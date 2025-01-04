@@ -1,16 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-  <RestoreAdditionalProjectSources>
-    https://api.nuget.org/v3/index.json;
-    https://nuget.bepinex.dev/v3/index.json;
-    https://nuget.samboy.dev/v3/index.json;
-    https://polymod.dev/nuget/v3/index.json;
-  </RestoreAdditionalProjectSources>
-  <Configurations>IL2CPP</Configurations>
+    <RestoreAdditionalProjectSources>
+      https://api.nuget.org/v3/index.json;
+      https://nuget.bepinex.dev/v3/index.json;
+      https://nuget.samboy.dev/v3/index.json;
+      https://polymod.dev/nuget/v3/index.json;
+    </RestoreAdditionalProjectSources>
+    <Configurations>IL2CPP</Configurations>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.725" />
     <PackageReference Include="TheBattleOfPolytopia" Version="2.11.0.13185">
@@ -18,4 +20,5 @@
     </PackageReference>
     <EmbeddedResource Include="resources\*.*" />
   </ItemGroup>
+
 </Project>

@@ -12,6 +12,7 @@ using System.Globalization;
 using System.IO.Compression;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Unity.VectorGraphics.External.LibTessDotNet;
 using UnityEngine;
@@ -53,14 +54,19 @@ namespace PolyMod
 			}
 		}
 
-		public record PreviewTile(
-			int? x = null,
-			int? y = null,
-			Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.Ocean,
-			ResourceData.Type resourceType = ResourceData.Type.None,
-			UnitData.Type unitType = UnitData.Type.None,
-			ImprovementData.Type improvementType = ImprovementData.Type.None
-		);
+		public class PreviewTile
+		{
+			public int? x = null;
+			public int? y = null;
+			[JsonConverter(typeof(EnumCacheJson<Polytopia.Data.TerrainData.Type>))]
+			public Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.Ocean;
+			[JsonConverter(typeof(EnumCacheJson<ResourceData.Type>))]
+			public ResourceData.Type resourceType = ResourceData.Type.None;
+			[JsonConverter(typeof(EnumCacheJson<UnitData.Type>))]
+			public UnitData.Type unitType = UnitData.Type.None;
+			[JsonConverter(typeof(EnumCacheJson<ImprovementData.Type>))]
+			public ImprovementData.Type improvementType = ImprovementData.Type.None;
+		}
 
 		private static readonly Stopwatch stopwatch = new();
 		public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
@@ -449,24 +455,13 @@ namespace PolyMod
 					autoidx++;
 				}
 			}
-			foreach (JToken jtoken in patch.SelectTokens("$.tribeData.*").ToArray()) // TODO: FIX CUSTOM ENUM VALUES
+			foreach (JToken jtoken in patch.SelectTokens("$.tribeData.*").ToArray())
 			{
 				JObject token = jtoken.Cast<JObject>();
 
 				if (token["preview"] != null)
 				{
-					var options = new JsonSerializerOptions
-					{
-						Converters =
-						{
-							new EnumCacheJson<Polytopia.Data.TerrainData.Type>(),
-							new EnumCacheJson<ResourceData.Type>(),
-							new EnumCacheJson<UnitData.Type>(),
-							new EnumCacheJson<ImprovementData.Type>(),
-						}
-					};
-
-					List<PreviewTile>? preview = JsonSerializer.Deserialize<List<PreviewTile>>(token["preview"].ToString(), options);
+					List<PreviewTile>? preview = JsonSerializer.Deserialize<List<PreviewTile>>(token["preview"].ToString());
 
 					if (preview != null)
 					{
