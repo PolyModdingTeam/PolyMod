@@ -324,7 +324,17 @@ namespace PolyMod
 							"mountain" => new(0.5f, -0.375f),
 							_ => new(0.5f, 0.5f),
 						};
-						Sprite sprite = SpritesLoader.BuildSprite(file.bytes, pivot);
+						float pixelsPerUnit = Path.GetFileNameWithoutExtension(file.name).Split("_")[0] switch
+						{
+							"field" => 256f,
+							"forest" => 280f,
+							"mountain" => 240f,
+							"game" => 512f,
+							"fruit" => 256f,
+							"house" => 300f,
+							_ => 2048f,
+						};
+						Sprite sprite = SpritesLoader.BuildSprite(file.bytes, pivot, pixelsPerUnit);
 						GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(Path.GetFileNameWithoutExtension(file.name), sprite);
 						sprites.Add(Path.GetFileNameWithoutExtension(file.name), sprite);
 					}

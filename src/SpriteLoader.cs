@@ -20,19 +20,32 @@ namespace PolyMod
 		[HarmonyPatch(typeof(Unit), nameof(Unit.SetVisible))]
 		private static void Unit_SetVisible(Unit __instance)
 		{
-			string style = EnumCache<TribeData.Type>.GetName(__instance.Owner.tribe);
-			if (__instance.Owner.skinType != SkinType.Default)
+			string style = __instance.Owner.skinType != SkinType.Default
+				? EnumCache<SkinType>.GetName(__instance.Owner.skinType)
+				: EnumCache<TribeData.Type>.GetName(__instance.Owner.tribe);
+
+			foreach (var visualPart in __instance.skinVisuals.visualParts)
 			{
-				style = EnumCache<SkinType>.GetName(__instance.Owner.skinType);
-			}
-			foreach (SkinVisualsReference.VisualPart visualPart in __instance.skinVisuals.visualParts)
-			{
-				Sprite? sprite = ModLoader.GetSprite(visualPart.DefaultSpriteName, style);
+				string baseName = visualPart.DefaultSpriteName.Split('_')[0];
+				string unitTypeName = EnumCache<UnitData.Type>.GetName(__instance.unitData.type);
+
+				Sprite? sprite = ModLoader.GetSprite($"{baseName}_{unitTypeName}", style);
+				if (sprite == null && baseName == "head")
+				{
+					sprite = ModLoader.GetSprite(baseName, style);
+				}
+
 				if (sprite != null)
 				{
 					visualPart.renderer.spriteRenderer.sprite = sprite;
 				}
-				Sprite? outlineSprite = ModLoader.GetSprite(visualPart.DefaultSpriteName + "_outline", style);
+
+				Sprite? outlineSprite = ModLoader.GetSprite($"{baseName}_{unitTypeName}_outline", style);
+				if (outlineSprite == null && baseName == "head")
+				{
+					outlineSprite = ModLoader.GetSprite($"{baseName}_outline", style);
+				}
+
 				if (outlineSprite != null)
 				{
 					visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
@@ -44,23 +57,29 @@ namespace PolyMod
 		[HarmonyPatch(typeof(Resource), nameof(Resource.SetVisible))]
 		private static void Resource_SetVisible(Resource __instance)
 		{
-			__instance.Sprite = GetSpriteForTile(
-				__instance.Sprite,
+			Sprite? sprite = GetSpriteForTile(
 				__instance.tile,
 				EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type)
 			);
+			if(sprite != null)
+			{
+				__instance.Sprite = sprite;
+			}
 		}
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(Building), nameof(Building.SetVisible))]
 		private static void Building_SetVisible(Building __instance)
 		{
-			__instance.Sprite = GetSpriteForTile(
-				__instance.Sprite,
+			Sprite? sprite = GetSpriteForTile(
 				__instance.tile,
 				EnumCache<ImprovementData.Type>.GetName(__instance.tile.improvement.data.type),
 				__instance.tile.improvement.Level
 			);
+			if(sprite != null)
+			{
+				__instance.Sprite = sprite;
+			}
 		}
 
 		[HarmonyPostfix]
@@ -74,7 +93,14 @@ namespace PolyMod
 			{
 				name = "field";
 			}
-			__instance.spriteRenderer.Sprite = GetSpriteForTile(__instance.spriteRenderer.Sprite, tile, name);
+			Sprite? sprite = GetSpriteForTile(
+				tile,
+				name
+			);
+			if(sprite != null)
+			{
+				__instance.spriteRenderer.Sprite = sprite;
+			}
 		}
 
 		[HarmonyPostfix]
@@ -93,11 +119,14 @@ namespace PolyMod
 						Tile? tile = tileTransform.GetComponent<Tile>();
 						if (tile != null)
 						{
-							__instance.Sprite = GetSpriteForTile(
-								__instance.Sprite,
+							Sprite? sprite = GetSpriteForTile(
 								tile,
 								EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain)
 							);
+							if(sprite != null)
+							{
+								__instance.Sprite = sprite;
+							}
 						}
 					}
 				}
@@ -347,6 +376,10 @@ namespace PolyMod
 
 			if (type != __instance.HOUSE_WORKSHOP && type != __instance.HOUSE_PARK)
 			{
+				if (polytopiaSpriteRenderer.Sprite != null)
+				{
+					Console.Write(polytopiaSpriteRenderer.Sprite.pixelsPerUnit);
+				}
 				string style = EnumCache<TribeData.Type>.GetName(tribe);
 				if (skinType != SkinType.Default)
 				{
@@ -402,21 +435,18 @@ namespace PolyMod
 			}
 		}
 
-		private static Sprite GetSpriteForTile(Sprite sprite, Tile tile, string name, int level = 0)
+		private static Sprite GetSpriteForTile(Tile tile, string name, int level = 0)
 		{
 			try
 			{
 				string tribe = EnumCache<TribeData.Type>
 					.GetName(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate));
 
-				Sprite? newSprite = ModLoader.GetSprite(name, tribe, level);
-				if (newSprite != null)
-				{
-					sprite = newSprite;
-				}
+				Sprite? sprite = ModLoader.GetSprite(name, tribe, level);
+				return sprite;
 			}
 			catch { }
-			return sprite;
+			return null;
 		}
 
 		public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 256f)
