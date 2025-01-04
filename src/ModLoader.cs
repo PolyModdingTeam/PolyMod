@@ -139,18 +139,18 @@ namespace PolyMod
 			Harmony.CreateAndPatchAll(typeof(ModLoader));
 
 			Directory.CreateDirectory(Plugin.MODS_PATH);
-			string[] modFiles = Directory.GetDirectories(Plugin.MODS_PATH)
+			string[] modContainers = Directory.GetDirectories(Plugin.MODS_PATH)
 				.Union(Directory.GetFiles(Plugin.MODS_PATH, "*.polymod"))
 				.Union(Directory.GetFiles(Plugin.MODS_PATH, "*.zip"))
 				.ToArray();
-			foreach (var modFile in modFiles)
+			foreach (var modContainer in modContainers)
 			{
 				Mod.Manifest? manifest = null;
 				List<Mod.File> files = new();
 
-				if (Directory.Exists(modFile))
+				if (Directory.Exists(modContainer))
 				{
-					foreach (var file in Directory.GetFiles(modFile))
+					foreach (var file in Directory.GetFiles(modContainer))
 					{
 						if (Path.GetFileName(file) == "manifest.json")
 						{
@@ -168,7 +168,7 @@ namespace PolyMod
 				}
 				else
 				{
-					foreach (var entry in new ZipArchive(File.OpenRead(modFile)).Entries)
+					foreach (var entry in new ZipArchive(File.OpenRead(modContainer)).Entries)
 					{
 						if (entry.FullName == "manifest.json")
 						{
@@ -322,7 +322,7 @@ namespace PolyMod
 						}
 						catch (Exception e)
 						{
-							Plugin.logger.LogError($"Found invalid localization in {id} mod: {e.Message}");
+							Plugin.logger.LogError($"Error on loading locatization from {id} mod: {e.Message}");
 						}
 					}
 					if (Path.GetExtension(file.name) == ".png" && shouldInitializeSprites)
