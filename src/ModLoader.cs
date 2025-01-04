@@ -293,11 +293,11 @@ namespace PolyMod
 							mod.status = Mod.Status.ERROR;
 						}
 					}
-					if (Path.GetFileName(file.name) == "localization.json") 
+					if (Path.GetFileName(file.name) == "localization.json")
 					{
 						try
 						{
-							foreach(var (key, data) in JsonSerializer
+							foreach (var (key, data) in JsonSerializer
 								.Deserialize<Dictionary<string, Dictionary<string, string>>>(file.bytes)!
 							)
 							{
@@ -424,11 +424,11 @@ namespace PolyMod
 						case "unitData":
 							EnumCache<UnitData.Type>.AddMapping(id, (UnitData.Type)autoidx);
 							UnitData.Type unitPrefabType = UnitData.Type.Scout;
-							if(token["prefab"] != null)
+							if (token["prefab"] != null)
 							{
 								TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
 								string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-								if(Enum.TryParse(prefabId, out UnitData.Type parsedType))
+								if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
 								{
 									unitPrefabType = parsedType;
 								}
@@ -438,11 +438,11 @@ namespace PolyMod
 						case "improvementData":
 							EnumCache<ImprovementData.Type>.AddMapping(id, (ImprovementData.Type)autoidx);
 							ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
-							if(token["prefab"] != null)
+							if (token["prefab"] != null)
 							{
 								TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
 								string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-								if(Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
+								if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
 								{
 									improvementPrefabType = parsedType;
 								}
@@ -455,11 +455,11 @@ namespace PolyMod
 						case "resourceData":
 							EnumCache<ResourceData.Type>.AddMapping(id, (ResourceData.Type)autoidx);
 							ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
-							if(token["prefab"] != null)
+							if (token["prefab"] != null)
 							{
 								TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
 								string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-								if(Enum.TryParse(prefabId, out ResourceData.Type parsedType))
+								if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
 								{
 									resourcePrefabType = parsedType;
 								}

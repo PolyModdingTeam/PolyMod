@@ -61,7 +61,7 @@ namespace PolyMod
 				__instance.tile,
 				EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type)
 			);
-			if(sprite != null)
+			if (sprite != null)
 			{
 				__instance.Sprite = sprite;
 			}
@@ -76,7 +76,7 @@ namespace PolyMod
 				EnumCache<ImprovementData.Type>.GetName(__instance.tile.improvement.data.type),
 				__instance.tile.improvement.Level
 			);
-			if(sprite != null)
+			if (sprite != null)
 			{
 				__instance.Sprite = sprite;
 			}
@@ -97,7 +97,7 @@ namespace PolyMod
 				tile,
 				name
 			);
-			if(sprite != null)
+			if (sprite != null)
 			{
 				__instance.spriteRenderer.Sprite = sprite;
 			}
@@ -123,7 +123,7 @@ namespace PolyMod
 								tile,
 								EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain)
 							);
-							if(sprite != null)
+							if (sprite != null)
 							{
 								__instance.Sprite = sprite;
 							}
@@ -166,25 +166,25 @@ namespace PolyMod
 		private static void UIWorldPreviewData_TryGetData(ref bool __result, UIWorldPreviewData __instance, Vector2Int position, TribeData.Type tribeType, ref UITileData uiTile)
 		{
 			List<PolyMod.ModLoader.PreviewTile>? preview = null;
-			if(ModLoader.tribePreviews.ContainsKey(EnumCache<TribeData.Type>.GetName(tribeType).ToLower()))
+			if (ModLoader.tribePreviews.ContainsKey(EnumCache<TribeData.Type>.GetName(tribeType).ToLower()))
 			{
 				preview = ModLoader.tribePreviews[EnumCache<TribeData.Type>.GetName(tribeType).ToLower()];
 			}
-			if(preview != null)
+			if (preview != null)
 			{
 				ModLoader.PreviewTile? previewTile = preview.FirstOrDefault(tileInPreview => tileInPreview.x == position.x && tileInPreview.y == position.y);
-				if(previewTile != null)
+				if (previewTile != null)
 				{
-                    uiTile = new UITileData
-                    {
-                        Position = position,
-                        terrainType = previewTile.terrainType,
-                        resourceType = previewTile.resourceType,
-                        unitType = previewTile.unitType,
-                        improvementType = previewTile.improvementType,
-                        tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>()
-                    };
-                }
+					uiTile = new UITileData
+					{
+						Position = position,
+						terrainType = previewTile.terrainType,
+						resourceType = previewTile.resourceType,
+						unitType = previewTile.unitType,
+						improvementType = previewTile.improvementType,
+						tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>()
+					};
+				}
 			}
 		}
 
@@ -192,12 +192,12 @@ namespace PolyMod
 		[HarmonyPatch(typeof(UIWorldPreview), nameof(UIWorldPreview.SetPreview), new Type[] { })]
 		private static void UIWorldPreview_SetPreview(UIWorldPreview __instance)
 		{
-			if(Plugin.config.debug)
+			if (Plugin.config.debug)
 			{
-				if(firstTimeOpeningPreview)
+				if (firstTimeOpeningPreview)
 				{
 					RectMask2D mask = __instance.gameObject.GetComponent<RectMask2D>();
-                    GameObject.Destroy(mask);
+					GameObject.Destroy(mask);
 					__instance.gameObject.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
 					__instance.gameObject.transform.position -= new Vector3(-5f, 40f, 0f);
 					firstTimeOpeningPreview = false;
@@ -279,11 +279,11 @@ namespace PolyMod
 		{
 			RectTransform rectTransform = __result;
 			TribeData.Type tribeTypeFromStyle = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(climate);
-            SkinVisualsTransientData data = new SkinVisualsTransientData
-            {
-                tileClimateSettings = new TribeAndSkin(tribeTypeFromStyle, skin)
-            };
-            UIUtils.SkinnedTerrainSprites skinnedTerrainSprites = UIUtils.GetTerrainSprite(data, type, GameManager.GetSpriteAtlasManager());
+			SkinVisualsTransientData data = new SkinVisualsTransientData
+			{
+				tileClimateSettings = new TribeAndSkin(tribeTypeFromStyle, skin)
+			};
+			UIUtils.SkinnedTerrainSprites skinnedTerrainSprites = UIUtils.GetTerrainSprite(data, type, GameManager.GetSpriteAtlasManager());
 
 			int count = 0;
 			foreach (Il2CppSystem.Object child in rectTransform)
@@ -347,7 +347,7 @@ namespace PolyMod
 			{
 				style = EnumCache<SkinType>.GetName(skin);
 			}
-			if(terrain == Polytopia.Data.TerrainData.Type.Mountain || terrain == Polytopia.Data.TerrainData.Type.Forest)
+			if (terrain == Polytopia.Data.TerrainData.Type.Mountain || terrain == Polytopia.Data.TerrainData.Type.Forest)
 			{
 				sprite = ModLoader.GetSprite("field", style);
 				if (sprite != null)
@@ -451,15 +451,15 @@ namespace PolyMod
 
 		public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 256f)
 		{
-            Texture2D texture = new(1, 1)
-            {
-                filterMode = FilterMode.Trilinear
-            };
-            texture.LoadImage(data);
+			Texture2D texture = new(1, 1)
+			{
+				filterMode = FilterMode.Trilinear
+			};
+			texture.LoadImage(data);
 			return Sprite.Create(
-				texture, 
-				new(0, 0, texture.width, texture.height), 
-				pivot ?? new(0.5f, 0.5f), 
+				texture,
+				new(0, 0, texture.width, texture.height),
+				pivot ?? new(0.5f, 0.5f),
 				pixelsPerUnit
 			);
 		}

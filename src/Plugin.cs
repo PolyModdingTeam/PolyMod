@@ -28,11 +28,11 @@ namespace PolyMod
 
 		public override void Load()
 		{
-			try 
+			try
 			{
 				config = JsonSerializer.Deserialize<PolyConfig>(File.ReadAllText(CONFIG_PATH))!;
 			}
-			catch 
+			catch
 			{
 				config = new();
 				File.WriteAllText(CONFIG_PATH, JsonSerializer.Serialize(config));
