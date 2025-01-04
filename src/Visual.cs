@@ -1,5 +1,6 @@
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -25,6 +26,18 @@ namespace PolyMod
         [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
         private static void StartScreen_Start()
         {
+            GameObject originalText = GameObject.Find("SettingsButton/DescriptionText");
+            GameObject text = GameObject.Instantiate(originalText, originalText.transform.parent.parent.parent);
+            RectTransform rect = text.GetComponent<RectTransform>();
+            rect.anchoredPosition = new(265, 40);
+            rect.sizeDelta = new(500, rect.sizeDelta.y);
+            rect.anchorMax = new(0, 0);
+            rect.anchorMin = new(0, 0);
+            text.GetComponent<TextMeshProUGUI>().fontSize = 18;
+            text.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.BottomLeft;
+            text.GetComponent<TMPLocalizer>().Text = $"PolyMod {Plugin.VERSION}";
+            text.AddComponent<LayoutElement>().ignoreLayout = true;
+
             GameObject originalButton = GameObject.Find("StartScreen/WeeklyChallengesButton");
             GameObject button = GameObject.Instantiate(originalButton, originalButton.transform.parent);
             button.active = true;
