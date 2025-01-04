@@ -145,7 +145,7 @@ namespace PolyMod
 		}
 
 		[HarmonyPostfix]
-		[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.GetSpriteFromAtlas), new Type[] { typeof(SpriteAtlas), typeof(string) })]
+		[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.GetSpriteFromAtlas), typeof(SpriteAtlas), typeof(string))]
 		private static void SpriteAtlasManager_GetSpriteFromAtlas(ref Sprite __result, SpriteAtlas spriteAtlas, string sprite)
 		{
 			try
@@ -175,14 +175,16 @@ namespace PolyMod
 				ModLoader.PreviewTile? previewTile = preview.FirstOrDefault(tileInPreview => tileInPreview.x == position.x && tileInPreview.y == position.y);
 				if(previewTile != null)
 				{
-					uiTile = new UITileData();
-					uiTile.Position = position;
-					uiTile.terrainType = previewTile.terrainType;
-					uiTile.resourceType = previewTile.resourceType;
-					uiTile.unitType = previewTile.unitType;
-					uiTile.improvementType = previewTile.improvementType;
-					uiTile.tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>();
-				}
+                    uiTile = new UITileData
+                    {
+                        Position = position,
+                        terrainType = previewTile.terrainType,
+                        resourceType = previewTile.resourceType,
+                        unitType = previewTile.unitType,
+                        improvementType = previewTile.improvementType,
+                        tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>()
+                    };
+                }
 			}
 		}
 
@@ -194,8 +196,8 @@ namespace PolyMod
 			{
 				if(firstTimeOpeningPreview)
 				{
-					RectMask2D mask = __instance.gameObject.GetComponent<UnityEngine.UI.RectMask2D>();
-					UnityEngine.GameObject.Destroy(mask);
+					RectMask2D mask = __instance.gameObject.GetComponent<RectMask2D>();
+                    GameObject.Destroy(mask);
 					__instance.gameObject.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
 					__instance.gameObject.transform.position -= new Vector3(-5f, 40f, 0f);
 					firstTimeOpeningPreview = false;
@@ -277,9 +279,11 @@ namespace PolyMod
 		{
 			RectTransform rectTransform = __result;
 			TribeData.Type tribeTypeFromStyle = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(climate);
-			SkinVisualsTransientData data = new SkinVisualsTransientData();
-			data.tileClimateSettings = new TribeAndSkin(tribeTypeFromStyle, skin);
-			UIUtils.SkinnedTerrainSprites skinnedTerrainSprites = UIUtils.GetTerrainSprite(data, type, GameManager.GetSpriteAtlasManager());
+            SkinVisualsTransientData data = new SkinVisualsTransientData
+            {
+                tileClimateSettings = new TribeAndSkin(tribeTypeFromStyle, skin)
+            };
+            UIUtils.SkinnedTerrainSprites skinnedTerrainSprites = UIUtils.GetTerrainSprite(data, type, GameManager.GetSpriteAtlasManager());
 
 			int count = 0;
 			foreach (Il2CppSystem.Object child in rectTransform)
@@ -296,7 +300,7 @@ namespace PolyMod
 		}
 
 		[HarmonyPostfix]
-		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), new Type[] { typeof(ImprovementData.Type), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteAtlasManager) })]
+		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteAtlasManager))]
 		private static void UIUtils_GetImprovementSprite(ref Sprite __result, ImprovementData.Type improvement, TribeData.Type tribe, SkinType skin, SpriteAtlasManager atlasManager)
 		{
 			string style = EnumCache<TribeData.Type>.GetName(tribe);
@@ -376,10 +380,6 @@ namespace PolyMod
 
 			if (type != __instance.HOUSE_WORKSHOP && type != __instance.HOUSE_PARK)
 			{
-				if (polytopiaSpriteRenderer.Sprite != null)
-				{
-					Console.Write(polytopiaSpriteRenderer.Sprite.pixelsPerUnit);
-				}
 				string style = EnumCache<TribeData.Type>.GetName(tribe);
 				if (skinType != SkinType.Default)
 				{
@@ -435,7 +435,7 @@ namespace PolyMod
 			}
 		}
 
-		private static Sprite GetSpriteForTile(Tile tile, string name, int level = 0)
+		private static Sprite? GetSpriteForTile(Tile tile, string name, int level = 0)
 		{
 			try
 			{
@@ -451,9 +451,11 @@ namespace PolyMod
 
 		public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 256f)
 		{
-			Texture2D texture = new(1, 1);
-			texture.filterMode = FilterMode.Trilinear;
-			texture.LoadImage(data);
+            Texture2D texture = new(1, 1)
+            {
+                filterMode = FilterMode.Trilinear
+            };
+            texture.LoadImage(data);
 			return Sprite.Create(
 				texture, 
 				new(0, 0, texture.width, texture.height), 

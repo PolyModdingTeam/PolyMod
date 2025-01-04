@@ -1,4 +1,5 @@
-﻿using Cpp2IL.Core.Extensions;
+﻿using BepInEx.Unity.IL2CPP.Logging;
+using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using I2.Loc;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
@@ -14,7 +15,6 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using Unity.VectorGraphics.External.LibTessDotNet;
 using UnityEngine;
 
 namespace PolyMod
@@ -122,6 +122,15 @@ namespace PolyMod
 					Localization.Get(__instance.startTechSid, Array.Empty<Il2CppSystem.Object>())
 				});
 			}
+		}
+
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(IL2CPPUnityLogSource), nameof(IL2CPPUnityLogSource.UnityLogCallback))]
+		private static bool IL2CPPUnityLogSource_UnityLogCallback(string logLine, string exception, LogType type)
+		{
+			if (logLine.Contains("Failed to find atlas") && type == LogType.Warning) return false;
+			if (logLine.Contains("Could not find sprite") && type == LogType.Warning) return false;
+			return true;
 		}
 
 		internal static void Init()
