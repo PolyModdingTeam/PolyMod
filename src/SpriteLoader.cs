@@ -286,14 +286,9 @@ namespace PolyMod
 			}
 			if (sprite != null)
 			{
-				Image image = new GameObject
-				{
-					name = string.Format("{0}_Icon", id)
-				}.AddComponent<Image>();
-				image.sprite = sprite;
-				image.useSpriteMesh = true;
-				image.SetNativeSize();
-				__result = image;
+				__result.sprite = sprite;
+				__result.useSpriteMesh = true;
+				__result.SetNativeSize();
 			}
 		}
 
