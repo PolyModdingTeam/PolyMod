@@ -369,16 +369,7 @@ namespace PolyMod
 							"mountain" => new(0.5f, -0.375f),
 							_ => new(0.5f, 0.5f),
 						};
-						float pixelsPerUnit = name.Split("_")[0] switch
-						{
-							"field" => 256f,
-							"forest" => 280f,
-							"mountain" => 240f,
-							"game" => 512f,
-							"fruit" => 256f,
-							"house" => 300f,
-							_ => 2112f,
-						};
+						float pixelsPerUnit = 2112f;
 						if (spriteDatas.ContainsKey(name))
 						{
 							DataSprite spriteData = spriteDatas[name];
