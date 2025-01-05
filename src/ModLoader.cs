@@ -74,9 +74,10 @@ namespace PolyMod
 		public static Dictionary<string, AudioSource> audioClips = new();
 		public static Dictionary<string, Mod> mods = new();
 		public static Dictionary<int, int> climateToTribeData = new();
-		public static Dictionary<string, List<PreviewTile>> tribePreviews = new();
-		public static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
-		public static bool shouldInitializeSprites = true;
+		private static List<TribeData.Type> customTribes = new();
+		internal static Dictionary<string, List<PreviewTile>> tribePreviews = new();
+		private static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
+		private static bool shouldInitializeSprites = true;
 
 
 		[HarmonyPrefix]
@@ -98,6 +99,16 @@ namespace PolyMod
 		private static void PurchaseManager_IsSkinUnlocked(ref bool __result, SkinType skinType)
 		{
 			__result = ((int)skinType >= Plugin.AUTOIDX_STARTS_FROM && (int)skinType != 2000) || __result;
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.GetUnlockedTribes))]
+		private static void PurchaseManager_GetUnlockedTribes(
+			ref Il2CppSystem.Collections.Generic.List<TribeData.Type> __result, 
+			bool forceUpdate = false
+		)
+		{
+			foreach (var tribe in customTribes) __result.Add(tribe);
 		}
 
 		[HarmonyPrefix]
@@ -419,6 +430,7 @@ namespace PolyMod
 					{
 						case "tribeData":
 							EnumCache<TribeData.Type>.AddMapping(id, (TribeData.Type)autoidx);
+							customTribes.Add((TribeData.Type)autoidx);
 							climateToTribeData[climateAutoidx++] = autoidx;
 							break;
 						case "techData":
