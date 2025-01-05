@@ -5,6 +5,7 @@ using I2.Loc;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppSystem.Linq;
 using LibCpp2IL;
+using MonoMod.Utils;
 using Newtonsoft.Json.Linq;
 using PolyMod.Json;
 using Polytopia.Data;
@@ -68,14 +69,17 @@ namespace PolyMod
 			public ImprovementData.Type improvementType = ImprovementData.Type.None;
 		}
 
+		public record DataSprite(float pixelsPerUnit, Vector2 pivot);
+
 		private static readonly Stopwatch stopwatch = new();
 		public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
 		public static Dictionary<string, Sprite> sprites = new();
 		public static Dictionary<string, AudioSource> audioClips = new();
 		public static Dictionary<string, Mod> mods = new();
 		public static Dictionary<int, int> climateToTribeData = new();
+		public static Dictionary<string, PreviewTile[]> tribePreviews = new();
+		public static Dictionary<string, DataSprite> spriteDatas = new();
 		private static List<TribeData.Type> customTribes = new();
-		internal static Dictionary<string, List<PreviewTile>> tribePreviews = new();
 		private static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 		private static bool shouldInitializeSprites = true;
 
@@ -104,7 +108,7 @@ namespace PolyMod
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.GetUnlockedTribes))]
 		private static void PurchaseManager_GetUnlockedTribes(
-			ref Il2CppSystem.Collections.Generic.List<TribeData.Type> __result, 
+			ref Il2CppSystem.Collections.Generic.List<TribeData.Type> __result,
 			bool forceUpdate = false
 		)
 		{
@@ -276,6 +280,26 @@ namespace PolyMod
 							}
 						}
 					}
+					if (Path.GetFileName(file.name) == "sprites.json")
+					{
+						try
+						{
+							spriteDatas = spriteDatas
+								.Concat(JsonSerializer.Deserialize<Dictionary<string, DataSprite>>(
+									file.bytes,
+									new JsonSerializerOptions()
+									{
+										Converters = { new Vector2Json() },
+									}
+								)!)
+								.ToDictionary(e => e.Key, e => e.Value);
+							Plugin.logger.LogInfo($"Registried sprite data from {id} mod");
+						}
+						catch (Exception e)
+						{
+							Plugin.logger.LogError($"Error on loading sprite data from {id} mod: {e.Message}");
+						}
+					}
 				}
 			}
 
@@ -338,15 +362,32 @@ namespace PolyMod
 					}
 					if (Path.GetExtension(file.name) == ".png" && shouldInitializeSprites)
 					{
-						Vector2 pivot = Path.GetFileNameWithoutExtension(file.name).Split("_")[0] switch
+						string name = Path.GetFileNameWithoutExtension(file.name);
+						Vector2 pivot = name.Split("_")[0] switch
 						{
 							"field" => new(0.5f, 0.0f),
 							"mountain" => new(0.5f, -0.375f),
 							_ => new(0.5f, 0.5f),
 						};
-						Sprite sprite = SpritesLoader.BuildSprite(file.bytes, pivot);
-						GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(Path.GetFileNameWithoutExtension(file.name), sprite);
-						sprites.Add(Path.GetFileNameWithoutExtension(file.name), sprite);
+						float pixelsPerUnit = name.Split("_")[0] switch
+						{
+							"field" => 256f,
+							"forest" => 280f,
+							"mountain" => 240f,
+							"game" => 512f,
+							"fruit" => 256f,
+							"house" => 300f,
+							_ => 2112f,
+						};
+						if (spriteDatas.ContainsKey(name))
+						{
+							DataSprite spriteData = spriteDatas[name];
+							pivot = spriteData.pivot;
+							pixelsPerUnit = spriteData.pixelsPerUnit;
+						}
+						Sprite sprite = SpritesLoader.BuildSprite(file.bytes, pivot, pixelsPerUnit);
+						GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
+						sprites.Add(name, sprite);
 					}
 					if (Path.GetExtension(file.name) == ".wav")
 					{
@@ -482,12 +523,8 @@ namespace PolyMod
 
 				if (token["preview"] != null)
 				{
-					List<PreviewTile>? preview = JsonSerializer.Deserialize<List<PreviewTile>>(token["preview"].ToString());
-
-					if (preview != null)
-					{
-						tribePreviews[GetJTokenName(token)] = preview;
-					}
+					PreviewTile[] preview = JsonSerializer.Deserialize<PreviewTile[]>(token["preview"].ToString())!;
+					tribePreviews[GetJTokenName(token)] = preview;
 				}
 			}
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });

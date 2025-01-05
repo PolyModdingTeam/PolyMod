@@ -84,7 +84,7 @@ namespace PolyMod
 		{
 			PlayerState player;
 			string style;
-			if(GameManager.GameState.TryGetPlayer(__instance.tile.data.improvement.founder, out player))
+			if (GameManager.GameState.TryGetPlayer(__instance.tile.data.improvement.founder, out player))
 			{
 				style = player.skinType != SkinType.Default
 					? EnumCache<SkinType>.GetName(player.skinType)
@@ -192,7 +192,7 @@ namespace PolyMod
 		[HarmonyPatch(typeof(UIWorldPreviewData), nameof(UIWorldPreviewData.TryGetData))]
 		private static void UIWorldPreviewData_TryGetData(ref bool __result, UIWorldPreviewData __instance, Vector2Int position, TribeData.Type tribeType, ref UITileData uiTile)
 		{
-			List<PolyMod.ModLoader.PreviewTile>? preview = null;
+			ModLoader.PreviewTile[]? preview = null;
 			if (ModLoader.tribePreviews.ContainsKey(EnumCache<TribeData.Type>.GetName(tribeType).ToLower()))
 			{
 				preview = ModLoader.tribePreviews[EnumCache<TribeData.Type>.GetName(tribeType).ToLower()];
@@ -272,7 +272,7 @@ namespace PolyMod
 		private static void UIIconData_GetImage(ref Image __result, string id)
 		{
 			Sprite? sprite;
-			if(GameManager.LocalPlayer != null)
+			if (GameManager.LocalPlayer != null)
 			{
 				string style = GameManager.LocalPlayer.skinType != SkinType.Default
 					? EnumCache<SkinType>.GetName(GameManager.LocalPlayer.skinType)
