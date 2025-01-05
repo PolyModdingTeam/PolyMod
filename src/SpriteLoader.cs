@@ -59,8 +59,8 @@ namespace PolyMod
 		{
 			string style = __instance.tile.data.Skin != SkinType.Default
 				? EnumCache<SkinType>.GetName(__instance.tile.data.Skin)
-				: EnumCache<TribeData.Type>
-								.GetName(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(__instance.tile.data.climate));
+				: EnumCache<TribeData.Type>.GetName(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(__instance.tile.data.climate));
+
 			string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
 			foreach (var visualPart in __instance._skinVis.visualParts)
 			{
@@ -269,9 +269,32 @@ namespace PolyMod
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UIIconData), nameof(UIIconData.GetImage))]
-		private static void UIIconData_GetImage(ref Image __result, UIIconData __instance, string id) // TODO
+		private static void UIIconData_GetImage(ref Image __result, string id)
 		{
-			Console.Write(id);
+			Sprite? sprite;
+			if(GameManager.LocalPlayer != null)
+			{
+				string style = GameManager.LocalPlayer.skinType != SkinType.Default
+					? EnumCache<SkinType>.GetName(GameManager.LocalPlayer.skinType)
+					: EnumCache<TribeData.Type>
+									.GetName(GameManager.LocalPlayer.tribe);
+				sprite = ModLoader.GetSprite(id, style);
+			}
+			else
+			{
+				sprite = ModLoader.GetSprite(id);
+			}
+			if (sprite != null)
+			{
+				Image image = new GameObject
+				{
+					name = string.Format("{0}_Icon", id)
+				}.AddComponent<Image>();
+				image.sprite = sprite;
+				image.useSpriteMesh = true;
+				image.SetNativeSize();
+				__result = image;
+			}
 		}
 
 		[HarmonyPostfix]
