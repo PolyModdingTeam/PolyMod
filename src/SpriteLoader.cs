@@ -267,7 +267,7 @@ namespace PolyMod
 				if (sprite != null)
 				{
 					headImage.sprite = sprite;
-					headImage.gameObject.transform.localScale = new Vector3(1.5f, 1.5f, 0);
+					headImage.SetNativeSize();
 				}
 			}
 		}

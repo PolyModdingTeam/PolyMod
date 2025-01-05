@@ -330,7 +330,10 @@ namespace PolyMod
 						Vector2 pivot = Path.GetFileNameWithoutExtension(file.name).Split("_")[0] switch
 						{
 							"field" => new(0.5f, 0.0f),
+							"house" => new(0.5f, 0.0f),
 							"mountain" => new(0.5f, -0.375f),
+							"game" => new(0.444f, 0.30303f),
+							"fruit" => new(0.444f, 0.30303f),
 							_ => new(0.5f, 0.5f),
 						};
 						float pixelsPerUnit = Path.GetFileNameWithoutExtension(file.name).Split("_")[0] switch
@@ -341,7 +344,7 @@ namespace PolyMod
 							"game" => 512f,
 							"fruit" => 256f,
 							"house" => 300f,
-							_ => 2048f,
+							_ => 2112f,
 						};
 						Sprite sprite = SpritesLoader.BuildSprite(file.bytes, pivot, pixelsPerUnit);
 						GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(Path.GetFileNameWithoutExtension(file.name), sprite);
