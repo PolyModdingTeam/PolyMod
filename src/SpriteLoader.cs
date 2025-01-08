@@ -504,7 +504,9 @@ namespace PolyMod
 
 		public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
 		{
-			Texture2D texture = new(1, 1)
+			Texture2D tempTexture = new(1, 1);
+			tempTexture.LoadImage(data);
+			Texture2D texture = new(tempTexture.width, tempTexture.height)
 			{
 				filterMode = FilterMode.Trilinear
 			};
