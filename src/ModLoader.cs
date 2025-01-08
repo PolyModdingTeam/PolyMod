@@ -69,7 +69,7 @@ namespace PolyMod
 			public ImprovementData.Type improvementType = ImprovementData.Type.None;
 		}
 
-		public record DataSprite(float pixelsPerUnit, Vector2 pivot);
+		public record DataSprite(float? pixelsPerUnit, Vector2? pivot, bool? alphaIsTransparency);
 
 		private static readonly Stopwatch stopwatch = new();
 		public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
@@ -379,8 +379,8 @@ namespace PolyMod
 						if (spriteDatas.ContainsKey(name))
 						{
 							DataSprite spriteData = spriteDatas[name];
-							pivot = spriteData.pivot;
-							pixelsPerUnit = spriteData.pixelsPerUnit;
+							pivot = spriteData.pivot ?? pivot;
+							pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
 						}
 						Sprite sprite = SpritesLoader.BuildSprite(file.bytes, pivot, pixelsPerUnit);
 						GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
