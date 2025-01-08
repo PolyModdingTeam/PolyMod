@@ -236,6 +236,13 @@ namespace PolyMod
 			}
 		}
 
+		[HarmonyPrefix]
+        [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
+        private static void StartScreen_Start()
+		{
+			firstTimeOpeningPreview = true;
+		}
+
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.AddImprovementButtons))]
 		private static void InteractionBar_AddImprovementButtons(InteractionBar __instance, Tile tile)
