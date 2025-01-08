@@ -310,9 +310,9 @@ namespace PolyMod
 			stopwatch.Start();
 			GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
 			Mod.Manifest polytopia = new(
-				"polytopia", 
-				new(VersionManager.SemanticVersion.ToString()), 
-				Array.Empty<string>(), 
+				"polytopia",
+				new(VersionManager.SemanticVersion.ToString()),
+				Array.Empty<string>(),
 				Array.Empty<Mod.Dependency>()
 			);
 			mods.Add(polytopia.id, new(polytopia, Mod.Status.SUCCESS, new()));

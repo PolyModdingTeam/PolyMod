@@ -237,8 +237,8 @@ namespace PolyMod
 		}
 
 		[HarmonyPrefix]
-        [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-        private static void StartScreen_Start()
+		[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
+		private static void StartScreen_Start()
 		{
 			firstTimeOpeningPreview = true;
 		}
