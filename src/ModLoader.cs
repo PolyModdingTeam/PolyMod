@@ -376,15 +376,13 @@ namespace PolyMod
 							_ => new(0.5f, 0.5f),
 						};
 						float pixelsPerUnit = 2112f;
-						bool alphaIsTransparency = false;
 						if (spriteDatas.ContainsKey(name))
 						{
 							DataSprite spriteData = spriteDatas[name];
 							pivot = spriteData.pivot ?? pivot;
 							pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
-							alphaIsTransparency = spriteData.alphaIsTransparency ?? alphaIsTransparency;
 						}
-						Sprite sprite = SpritesLoader.BuildSprite(file.bytes, pivot, pixelsPerUnit, alphaIsTransparency);
+						Sprite sprite = SpritesLoader.BuildSprite(file.bytes, pivot, pixelsPerUnit);
 						GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
 						sprites.Add(name, sprite);
 					}
