@@ -76,7 +76,6 @@ namespace PolyMod
 		public static Dictionary<string, Sprite> sprites = new();
 		public static Dictionary<string, AudioSource> audioClips = new();
 		public static Dictionary<string, Mod> mods = new();
-		public static Dictionary<int, int> climateToTribeData = new();
 		public static Dictionary<string, PreviewTile[]> tribePreviews = new();
 		public static Dictionary<string, DataSprite> spriteDatas = new();
 		private static List<TribeData.Type> customTribes = new();
@@ -457,7 +456,9 @@ namespace PolyMod
 						case "tribeData":
 							EnumCache<TribeData.Type>.AddMapping(id, (TribeData.Type)autoidx);
 							customTribes.Add((TribeData.Type)autoidx);
-							climateToTribeData[climateAutoidx++] = autoidx;
+							token["style"] = climateAutoidx;
+							token["climate"] = climateAutoidx;
+							climateAutoidx++;
 							break;
 						case "techData":
 							EnumCache<TechData.Type>.AddMapping(id, (TechData.Type)autoidx);
