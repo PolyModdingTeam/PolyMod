@@ -202,7 +202,7 @@ namespace PolyMod
 
 				if (manifest != null
 					&& manifest.id != null
-					&& Regex.IsMatch(manifest.id, @"^[a-zA-Z_]+$")
+					&& Regex.IsMatch(manifest.id, @"^(?!polytopia$)[a-z_]+$")
 					&& manifest.version != null
 					&& manifest.authors != null
 					&& manifest.authors.Length != 0
@@ -310,6 +310,13 @@ namespace PolyMod
 		{
 			stopwatch.Start();
 			GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
+			Mod.Manifest polytopia = new(
+				"polytopia", 
+				new(VersionManager.SemanticVersion.ToString()), 
+				Array.Empty<string>(), 
+				Array.Empty<Mod.Dependency>()
+			);
+			mods.Add(polytopia.id, new(polytopia, Mod.Status.SUCCESS, new()));
 
 			foreach (var (id, mod) in mods)
 			{
