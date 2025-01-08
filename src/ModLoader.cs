@@ -5,7 +5,6 @@ using I2.Loc;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppSystem.Linq;
 using LibCpp2IL;
-using MonoMod.Utils;
 using Newtonsoft.Json.Linq;
 using PolyMod.Json;
 using Polytopia.Data;

@@ -35,7 +35,7 @@ namespace PolyMod
             rect.anchorMin = new(0, 0);
             text.GetComponent<TextMeshProUGUI>().fontSize = 18;
             text.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.BottomLeft;
-            text.GetComponent<TMPLocalizer>().Text = $"PolyMod {Plugin.VERSION}";
+            text.GetComponent<TMPLocalizer>().Text = $"PolyMod {(Plugin.VERSION == "0.0.0" ? "Dev" : Plugin.VERSION)}";
             text.AddComponent<LayoutElement>().ignoreLayout = true;
 
             GameObject originalButton = GameObject.Find("StartScreen/WeeklyChallengesButton");
