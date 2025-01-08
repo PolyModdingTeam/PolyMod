@@ -497,11 +497,19 @@ namespace PolyMod
 
 		public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
 		{
-			Texture2D texture = new(1, 1)
+			Texture2D texture = new(1, 1, TextureFormat.RGBA32, false)
 			{
-				filterMode = FilterMode.Trilinear
+				filterMode = FilterMode.Trilinear,
 			};
 			texture.LoadImage(data);
+			Color[] pixels = texture.GetPixels();
+			for (int i = 0; i < pixels.Length; i++)
+			{
+				if (Mathf.Approximately(pixels[i].a, 0))
+					pixels[i] = new Color();
+			}
+			texture.SetPixels(pixels);
+			texture.Apply();
 			return Sprite.Create(
 				texture,
 				new(0, 0, texture.width, texture.height),
