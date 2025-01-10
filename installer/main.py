@@ -53,7 +53,7 @@ def install():
     path_entry.configure(state=customtkinter.DISABLED)
     browse_button.configure(state=customtkinter.DISABLED)
     disable_logs_button.configure(state=customtkinter.DISABLED)
-    install_button.pack_forget()
+    install_button.destroy()
     progress_bar = customtkinter.CTkProgressBar(app, determinate_speed=50 / 2)
     progress_bar.grid(column=0, row=2, columnspan=2, padx=5, pady=5)
     progress_bar.set(0)
