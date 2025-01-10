@@ -1,4 +1,5 @@
-﻿using BepInEx.Unity.IL2CPP.Logging;
+﻿using BepInEx.Logging;
+using BepInEx.Unity.IL2CPP.Logging;
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using I2.Loc;
@@ -263,11 +264,20 @@ namespace PolyMod
 							Assembly assembly = Assembly.Load(file.bytes);
 							foreach (Type type in assembly.GetTypes())
 							{
-								MethodInfo? method = type.GetMethod("Load");
-								if (method != null)
+								MethodInfo? loadWithLogger = type.GetMethod("Load", new Type[] { typeof(ManualLogSource) });
+								if (loadWithLogger != null)
 								{
-									method.Invoke(null, null);
-									Plugin.logger.LogInfo($"Invoked Load method from {assembly.GetName().Name} assembly from {id} mod");
+									loadWithLogger.Invoke(null, new object[] 
+									{ 
+										BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{id}") 
+									});
+									Plugin.logger.LogInfo($"Invoked Load method with logger from {type.FullName} from {id} mod");
+								}
+								MethodInfo? load = type.GetMethod("Load", Array.Empty<Type>());
+								if (load != null)
+								{
+									load.Invoke(null, null);
+									Plugin.logger.LogInfo($"Invoked Load method from {type.FullName} from {id} mod");
 								}
 							}
 						}
