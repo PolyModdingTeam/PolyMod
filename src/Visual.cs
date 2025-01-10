@@ -39,7 +39,9 @@ namespace PolyMod
             text.AddComponent<LayoutElement>().ignoreLayout = true;
 
             GameObject originalButton = GameObject.Find("StartScreen/WeeklyChallengesButton");
+            GameObject newsButton = GameObject.Find("StartScreen/NewsButton");
             GameObject button = GameObject.Instantiate(originalButton, originalButton.transform.parent);
+            button.transform.position = newsButton.transform.position - new Vector3(90, 0, 0);
             button.active = true;
             button.GetComponentInChildren<TMPLocalizer>().Text = "PolyMod Discord";
             Transform iconContainer = button.transform.Find("IconContainer");
@@ -47,7 +49,6 @@ namespace PolyMod
                 = SpritesLoader.BuildSprite(Plugin.GetResource("discord_icon.png").ReadBytes());
             iconContainer.localScale = new Vector3(0.55f, 0.6f, 0);
             iconContainer.position -= new Vector3(0, 4, 0);
-
             UIRoundButton buttonObject = button.GetComponent<UIRoundButton>();
             buttonObject.OnClicked += (UIButtonBase.ButtonAction)
                 ((int id, BaseEventData eventdata) => NativeHelpers.OpenURL("https://discord.gg/eWPdhWtfVy", false));

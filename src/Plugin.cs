@@ -17,8 +17,8 @@ namespace PolyMod
 
 		internal const string VERSION = "0.0.0";
 		internal const int AUTOIDX_STARTS_FROM = 1000;
-		internal static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
-		internal static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
+		public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
+		public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
 		internal static readonly string CONFIG_PATH = Path.Combine(BASE_PATH, "PolyMod.json");
 
 #pragma warning disable CS8618
@@ -44,7 +44,6 @@ namespace PolyMod
 			ModLoader.Init();
 			SpritesLoader.Init();
 			Visual.Init();
-			//PolyBreaker.Init();
 		}
 
 		internal static Stream GetResource(string id)
