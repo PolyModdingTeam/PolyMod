@@ -4,7 +4,6 @@ import sys
 import zipfile
 import requests
 import threading
-import configparser
 import customtkinter
 import CTkMessagebox as messagebox
 
@@ -52,10 +51,9 @@ def install():
         return
     path_entry.configure(state=customtkinter.DISABLED)
     browse_button.configure(state=customtkinter.DISABLED)
-    disable_logs_button.configure(state=customtkinter.DISABLED)
     install_button.destroy()
     progress_bar = customtkinter.CTkProgressBar(app, determinate_speed=50 / 2)
-    progress_bar.grid(column=0, row=2, columnspan=2, padx=5, pady=5)
+    progress_bar.grid(column=0, row=1, columnspan=2, padx=5, pady=5)
     progress_bar.set(0)
     threading.Thread(target=_install, daemon=True, args=(path, )).start()
 
@@ -71,26 +69,15 @@ def _install(path):
     open(path + "/BepInEx/plugins/PolyMod.dll", "wb").write(
         requests.get(POLYMOD).content
     )
-    os.makedirs(path + "/BepInEx/config/")
-    config_file = open(path + "/BepInEx/config/BepInEx.cfg", "a+")
-    config = configparser.ConfigParser()
-    config.read_file(config_file)
-    logs = not bool(disable_logs_button.get())
-    if "Logging.Console" in config:
-        config["Logging.Console"]["Enabled"] = logs
-    else:
-        config["Logging.Console"] = {
-            "Enabled": logs}
-    config.write(config_file)
     progress_bar.step()
 
     customtkinter.CTkButton(app, text="Launch", command=launch).grid(
-        column=0, row=3, columnspan=2, padx=5, pady=5
+        column=0, row=2, columnspan=2, padx=5, pady=5
     )
 
 
 def launch():
-    os.system("start steam://rungameid/874390")
+    os.startfile("steam://rungameid/874390")
     app.destroy()
     sys.exit()
 
@@ -104,13 +91,10 @@ path_entry = customtkinter.CTkEntry(
     app, placeholder_text="Game path", width=228)
 browse_button = customtkinter.CTkButton(
     app, text="Browse", command=browse, width=1)
-disable_logs_button = customtkinter.CTkCheckBox(app, text="Disable logs")
-disable_logs_button.select()
 install_button = customtkinter.CTkButton(app, text="Install", command=install)
 
 path_entry.grid(column=0, row=0, padx=5, pady=5)
 browse_button.grid(column=1, row=0, padx=(0, 5), pady=5)
-disable_logs_button.grid(column=0, row=1, columnspan=2, padx=5, pady=5)
-install_button.grid(column=0, row=2, columnspan=2, padx=5, pady=5)
+install_button.grid(column=0, row=1, columnspan=2, padx=5, pady=5)
 
 app.mainloop()

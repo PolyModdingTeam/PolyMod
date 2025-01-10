@@ -38,6 +38,8 @@ namespace PolyMod
 				File.WriteAllText(CONFIG_PATH, JsonSerializer.Serialize(config));
 			}
 
+			if (!config.debug) ConsoleManager.DetachConsole();
+
 			logger = Log;
 			ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
 			AudioClipLoader.Init();
