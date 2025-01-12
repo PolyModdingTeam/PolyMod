@@ -516,6 +516,8 @@ namespace PolyMod
 						case "taskData":
 							EnumCache<TaskData.Type>.AddMapping(id, (TaskData.Type)autoidx);
 							break;
+						default:
+							continue;
 					}
 					Plugin.logger.LogInfo("Created mapping for " + dataType + " with id " + id + " and index " + autoidx);
 					autoidx++;
