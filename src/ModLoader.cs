@@ -73,13 +73,14 @@ namespace PolyMod
 
 		public record DataSprite(float? pixelsPerUnit, Vector2? pivot, bool? alphaIsTransparency);
 
-		private static readonly Stopwatch stopwatch = new();
 		public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
 		public static Dictionary<string, Sprite> sprites = new();
 		public static Dictionary<string, AudioSource> audioClips = new();
 		public static Dictionary<string, Mod> mods = new();
 		public static Dictionary<string, PreviewTile[]> tribePreviews = new();
 		public static Dictionary<string, DataSprite> spriteDatas = new();
+		private static readonly Stopwatch stopwatch = new();
+		private static int maxTechTier;
 		private static List<TribeData.Type> customTribes = new();
 		private static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 		private static bool shouldInitializeSprites = true;
@@ -401,6 +402,11 @@ namespace PolyMod
 				}
 			}
 
+			TechItem.techTierFirebaseId.Clear();
+			for (int i = 0; i <= maxTechTier; i++)
+			{
+				TechItem.techTierFirebaseId.Add($"tech_research_{i}");
+			}
 			shouldInitializeSprites = false;
 			stopwatch.Stop();
 			Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
@@ -466,6 +472,8 @@ namespace PolyMod
 							climateAutoidx++;
 							break;
 						case "techData":
+							int cost = (int)token["cost"];
+							if (cost > maxTechTier) maxTechTier = cost; 
 							EnumCache<TechData.Type>.AddMapping(id, (TechData.Type)autoidx);
 							break;
 						case "unitData":
