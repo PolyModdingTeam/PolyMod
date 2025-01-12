@@ -360,14 +360,7 @@ namespace PolyMod
 								List<string> strings = new();
 								foreach (string language in LocalizationManager.GetAllLanguages())
 								{
-									if (data.TryGetValue(language, out string? localized))
-									{
-										strings.Add(localized);
-									}
-									else
-									{
-										strings.Add(term.Term);
-									}
+									strings.Add(data.GetOrDefault(language, data.GetOrDefault("English", term.Term))!);
 								}
 								term.Languages = new Il2CppStringArray(strings.ToArray());
 							}
