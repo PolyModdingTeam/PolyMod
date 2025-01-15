@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using static PopupBase;
 
 namespace PolyMod
 {
@@ -28,6 +29,7 @@ namespace PolyMod
         {
             GameObject originalText = GameObject.Find("SettingsButton/DescriptionText");
             GameObject text = GameObject.Instantiate(originalText, originalText.transform.parent.parent.parent);
+            text.name = "PolyModVersion";
             RectTransform rect = text.GetComponent<RectTransform>();
             rect.anchoredPosition = new(265, 40);
             rect.sizeDelta = new(500, rect.sizeDelta.y);
@@ -38,20 +40,47 @@ namespace PolyMod
             text.GetComponent<TMPLocalizer>().Text = $"PolyMod {(Plugin.VERSION == "0.0.0" ? "Dev" : Plugin.VERSION)}";
             text.AddComponent<LayoutElement>().ignoreLayout = true;
 
-            GameObject originalButton = GameObject.Find("StartScreen/WeeklyChallengesButton");
-            GameObject newsButton = GameObject.Find("StartScreen/NewsButton");
+            GameObject originalButton = GameObject.Find("StartScreen/NewsButton");
             GameObject button = GameObject.Instantiate(originalButton, originalButton.transform.parent);
-            button.transform.position = newsButton.transform.position - new Vector3(90, 0, 0);
+            button.gameObject.name = "PolyModButton";
+            button.transform.position = originalButton.transform.position - new Vector3(90, 0, 0);
             button.active = true;
-            button.GetComponentInChildren<TMPLocalizer>().Text = "PolyMod Discord";
+            Transform descriptionText = button.transform.Find("DescriptionText");
+            descriptionText.gameObject.SetActive(true);
+            descriptionText.GetComponentInChildren<TMPLocalizer>().Text = "PolyMod Hub";
             Transform iconContainer = button.transform.Find("IconContainer");
             iconContainer.GetComponentInChildren<Image>().sprite
-                = SpritesLoader.BuildSprite(Plugin.GetResource("discord_icon.png").ReadBytes());
-            iconContainer.localScale = new Vector3(0.55f, 0.6f, 0);
-            iconContainer.position -= new Vector3(0, 4, 0);
+                = SpritesLoader.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
             UIRoundButton buttonObject = button.GetComponent<UIRoundButton>();
-            buttonObject.OnClicked += (UIButtonBase.ButtonAction)
-                ((int id, BaseEventData eventdata) => NativeHelpers.OpenURL("https://discord.gg/eWPdhWtfVy", false));
+            buttonObject.OnClicked += (UIButtonBase.ButtonAction)OnPolyModButtonClicked;
+
+            void OnPolyModButtonClicked(int buttonId, BaseEventData eventData)
+			{
+                BasicPopup polymodPopup = PopupManager.GetBasicPopup();
+
+                polymodPopup.Header = "PolyMod Hub";
+                string polyModHubText = "Welcome! \nHere you can see the list of all currently loaded mods: \n\n";
+                string[] keys = ModLoader.mods.Keys.ToArray();
+                foreach (string key in keys)
+                {
+                    PolyMod.ModLoader.Mod mod =  ModLoader.mods[key];
+                    string modAuthors = "\nAuthors: ";
+                    foreach(string author in mod.authors)
+                    {
+                        modAuthors += author;
+                    }
+                    polyModHubText += "Name: " + mod.name + "\nStatus: " + mod.GetPrettyStatus() + modAuthors + "\nVersion: " + mod.version +"\n\n";
+                }
+                polyModHubText += "Join our discord! Feel free to discuss mods, create them and ask for help!";
+                polymodPopup.Description = polyModHubText;
+                List<PopupButtonData> popupButtons = new()
+                {
+                    new(Localization.Get("buttons.back"), PopupButtonData.States.None, null, -1, true, null),
+                    new("OUR DISCORD", PopupButtonData.States.None, (UIButtonBase.ButtonAction)((int id, BaseEventData eventdata) => NativeHelpers.OpenURL("https://discord.gg/eWPdhWtfVy", false)), -1, true, null)
+                };
+                polymodPopup.buttonData = popupButtons.ToArray();
+                polymodPopup.Show();
+            }
         }
 
         internal static void Init()

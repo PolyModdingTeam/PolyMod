@@ -325,7 +325,7 @@ namespace PolyMod
 				"polytopia",
 				"The Battle of Polytopia",
 				new(VersionManager.SemanticVersion.ToString()),
-				Array.Empty<string>(),
+				new string[]{"Midjiwan AB"},
 				Array.Empty<Mod.Dependency>()
 			);
 			mods.Add(polytopia.id, new(polytopia, Mod.Status.SUCCESS, new()));
