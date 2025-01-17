@@ -80,7 +80,7 @@ namespace PolyMod
 		public static Dictionary<string, PreviewTile[]> tribePreviews = new();
 		public static Dictionary<string, DataSprite> spriteDatas = new();
 		private static readonly Stopwatch stopwatch = new();
-		private static int maxTechTier;
+		private static int maxTechTier = TechItem.techTierFirebaseId.Count - 1;
 		private static List<TribeData.Type> customTribes = new();
 		private static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 		private static bool shouldInitializeSprites = true;
