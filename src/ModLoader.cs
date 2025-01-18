@@ -54,14 +54,20 @@ namespace PolyMod
 
 		public class PreviewTile
 		{
+			[JsonInclude]
 			public int? x = null;
+			[JsonInclude]
 			public int? y = null;
+			[JsonInclude]
 			[JsonConverter(typeof(EnumCacheJson<Polytopia.Data.TerrainData.Type>))]
 			public Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.Ocean;
+			[JsonInclude]
 			[JsonConverter(typeof(EnumCacheJson<ResourceData.Type>))]
 			public ResourceData.Type resourceType = ResourceData.Type.None;
+			[JsonInclude]
 			[JsonConverter(typeof(EnumCacheJson<UnitData.Type>))]
 			public UnitData.Type unitType = UnitData.Type.None;
+			[JsonInclude]
 			[JsonConverter(typeof(EnumCacheJson<ImprovementData.Type>))]
 			public ImprovementData.Type improvementType = ImprovementData.Type.None;
 		}
@@ -555,6 +561,7 @@ namespace PolyMod
 					{
 						case "tribeData":
 							EnumCache<TribeData.Type>.AddMapping(id, (TribeData.Type)autoidx);
+							EnumCache<TribeData.Type>.AddMapping(id, (TribeData.Type)autoidx);
 							customTribes.Add((TribeData.Type)autoidx);
 							token["style"] = climateAutoidx;
 							token["climate"] = climateAutoidx;
@@ -564,8 +571,10 @@ namespace PolyMod
 							int cost = (int)token["cost"];
 							if (cost > maxTechTier) maxTechTier = cost;
 							EnumCache<TechData.Type>.AddMapping(id, (TechData.Type)autoidx);
+							EnumCache<TechData.Type>.AddMapping(id, (TechData.Type)autoidx);
 							break;
 						case "unitData":
+							EnumCache<UnitData.Type>.AddMapping(id, (UnitData.Type)autoidx);
 							EnumCache<UnitData.Type>.AddMapping(id, (UnitData.Type)autoidx);
 							UnitData.Type unitPrefabType = UnitData.Type.Scout;
 							if (token["prefab"] != null)
@@ -581,6 +590,7 @@ namespace PolyMod
 							break;
 						case "improvementData":
 							EnumCache<ImprovementData.Type>.AddMapping(id, (ImprovementData.Type)autoidx);
+							EnumCache<ImprovementData.Type>.AddMapping(id, (ImprovementData.Type)autoidx);
 							ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
 							if (token["prefab"] != null)
 							{
@@ -595,8 +605,10 @@ namespace PolyMod
 							break;
 						case "terrainData":
 							EnumCache<Polytopia.Data.TerrainData.Type>.AddMapping(id, (Polytopia.Data.TerrainData.Type)autoidx);
+							EnumCache<Polytopia.Data.TerrainData.Type>.AddMapping(id, (Polytopia.Data.TerrainData.Type)autoidx);
 							break;
 						case "resourceData":
+							EnumCache<ResourceData.Type>.AddMapping(id, (ResourceData.Type)autoidx);
 							EnumCache<ResourceData.Type>.AddMapping(id, (ResourceData.Type)autoidx);
 							ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
 							if (token["prefab"] != null)
@@ -611,6 +623,7 @@ namespace PolyMod
 							PrefabManager.resources.TryAdd((ResourceData.Type)autoidx, PrefabManager.resources[resourcePrefabType]);
 							break;
 						case "taskData":
+							EnumCache<TaskData.Type>.AddMapping(id, (TaskData.Type)autoidx);
 							EnumCache<TaskData.Type>.AddMapping(id, (TaskData.Type)autoidx);
 							break;
 						default:
