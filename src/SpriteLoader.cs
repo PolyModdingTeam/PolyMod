@@ -98,20 +98,23 @@ namespace PolyMod
 		[HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))]
 		private static void TerrainRenderer_UpdateGraphics(TerrainRenderer __instance, Tile tile)
 		{
-			string? name = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain);
-			if (tile.data.terrain == Polytopia.Data.TerrainData.Type.Forest
-				|| tile.data.terrain == Polytopia.Data.TerrainData.Type.Mountain
-			)
+			if(!(tile.data.effects.Contains(TileData.EffectType.Flooded) || tile.data.effects.Contains(TileData.EffectType.Swamped)))
 			{
-				name = "field";
-			}
-			Sprite? sprite = GetSpriteForTile(
-				tile,
-				name
-			);
-			if (sprite != null)
-			{
-				__instance.spriteRenderer.Sprite = sprite;
+				string? name = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain);
+				if (tile.data.terrain == Polytopia.Data.TerrainData.Type.Forest
+					|| tile.data.terrain == Polytopia.Data.TerrainData.Type.Mountain
+				)
+				{
+					name = "field";
+				}
+				Sprite? sprite = GetSpriteForTile(
+					tile,
+					name
+				);
+				if (sprite != null)
+				{
+					__instance.spriteRenderer.Sprite = sprite;
+				}
 			}
 		}
 
@@ -246,15 +249,18 @@ namespace PolyMod
 				BuildCommand buildCommand = buildableImprovementsCommands[key].Cast<BuildCommand>();
 				gameState.GameLogicData.TryGetData(buildCommand.Type, out ImprovementData improvementData2);
 				UnitData.Type type = improvementData2.CreatesUnit();
-				if (type == UnitData.Type.None && uiroundButton.icon.sprite.name == "placeholder")
+				if(type == UnitData.Type.None)
 				{
-					try
+					if (uiroundButton.icon.sprite == null || uiroundButton.icon.sprite.name == "placeholder")
 					{
-						string improvementType = EnumCache<ImprovementData.Type>.GetName(improvementData2.type);
-						string tribeType = EnumCache<TribeData.Type>.GetName(player.tribe);
-						uiroundButton.SetSprite(ModLoader.GetSprite(improvementType, tribeType));
+						try
+						{
+							string improvementType = EnumCache<ImprovementData.Type>.GetName(improvementData2.type);
+							string tribeType = EnumCache<TribeData.Type>.GetName(player.tribe);
+							uiroundButton.SetSprite(ModLoader.GetSprite(improvementType, tribeType));
+						}
+						catch { }
 					}
-					catch { }
 				}
 			}
 		}
