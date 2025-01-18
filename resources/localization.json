@@ -37,12 +37,12 @@
         "Russian": "Несоответствие подписи",
         "Turkish": "İmza uyumsuz"
     },
-    "polymod_mods_incompatible": {
+    "polymod_signature_incompatible": {
         "English": "Current mods are not compatible with original mods!",
         "Russian": "Текущие моды несовместимы с оригинальными модами!",
         "Turkish": "Mevcut modlar orijinal modlarla uyumsuz!"
     },
-    "polymod_mods_may_be_incompatible": {
+    "polymod_signature_maybe_incompatible": {
         "English": "Current mods may not be compatible with original mods!",
         "Russian": "Текущие моды могут быть несовместимы с оригинальными модами!",
         "Turkish": "Mevcut modlar orijinal modlarla uyumlu olmayabilir!"
