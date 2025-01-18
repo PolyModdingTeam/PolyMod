@@ -208,8 +208,8 @@ namespace PolyMod
 			if (looseSignature != signatures[0])
 			{
 				PopupManager.GetBasicPopup(new(
-					"Signature mismatch",
-					"Current mods are not compatible with original mods",
+					Localization.Get("polymod.signature.mismatch"),
+					Localization.Get("polymod.signature.incompatible"),
 					new(new PopupBase.PopupButtonData[] {
 						new("OK")
 					}))
@@ -219,8 +219,8 @@ namespace PolyMod
 			if (signature != signatures[1])
 			{
 				PopupManager.GetBasicPopup(new(
-					"signature mismatch",
-					"Current mods may not be compatible with original mods",
+					Localization.Get("polymod.signature.mismatch"),
+					Localization.Get("polymod.signature.maybe.incompatible"),
 					new(new PopupBase.PopupButtonData[] {
 						new(
 							"OK",
