@@ -50,16 +50,6 @@ namespace PolyMod
 				this.status = status;
 				this.files = files;
 			}
-
-			public string GetPrettyStatus()
-			{
-				return status switch
-				{
-					Status.SUCCESS => "loaded successfully",
-					Status.ERROR => "had loading error",
-					_ => throw new InvalidOperationException(),
-				};
-			}
 		}
 
 		public class PreviewTile
@@ -437,6 +427,9 @@ namespace PolyMod
 				Array.Empty<Mod.Dependency>()
 			);
 			mods.Add(polytopia.id, new(polytopia, Mod.Status.SUCCESS, new()));
+			LocalizationPatch(JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
+				Plugin.GetResource("localization.json")
+			)!);
 
 			foreach (var (id, mod) in mods)
 			{
@@ -459,20 +452,8 @@ namespace PolyMod
 					{
 						try
 						{
-							foreach (var (key, data) in JsonSerializer
-								.Deserialize<Dictionary<string, Dictionary<string, string>>>(file.bytes)!
-							)
-							{
-								string name = key.Replace("_", ".");
-								if (name.StartsWith("tribeskins")) name = "TribeSkins/" + name;
-								TermData term = LocalizationManager.Sources[0].AddTerm(name);
-								List<string> strings = new();
-								foreach (string language in LocalizationManager.GetAllLanguages())
-								{
-									strings.Add(data.GetOrDefault(language, data.GetOrDefault("English", term.Term))!);
-								}
-								term.Languages = new Il2CppStringArray(strings.ToArray());
-							}
+							LocalizationPatch(JsonSerializer
+								.Deserialize<Dictionary<string, Dictionary<string, string>>>(file.bytes)!);
 							Plugin.logger.LogInfo($"Registried localization from {id} mod");
 						}
 						catch (Exception e)
@@ -650,6 +631,22 @@ namespace PolyMod
 				}
 			}
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
+		}
+
+		private static void LocalizationPatch(Dictionary<string, Dictionary<string, string>> localization)
+		{
+			foreach (var (key, data) in localization)
+			{
+				string name = key.Replace("_", ".");
+				if (name.StartsWith("tribeskins")) name = "TribeSkins/" + name;
+				TermData term = LocalizationManager.Sources[0].AddTerm(name);
+				List<string> strings = new();
+				foreach (string language in LocalizationManager.GetAllLanguages())
+				{
+					strings.Add(data.GetOrDefault(language, data.GetOrDefault("English", term.Term))!);
+				}
+				term.Languages = new Il2CppStringArray(strings.ToArray());
+			}
 		}
 
 		public static Sprite? GetSprite(string name, string style = "", int level = 0)

@@ -42,44 +42,46 @@ namespace PolyMod
 
             GameObject originalButton = GameObject.Find("StartScreen/NewsButton");
             GameObject button = GameObject.Instantiate(originalButton, originalButton.transform.parent);
-            button.gameObject.name = "PolyModButton";
+            button.gameObject.name = "PolyModHubButton";
             button.transform.position = originalButton.transform.position - new Vector3(90, 0, 0);
             button.active = true;
             Transform descriptionText = button.transform.Find("DescriptionText");
             descriptionText.gameObject.SetActive(true);
-            descriptionText.GetComponentInChildren<TMPLocalizer>().Text = "PolyMod Hub";
+            descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
             Transform iconContainer = button.transform.Find("IconContainer");
             iconContainer.GetComponentInChildren<Image>().sprite
                 = SpritesLoader.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
             UIRoundButton buttonObject = button.GetComponent<UIRoundButton>();
-            buttonObject.OnClicked += (UIButtonBase.ButtonAction)OnPolyModButtonClicked;
-
-            void OnPolyModButtonClicked(int buttonId, BaseEventData eventData)
+            buttonObject.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
+            static void PolyModHubButtonClicked(int buttonId, BaseEventData eventData)
             {
-                BasicPopup polymodPopup = PopupManager.GetBasicPopup();
-
-                polymodPopup.Header = "PolyMod Hub";
-                string polyModHubText = "Welcome! \nHere you can see the list of all currently loaded mods: \n\n";
-                string[] keys = ModLoader.mods.Keys.ToArray();
-                foreach (string key in keys)
+                BasicPopup popup = PopupManager.GetBasicPopup();
+                popup.Header = Localization.Get("polymod.hub");
+                popup.Description = Localization.Get("polymod.hub.header") + "\n\n";
+                foreach (var mod in ModLoader.mods.Values)
                 {
-                    PolyMod.ModLoader.Mod mod = ModLoader.mods[key];
-                    string modAuthors = "\nAuthors: ";
-                    foreach (string author in mod.authors)
-                    {
-                        modAuthors += author;
-                    }
-                    polyModHubText += "Name: " + mod.name + "\nStatus: " + mod.GetPrettyStatus() + modAuthors + "\nVersion: " + mod.version + "\n\n";
+                    popup.Description += Localization.Get("polymod.hub.mod", new Il2CppSystem.Object[] {
+                        mod.name,
+                        Localization.Get("polymod.hub.mod.status."
+                            + Enum.GetName(typeof(ModLoader.Mod.Status), mod.status)!.ToLower()),
+                        string.Join(", ", mod.authors),
+                        mod.version.ToString()
+                    });
+                    popup.Description += "\n\n";
                 }
-                polyModHubText += "Join our discord! Feel free to discuss mods, create them and ask for help!";
-                polymodPopup.Description = polyModHubText;
+                popup.Description += Localization.Get("polymod.hub.footer");
                 List<PopupButtonData> popupButtons = new()
                 {
-                    new(Localization.Get("buttons.back")),
-                    new("OUR DISCORD", PopupButtonData.States.None, (UIButtonBase.ButtonAction)((int id, BaseEventData eventdata) => NativeHelpers.OpenURL("https://discord.gg/eWPdhWtfVy", false)), -1, true, null)
+                    new("buttons.back"),
+                    new(
+                        "polymod.hub.discord",
+                        PopupButtonData.States.None,
+                        (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
+                            NativeHelpers.OpenURL("https://discord.gg/eWPdhWtfVy", false))
+                    )
                 };
-                polymodPopup.buttonData = popupButtons.ToArray();
-                polymodPopup.Show();
+                popup.buttonData = popupButtons.ToArray();
+                popup.Show();
             }
         }
 
