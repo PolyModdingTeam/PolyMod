@@ -37,7 +37,7 @@ namespace PolyMod
             rect.anchorMin = new(0, 0);
             text.GetComponent<TextMeshProUGUI>().fontSize = 18;
             text.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.BottomLeft;
-            text.GetComponent<TMPLocalizer>().Text = $"PolyMod {(Plugin.VERSION == "0.0.0" ? "Dev" : Plugin.VERSION)}";
+            text.GetComponent<TMPLocalizer>().Text = $"PolyMod {(Plugin.DEV ? "Dev" : Plugin.VERSION)}";
             text.AddComponent<LayoutElement>().ignoreLayout = true;
 
             GameObject originalButton = GameObject.Find("StartScreen/NewsButton");
@@ -55,7 +55,7 @@ namespace PolyMod
             buttonObject.OnClicked += (UIButtonBase.ButtonAction)OnPolyModButtonClicked;
 
             void OnPolyModButtonClicked(int buttonId, BaseEventData eventData)
-			{
+            {
                 BasicPopup polymodPopup = PopupManager.GetBasicPopup();
 
                 polymodPopup.Header = "PolyMod Hub";
@@ -63,19 +63,19 @@ namespace PolyMod
                 string[] keys = ModLoader.mods.Keys.ToArray();
                 foreach (string key in keys)
                 {
-                    PolyMod.ModLoader.Mod mod =  ModLoader.mods[key];
+                    PolyMod.ModLoader.Mod mod = ModLoader.mods[key];
                     string modAuthors = "\nAuthors: ";
-                    foreach(string author in mod.authors)
+                    foreach (string author in mod.authors)
                     {
                         modAuthors += author;
                     }
-                    polyModHubText += "Name: " + mod.name + "\nStatus: " + mod.GetPrettyStatus() + modAuthors + "\nVersion: " + mod.version +"\n\n";
+                    polyModHubText += "Name: " + mod.name + "\nStatus: " + mod.GetPrettyStatus() + modAuthors + "\nVersion: " + mod.version + "\n\n";
                 }
                 polyModHubText += "Join our discord! Feel free to discuss mods, create them and ask for help!";
                 polymodPopup.Description = polyModHubText;
                 List<PopupButtonData> popupButtons = new()
                 {
-                    new(Localization.Get("buttons.back"), PopupButtonData.States.None, null, -1, true, null),
+                    new(Localization.Get("buttons.back")),
                     new("OUR DISCORD", PopupButtonData.States.None, (UIButtonBase.ButtonAction)((int id, BaseEventData eventdata) => NativeHelpers.OpenURL("https://discord.gg/eWPdhWtfVy", false)), -1, true, null)
                 };
                 polymodPopup.buttonData = popupButtons.ToArray();

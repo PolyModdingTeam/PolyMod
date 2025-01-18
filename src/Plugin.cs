@@ -1,4 +1,6 @@
 ﻿using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using BepInEx;
 using BepInEx.Configuration;
@@ -16,6 +18,7 @@ namespace PolyMod
 		);
 
 		internal const string VERSION = "0.0.0";
+		internal const bool DEV = VERSION == "0.0.0";
 		internal const int AUTOIDX_STARTS_FROM = 1000;
 		public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
 		public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
@@ -60,6 +63,11 @@ namespace PolyMod
 			if (!ClassInjector.IsTypeRegisteredInIl2Cpp<T>())
 				ClassInjector.RegisterTypeInIl2Cpp<T>();
 			return Il2CppType.From(typeof(T));
+		}
+
+		internal static string Hash(object data)
+		{
+			return Convert.ToHexString(SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(data.ToString()!)));
 		}
 	}
 }

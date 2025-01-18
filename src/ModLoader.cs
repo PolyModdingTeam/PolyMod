@@ -9,14 +9,17 @@ using LibCpp2IL;
 using Newtonsoft.Json.Linq;
 using PolyMod.Json;
 using Polytopia.Data;
+using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace PolyMod
 {
@@ -25,7 +28,7 @@ namespace PolyMod
 		public class Mod
 		{
 			public record Dependency(string id, Version min, Version max, bool required = true);
-			public record Manifest(string id, string? name, Version version, string[] authors, Dependency[]? dependencies);
+			public record Manifest(string id, string? name, Version version, string[] authors, Dependency[]? dependencies, bool client = false);
 			public record File(string name, byte[] bytes);
 			public enum Status { SUCCESS, ERROR };
 
@@ -33,6 +36,7 @@ namespace PolyMod
 			public Version version;
 			public string[] authors;
 			public Dependency[]? dependencies;
+			public bool client;
 			public Status status;
 			public List<File> files;
 
@@ -42,6 +46,7 @@ namespace PolyMod
 				version = manifest.version;
 				authors = manifest.authors;
 				dependencies = manifest.dependencies;
+				client = manifest.client;
 				this.status = status;
 				this.files = files;
 			}
@@ -81,6 +86,9 @@ namespace PolyMod
 		public static Dictionary<string, DataSprite> spriteDatas = new();
 		private static readonly Stopwatch stopwatch = new();
 		private static int maxTechTier = TechItem.techTierFirebaseId.Count - 1;
+		private static string signature = string.Empty;
+		private static string looseSignature = string.Empty;
+		private static bool sawIncompatibilityWarning;
 		private static List<TribeData.Type> customTribes = new();
 		private static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 		private static bool shouldInitializeSprites = true;
@@ -147,6 +155,94 @@ namespace PolyMod
 		{
 			if (logLine.Contains("Failed to find atlas") && type == LogType.Warning) return false;
 			if (logLine.Contains("Could not find sprite") && type == LogType.Warning) return false;
+			return true;
+		}
+
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.OnMainButtonClicked))]
+		private static bool GameInfoPopup_OnMainButtonClicked(GameInfoPopup __instance, int id, BaseEventData eventData)
+		{
+			return CheckSignatures(__instance.OnMainButtonClicked, id, eventData, __instance.gameId);
+		}
+
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnResumeButtonClick))]
+		private static bool StartScreen_OnResumeButtonClick(StartScreen __instance, int id, BaseEventData eventData)
+		{
+			return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, ClientBase.GetSinglePlayerSessions()[0]);
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(ClientBase), nameof(ClientBase.DeletePassAndPlayGame))]
+		private static void ClientBase_DeletePassAndPlayGame(string gameId)
+		{
+			File.Delete(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+		}
+
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(ClientBase), nameof(ClientBase.DeleteSinglePlayerGames))]
+		private static void ClientBase_DeleteSinglePlayerGames()
+		{
+			foreach (var gameId in ClientBase.GetSinglePlayerSessions())
+			{
+				File.Delete(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+			}
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(ClientBase), nameof(ClientBase.CreateSession), typeof(GameSettings), typeof(Il2CppSystem.Guid))]
+		private static void ClientBase_CreateSession(GameSettings settings, Il2CppSystem.Guid gameId)
+		{
+			File.WriteAllLinesAsync(
+				Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"),
+				new string[] { looseSignature, signature }
+			);
+		}
+
+		private static bool CheckSignatures(Action<int, BaseEventData> action, int id, BaseEventData eventData, Il2CppSystem.Guid gameId)
+		{
+			if (sawIncompatibilityWarning)
+			{
+				sawIncompatibilityWarning = false;
+				return true;
+			}
+
+			string[] signatures = { string.Empty, string.Empty };
+			try
+			{
+				signatures = File.ReadAllLines(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+			}
+			catch { }
+			if (signatures[0] == string.Empty && signatures[1] == string.Empty) return true;
+			if (Plugin.config.debug) return true;
+			if (looseSignature != signatures[0])
+			{
+				PopupManager.GetBasicPopup(new(
+					"Signature mismatch",
+					"Current mods are not compatible with original mods",
+					new(new PopupBase.PopupButtonData[] {
+						new("OK")
+					}))
+				).Show();
+				return false;
+			}
+			if (signature != signatures[1])
+			{
+				PopupManager.GetBasicPopup(new(
+					"signature mismatch",
+					"Current mods may not be compatible with original mods",
+					new(new PopupBase.PopupButtonData[] {
+						new(
+							"OK",
+							callback: (UIButtonBase.ButtonAction)((int buttonId, BaseEventData baseEventData) => {
+								sawIncompatibilityWarning = true;
+								action(id, eventData);
+							})
+						)
+					}))
+				).Show();
+				return false;
+			}
 			return true;
 		}
 
@@ -228,8 +324,18 @@ namespace PolyMod
 				}
 			}
 
+			StringBuilder looseSignatureString = new();
+			StringBuilder signatureString = new();
 			foreach (var (id, mod) in mods)
 			{
+				if (!mod.client && id != "polytopia")
+				{
+					looseSignatureString.Append(id);
+					looseSignatureString.Append(mod.version.Major);
+
+					signatureString.Append(id);
+					signatureString.Append(mod.version.ToString());
+				}
 				foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
 				{
 					string? message = null;
@@ -268,9 +374,9 @@ namespace PolyMod
 								MethodInfo? loadWithLogger = type.GetMethod("Load", new Type[] { typeof(ManualLogSource) });
 								if (loadWithLogger != null)
 								{
-									loadWithLogger.Invoke(null, new object[] 
-									{ 
-										BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{id}") 
+									loadWithLogger.Invoke(null, new object[]
+									{
+										BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{id}")
 									});
 									Plugin.logger.LogInfo($"Invoked Load method with logger from {type.FullName} from {id} mod");
 								}
@@ -313,6 +419,8 @@ namespace PolyMod
 					}
 				}
 			}
+			looseSignature = Plugin.Hash(looseSignatureString);
+			signature = Plugin.Hash(signatureString);
 
 			stopwatch.Stop();
 		}
@@ -325,7 +433,7 @@ namespace PolyMod
 				"polytopia",
 				"The Battle of Polytopia",
 				new(VersionManager.SemanticVersion.ToString()),
-				new string[]{"Midjiwan AB"},
+				new string[] { "Midjiwan AB" },
 				Array.Empty<Mod.Dependency>()
 			);
 			mods.Add(polytopia.id, new(polytopia, Mod.Status.SUCCESS, new()));
@@ -473,7 +581,7 @@ namespace PolyMod
 							break;
 						case "techData":
 							int cost = (int)token["cost"];
-							if (cost > maxTechTier) maxTechTier = cost; 
+							if (cost > maxTechTier) maxTechTier = cost;
 							EnumCache<TechData.Type>.AddMapping(id, (TechData.Type)autoidx);
 							break;
 						case "unitData":
