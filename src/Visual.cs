@@ -4,7 +4,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using static PopupBase;
 
 namespace PolyMod
 {
@@ -70,12 +69,12 @@ namespace PolyMod
                     popup.Description += "\n\n";
                 }
                 popup.Description += Localization.Get("polymod.hub.footer");
-                List<PopupButtonData> popupButtons = new()
+                List<PopupBase.PopupButtonData> popupButtons = new()
                 {
                     new("buttons.back"),
                     new(
                         "polymod.hub.discord",
-                        PopupButtonData.States.None,
+                        PopupBase.PopupButtonData.States.None,
                         (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
                             NativeHelpers.OpenURL("https://discord.gg/eWPdhWtfVy", false))
                     )

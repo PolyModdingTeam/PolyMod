@@ -23,6 +23,7 @@ namespace PolyMod
 		public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
 		public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
 		internal static readonly string CONFIG_PATH = Path.Combine(BASE_PATH, "PolyMod.json");
+		internal static readonly Il2CppSystem.Version POLYTOPIA_VERSION = new(0, 0, 0, 0);
 
 #pragma warning disable CS8618
 		internal static PolyConfig config;
@@ -40,11 +41,11 @@ namespace PolyMod
 				config = new();
 				File.WriteAllText(CONFIG_PATH, JsonSerializer.Serialize(config));
 			}
-
 			if (!config.debug) ConsoleManager.DetachConsole();
-
 			logger = Log;
 			ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
+
+			VersionChecker.Init();
 			AudioClipLoader.Init();
 			ModLoader.Init();
 			SpritesLoader.Init();
