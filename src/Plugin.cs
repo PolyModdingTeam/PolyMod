@@ -17,13 +17,13 @@ namespace PolyMod
 			bool debug = false
 		);
 
-		internal const string VERSION = "0.0.0";
+		internal const string VERSION = "0.0.1";
 		internal const bool DEV = VERSION == "0.0.0";
 		internal const int AUTOIDX_STARTS_FROM = 1000;
 		public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
 		public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
 		internal static readonly string CONFIG_PATH = Path.Combine(BASE_PATH, "PolyMod.json");
-		internal static readonly Il2CppSystem.Version POLYTOPIA_VERSION = new(0, 0, 0, 0);
+		internal static readonly Il2CppSystem.Version POLYTOPIA_VERSION = new(0, 0, 0);
 
 #pragma warning disable CS8618
 		internal static PolyConfig config;

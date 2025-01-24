@@ -1,6 +1,4 @@
-using System.Text.Json;
 using HarmonyLib;
-using I2.Loc;
 using UnityEngine;
 
 namespace PolyMod
@@ -9,15 +7,16 @@ namespace PolyMod
     {
         private static bool sawIncompatibilityWarning;
 
+        private static bool EqualNoRevision(this Il2CppSystem.Version self, Il2CppSystem.Version version)
+        {
+            return self.Major == version.Major && self.Minor == version.Minor && self.Build == version.Build;
+        }
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
         private static void StartScreen_Start()
         {
-            // foreach (var item in LocalizationManager.Sources[0].mTerms)
-            // {
-            //     File.WriteAllTextAsync(Path.Combine(Plugin.BASE_PATH, "localiz", item.Term), JsonSerializer.Serialize(item.Languages));
-            // }
-            if (!Plugin.DEV && !sawIncompatibilityWarning && VersionManager.SemanticVersion != Plugin.POLYTOPIA_VERSION)
+            if (!Plugin.DEV && !sawIncompatibilityWarning && !VersionManager.SemanticVersion.EqualNoRevision(Plugin.POLYTOPIA_VERSION))
             {
                 PopupManager.GetBasicPopup(new(
                     Localization.Get("polymod.version.mismatch"),
