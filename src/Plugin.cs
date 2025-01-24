@@ -17,7 +17,7 @@ namespace PolyMod
 			bool debug = false
 		);
 
-		internal const string VERSION = "0.0.1";
+		internal const string VERSION = "0.0.0";
 		internal const bool DEV = VERSION == "0.0.0";
 		internal const int AUTOIDX_STARTS_FROM = 1000;
 		public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
