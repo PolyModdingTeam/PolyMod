@@ -253,13 +253,17 @@ namespace PolyMod
 				{
 					if (uiroundButton.icon.sprite == null || uiroundButton.icon.sprite.name == "placeholder")
 					{
-						try
+						string improvementType = EnumCache<ImprovementData.Type>.GetName(improvementData2.type);
+						string style = EnumCache<TribeData.Type>.GetName(player.tribe);
+						if (player.skinType != SkinType.Default)
 						{
-							string improvementType = EnumCache<ImprovementData.Type>.GetName(improvementData2.type);
-							string tribeType = EnumCache<TribeData.Type>.GetName(player.tribe);
-							uiroundButton.SetSprite(ModLoader.GetSprite(improvementType, tribeType));
+							style = EnumCache<SkinType>.GetName(player.skinType);
 						}
-						catch { }
+						Sprite? sprite = ModLoader.GetSprite(improvementType, style);
+						if(sprite != null)
+						{
+							uiroundButton.SetSprite(sprite);
+						}
 					}
 				}
 			}
@@ -357,6 +361,15 @@ namespace PolyMod
 			{
 				__result = sprite;
 			}
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(SkinVisualsTransientData), typeof(ImprovementData.Type), typeof(SpriteAtlasManager))]
+		private static void UIUtils_GetImprovementSprite_2(ref Sprite __result, SkinVisualsTransientData data, ImprovementData.Type improvement, SpriteAtlasManager atlasManager)
+		{
+			TribeData.Type tribe = data.foundingTribeSettings.tribe;
+			SkinType skin = data.foundingTribeSettings.skin;
+			UIUtils_GetImprovementSprite(ref __result, improvement, tribe, skin, atlasManager);
 		}
 
 		[HarmonyPostfix]
@@ -483,10 +496,13 @@ namespace PolyMod
 		{
 			try
 			{
-				string tribe = EnumCache<TribeData.Type>
-					.GetName(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate));
+				string style = EnumCache<TribeData.Type>.GetName(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate));
+				if (tile.data.Skin != SkinType.Default)
+				{
+					style = EnumCache<SkinType>.GetName(tile.data.Skin);
+				}
 
-				Sprite? sprite = ModLoader.GetSprite(name, tribe, level);
+				Sprite? sprite = ModLoader.GetSprite(name, style, level);
 				return sprite;
 			}
 			catch { }

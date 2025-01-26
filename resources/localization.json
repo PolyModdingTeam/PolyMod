@@ -25,7 +25,7 @@
 		"Russian": "Добро пожаловать!\nЗдесь вы можете увидеть список всех загруженных на данный момент модов:",
 		"Turkish": "Hoş geldin!\nBurada yüklenmiş modların listesini bulabilirsin:",
 		"Spanish (Mexico)": "Bienvenidos!\nAqui puedes ver un compilacion actualicado de todo los mods cargados:",
-		"French (France)": "Bienvenue!\nIci vous pouvez voir une compilation de tous les mods chargés:"
+		"French (France)": "Bienvenue!\nIci vous pouvez voir tous les mods chargés:"
 	},
 	"polymod_hub_mod": {
 		"English": "Name: {0}\nStatus: {1}\nAuthors: {2}\nVersion: {3}",
@@ -44,7 +44,7 @@
 		"English": "loaded successfully",
 		"Russian": "успешно загружено",
 		"Turkish": "başarıyla yüklendi",
-		"French (France)": "chargée avec succès"
+		"French (France)": "chargé avec succès"
 	},
 	"polymod_signature_incompatible": {
 		"English": "Current mods are not compatible with original mods!",
@@ -65,7 +65,7 @@
 		"Russian": "Несоответствие подписи",
 		"Turkish": "İmza uyumsuz",
 		"Spanish (Mexico)": "Falta de coincidencia en la firma",
-		"French (France)": "Incompatibilité de signature"
+		"French (France)": "Les signatures ne correspondent pas"
 	},
 	"polymod_version_mismatch": {
 		"English": "Version mismatch",
