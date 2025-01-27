@@ -305,12 +305,12 @@ namespace PolyMod
 				GameObject childGameObject = headTransform.gameObject;
 				Image headImage = childGameObject.GetComponent<Image>();
 
-				string name = EnumCache<TribeData.Type>.GetName(__instance.tribe);
+				string style = EnumCache<TribeData.Type>.GetName(__instance.tribe);
 				if (__instance.skin != SkinType.Default)
 				{
-					name = EnumCache<SkinType>.GetName(__instance.skin);
+					style = EnumCache<SkinType>.GetName(__instance.skin);
 				}
-				Sprite? sprite = ModLoader.GetSprite("head", name);
+				Sprite? sprite = ModLoader.GetSprite("head", style);
 
 				if (sprite != null)
 				{
@@ -492,21 +492,31 @@ namespace PolyMod
 			}
 		}
 
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(GameInfoRow), nameof(GameInfoRow.LoadFaceIcon), typeof(TribeData.Type), typeof(SkinType))] // TODO: FIX WRONG TRIBE TYPE BEING PASSED INTO THE METHOD
+		private static void GameInfoRow_LoadFaceIcon(GameInfoRow __instance, TribeData.Type type, SkinType skinType)
+		{
+			string style = EnumCache<TribeData.Type>.GetName(type);
+			if (skinType != SkinType.Default)
+			{
+				style = EnumCache<SkinType>.GetName(skinType);
+			}
+			Sprite? sprite = ModLoader.GetSprite("head", style);
+			if (sprite != null)
+			{
+				__instance.iconSpriteHandle.sprite = sprite;
+			}
+		}
+
 		private static Sprite? GetSpriteForTile(Tile tile, string name, int level = 0)
 		{
-			try
+			string style = EnumCache<TribeData.Type>.GetName(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate));
+			if (tile.data.Skin != SkinType.Default)
 			{
-				string style = EnumCache<TribeData.Type>.GetName(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate));
-				if (tile.data.Skin != SkinType.Default)
-				{
-					style = EnumCache<SkinType>.GetName(tile.data.Skin);
-				}
-
-				Sprite? sprite = ModLoader.GetSprite(name, style, level);
-				return sprite;
+				style = EnumCache<SkinType>.GetName(tile.data.Skin);
 			}
-			catch { }
-			return null;
+
+			return ModLoader.GetSprite(name, style, level);
 		}
 
 		public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
