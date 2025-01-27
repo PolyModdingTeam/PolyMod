@@ -62,7 +62,7 @@ namespace PolyMod
                     popup.Description += Localization.Get("polymod.hub.mod", new Il2CppSystem.Object[] {
                         mod.name,
                         Localization.Get("polymod.hub.mod.status."
-                            + Enum.GetName(typeof(ModLoader.Mod.Status), mod.status)!.ToLower()),
+                            + Enum.GetName(typeof(ModLoader.Mod.Status), mod.status)!.ToLower().Replace("_", "")),
                         string.Join(", ", mod.authors),
                         mod.version.ToString()
                     });

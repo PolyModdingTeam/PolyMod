@@ -68,7 +68,7 @@ namespace PolyMod
 
 		internal static string Hash(object data)
 		{
-			return Convert.ToHexString(SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(data.ToString()!)));
+			return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(data.ToString()!)));
 		}
 	}
 }

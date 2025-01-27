@@ -46,6 +46,10 @@
 		"Turkish": "başarıyla yüklendi",
 		"French (France)": "chargé avec succès"
 	},
+	"polymod_hub_mod_status_dependenciesunsatisfied": {
+		"English": "required dependencies not found",
+		"Russian": "необходимые зависимости не найдены"
+	},
 	"polymod_signature_incompatible": {
 		"English": "Current mods are not compatible with original mods!",
 		"Russian": "Текущие моды несовместимы с оригинальными модами!",
