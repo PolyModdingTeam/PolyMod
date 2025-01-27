@@ -30,7 +30,11 @@ namespace PolyMod
 			public record Dependency(string id, Version min, Version max, bool required = true);
 			public record Manifest(string id, string? name, Version version, string[] authors, Dependency[]? dependencies, bool client = false);
 			public record File(string name, byte[] bytes);
-			public enum Status { SUCCESS, ERROR };
+			public enum Status
+			{
+				SUCCESS,
+				ERROR,
+			}
 
 			public string? name;
 			public Version version;
