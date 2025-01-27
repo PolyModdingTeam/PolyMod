@@ -34,6 +34,7 @@ namespace PolyMod
 			{
 				SUCCESS,
 				ERROR,
+				DEPENDENCIES_UNSATISFIED,
 			}
 
 			public string? name;
@@ -343,25 +344,32 @@ namespace PolyMod
 					{
 						message = $"Dependency {dependency.id} not found";
 					}
-					Version version = mods[dependency.id].version;
-					if (
-						(dependency.min != null && version < dependency.min)
-						||
-						(dependency.max != null && version > dependency.max)
-					)
+					else
 					{
-						message = $"Need dependency {dependency.id} version {dependency.min} - {dependency.max} found {version}";
+						Version version = mods[dependency.id].version;
+						if (
+							(dependency.min != null && version < dependency.min)
+							||
+							(dependency.max != null && version > dependency.max)
+						)
+						{
+							message = $"Need dependency {dependency.id} version {dependency.min} - {dependency.max} found {version}";
+						}
 					}
 					if (message != null)
 					{
 						if (dependency.required)
 						{
 							Plugin.logger.LogError(message);
-							mod.status = Mod.Status.ERROR;
+							mod.status = Mod.Status.DEPENDENCIES_UNSATISFIED;
 						}
-						Plugin.logger.LogWarning(message);
+						else
+						{
+							Plugin.logger.LogWarning(message);
+						}
 					}
 				}
+				if (mod.status != Mod.Status.SUCCESS) continue;
 				foreach (var file in mod.files)
 				{
 					if (Path.GetExtension(file.name) == ".dll")
@@ -443,6 +451,7 @@ namespace PolyMod
 
 			foreach (var (id, mod) in mods)
 			{
+				if (mod.status != Mod.Status.SUCCESS) continue;
 				foreach (var file in mod.files)
 				{
 					if (Path.GetFileName(file.name) == "patch.json")
