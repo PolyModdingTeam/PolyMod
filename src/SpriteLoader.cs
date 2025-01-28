@@ -493,18 +493,39 @@ namespace PolyMod
 		}
 
 		[HarmonyPostfix]
-		[HarmonyPatch(typeof(GameInfoRow), nameof(GameInfoRow.LoadFaceIcon), typeof(TribeData.Type), typeof(SkinType))] // TODO: FIX WRONG TRIBE TYPE BEING PASSED INTO THE METHOD
+		[HarmonyPatch(typeof(GameInfoRow), nameof(GameInfoRow.LoadFaceIcon), typeof(TribeData.Type), typeof(SkinType))]
 		private static void GameInfoRow_LoadFaceIcon(GameInfoRow __instance, TribeData.Type type, SkinType skinType)
 		{
 			string style = EnumCache<TribeData.Type>.GetName(type);
+
+			if (style == "None")
+			{
+				for (int i = 0; i < 20; i++)
+				{
+					type = (TribeData.Type)((int)type + 256);
+					style = EnumCache<TribeData.Type>.GetName(type);
+
+					if (style != "None")
+					{
+						break;
+					}
+				}
+			}
+
 			if (skinType != SkinType.Default)
 			{
 				style = EnumCache<SkinType>.GetName(skinType);
 			}
+
 			Sprite? sprite = ModLoader.GetSprite("head", style);
+
 			if (sprite != null)
 			{
-				__instance.iconSpriteHandle.sprite = sprite;
+				__instance.SetFaceIcon(sprite);
+			}
+			else
+			{
+				__instance.LoadFaceIcon(SpriteData.SpecialFaceIcon.robot);
 			}
 		}
 
