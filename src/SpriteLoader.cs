@@ -502,7 +502,7 @@ namespace PolyMod
 			{
 				for (int i = 0; i < 20; i++)
 				{
-					type = (TribeData.Type)((int)type + 256);
+					type += byte.MaxValue + 1;
 					style = EnumCache<TribeData.Type>.GetName(type);
 
 					if (style != "None")
@@ -523,7 +523,8 @@ namespace PolyMod
 			{
 				__instance.SetFaceIcon(sprite);
 			}
-			else
+
+			if(__instance.icon.sprite == null)
 			{
 				__instance.LoadFaceIcon(SpriteData.SpecialFaceIcon.robot);
 			}
