@@ -4,84 +4,101 @@
 		"Russian": "Центр PolyMod",
 		"Turkish": "PolyMod Merkezi",
 		"Spanish (Mexico)": "Repositorio de PolyMod",
-		"French (France)": "Centre PolyMod"
+		"French (France)": "Centre PolyMod",
+		"Polish": "Centrum PolyMod"
 	},
 	"polymod_hub_discord": {
 		"English": "OUR DISCORD",
 		"Russian": "НАШ ДИСКОРД",
 		"Turkish": "DİSCORD'UMUZ",
 		"Spanish (Mexico)": "NUESTRO DISCORD",
-		"French (France)": "NOTRE DISCORD"
+		"French (France)": "NOTRE DISCORD",
+		"Polish": "NASZ DISCORD"
 	},
 	"polymod_hub_footer": {
 		"English": "Join our discord! Feel free to discuss mods, create them and ask for help!",
 		"Russian": "Присоединяйтесь к нашему дискорду! Не стесняйтесь обсуждать моды, создавать их и просить о помощи!",
 		"Turkish": "Discord sunucumuza katıl! Orada modlar oluşturabilir, tartışabilir ve yardım isteyebilirsin!",
 		"Spanish (Mexico)": "Unete a nuestro discord! Aqui se puede discutir sobre la modificacion del juego, guias para crear su propio, preguntar a los creadores, y mas!",
-		"French (France)": "Rejoignez notre discord! N'hésitez pas à discuter des mods, à en créer et à demander de l'aide!"
+		"French (France)": "Rejoignez notre discord! N'hésitez pas à discuter des mods, à en créer et à demander de l'aide!",
+		"Polish": "Dołącz do naszego discorda! Zachęcamy do omawiania modów, tworzenia ich lub proszenia o pomoc!"
 	},
 	"polymod_hub_header": {
 		"English": "Welcome!\nHere you can see the list of all currently loaded mods:",
 		"Russian": "Добро пожаловать!\nЗдесь вы можете увидеть список всех загруженных на данный момент модов:",
 		"Turkish": "Hoş geldin!\nBurada yüklenmiş modların listesini bulabilirsin:",
 		"Spanish (Mexico)": "Bienvenidos!\nAqui puedes ver un compilacion actualicado de todo los mods cargados:",
-		"French (France)": "Bienvenue!\nIci vous pouvez voir tous les mods chargés:"
+		"French (France)": "Bienvenue!\nIci vous pouvez voir tous les mods chargés:",
+		"Polish": "Witaj!\nTutaj możesz zobaczyć listę wszystkich aktualnie załadowanych modów:"
 	},
 	"polymod_hub_mod": {
 		"English": "Name: {0}\nStatus: {1}\nAuthors: {2}\nVersion: {3}",
 		"Russian": "Имя: {0}\nСтатус: {1}\nАвторы: {2}\nВерсия: {3}",
 		"Turkish": "İsim: {0}\nDurum: {1}\nYaratıcılar: {2}\nSürüm: {3}",
 		"Spanish (Mexico)": "Titulo: {0}\nEstado: {1}\nPublicador: {2}\nVersion: {3}",
-		"French (France)": "Titre: {0}\nEtat: {1}\nAuteurs: {2}\nVersion: {3}"
+		"French (France)": "Titre: {0}\nEtat: {1}\nAuteurs: {2}\nVersion: {3}",
+		"Polish": "Nazwa: {0}\nStatus: {1}\nAutorzy: {2}\nWersja: {3}"
 	},
 	"polymod_hub_mod_status_error": {
 		"English": "had loading error",
 		"Russian": "произошла ошибка загрузки",
 		"Turkish": "yükleme hatasıyla karşılaştı",
-		"French (France)": "a eu une erreur de chargement"
+		"Spanish (Mexico)": "error en cargando",
+		"French (France)": "a eu une erreur de chargement",
+		 "Polish": "wystąpił błąd ładowania"
 	},
 	"polymod_hub_mod_status_success": {
 		"English": "loaded successfully",
 		"Russian": "успешно загружено",
 		"Turkish": "başarıyla yüklendi",
-		"French (France)": "chargé avec succès"
+		"Spanish (Mexico)": "cargado exitosamente",
+		"French (France)": "chargé avec succès",
+		"Polish": "załadowano pomyślnie"
 	},
 	"polymod_hub_mod_status_dependenciesunsatisfied": {
 		"English": "required dependencies not found",
 		"Russian": "необходимые зависимости не найдены",
-		"French (France)": "les dépendances requises n'ont pas été trouvé"
+		"French (France)": "les dépendances requises n'ont pas été trouvé",
+		"Polish": "wymagane zależności nie zostały znalezione"
 	},
 	"polymod_signature_incompatible": {
 		"English": "Current mods are not compatible with original mods!",
 		"Russian": "Текущие моды несовместимы с оригинальными модами!",
 		"Turkish": "Mevcut modlar orijinal modlarla uyumsuz!",
 		"Spanish (Mexico)": "Falta de compatibilidad entre los mods concurrientes!",
-		"French (France)": "Les mods actuels ne sont pas compatibles avec les mods originaux!"
+		"French (France)": "Les mods actuels ne sont pas compatibles avec les mods originaux!",
+		"Polish": "Obecne mody nie są kompatybilne z oryginalnymi modami!"
 	},
 	"polymod_signature_maybe_incompatible": {
 		"English": "Current mods may not be compatible with original mods!",
 		"Russian": "Текущие моды могут быть несовместимы с оригинальными модами!",
 		"Turkish": "Mevcut modlar orijinal modlarla uyumlu olmayabilir!",
 		"Spanish (Mexico)": "Es posible que este mod no sea compatibile con el original!",
-		"French (France)": "Les mods actuels peuvent ne pas être compatibles avec les mods originaux!"
+		"French (France)": "Les mods actuels peuvent ne pas être compatibles avec les mods originaux!",
+		 "Polish": "Obecne mody mogą nie być kompatybilne z oryginalnymi modami!"
 	},
 	"polymod_signature_mismatch": {
 		"English": "Signature mismatch",
 		"Russian": "Несоответствие подписи",
 		"Turkish": "İmza uyumsuz",
 		"Spanish (Mexico)": "Falta de coincidencia en la firma",
-		"French (France)": "Les signatures ne correspondent pas"
+		"French (France)": "Les signatures ne correspondent pas",
+		"Polish": "Niezgodność podpisu"
 	},
 	"polymod_version_mismatch": {
 		"English": "Version mismatch",
 		"Russian": "Несовпадение версий",
 		"Turkish": "Sürüm uyumusuz",
-		"French (France)": "Les versions ne correspondent pas"
+		"Spanish (Mexico)": "Falta de coincidencia de version",
+		"French (France)": "Les versions ne correspondent pas",
+		"Polish": "Niezgodność wersji"
 	},
 	"polymod_version_mismatch_description": {
 		"English": "This version of PolyMod is not designed for the current version of the game and may not work correctly!",
 		"Russian": "PolyMod этой версии не предназначен для текущей версии игры и может работать некорректно!",
 		"Turkish": "PolyMod'un bu sürümü mevcut oyun sürümü için tasarlanmamıştır ve düzgün çalışmayabilir!",
-		"French (France)": "Cette version de PolyMod n'est pas conçu pour la version actuelle du jeu et peut ne pas fonctionner correctement!"
+		"Spanish (Mexico)": "¡El version de PolyMod no es diseñado para este version del juego y es posible que no funcione correctamente!",
+		"French (France)": "Cette version de PolyMod n'est pas conçu pour la version actuelle du jeu et peut ne pas fonctionner correctement!",
+		"Polish": "Ta wersja PolyMod nie jest przeznaczona dla bieżącej wersji gry i może nie działać poprawnie!"
 	}
 }
