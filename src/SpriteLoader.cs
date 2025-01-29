@@ -28,8 +28,7 @@ namespace PolyMod
 			{
 				string baseName = visualPart.DefaultSpriteName.Split('_')[0];
 				string unitTypeName = EnumCache<UnitData.Type>.GetName(__instance.unitData.type);
-
-				Sprite? sprite = ModLoader.GetSprite($"{baseName}_{unitTypeName}", style);
+				Sprite? sprite = ModLoader.GetSprite($"{visualPart.DefaultSpriteName}_{unitTypeName}", style);
 				if (sprite == null && baseName == "head")
 				{
 					sprite = ModLoader.GetSprite(baseName, style);
@@ -54,26 +53,29 @@ namespace PolyMod
 		}
 
 		[HarmonyPostfix]
-		[HarmonyPatch(typeof(Resource), nameof(Resource.SetVisible))]
-		private static void Resource_SetVisible(Resource __instance)
+		[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(SkinVisualsTransientData))]
+		private static void Resource_UpdateObject(Resource __instance, SkinVisualsTransientData transientSkinData)
 		{
-			string style = __instance.tile.data.Skin != SkinType.Default
-				? EnumCache<SkinType>.GetName(__instance.tile.data.Skin)
-				: EnumCache<TribeData.Type>.GetName(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(__instance.tile.data.climate));
-
-			string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
-			foreach (var visualPart in __instance._skinVis.visualParts)
+			if (__instance.data != null)
 			{
-				Sprite? sprite = ModLoader.GetSprite(name, style);
-				if (sprite != null)
-				{
-					visualPart.renderer.spriteRenderer.sprite = sprite;
-				}
-				Sprite? outlineSprite = ModLoader.GetSprite($"{name}_outline", style);
+				string style = transientSkinData.tileClimateSettings.skin != SkinType.Default
+					? EnumCache<SkinType>.GetName(transientSkinData.tileClimateSettings.skin)
+					: EnumCache<TribeData.Type>.GetName(transientSkinData.tileClimateSettings.tribe);
 
-				if (outlineSprite != null)
+				string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
+				foreach (var visualPart in __instance._skinVis.visualParts)
 				{
-					visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
+					Sprite? sprite = ModLoader.GetSprite(name, style);
+					if (sprite != null)
+					{
+						visualPart.renderer.spriteRenderer.sprite = sprite;
+					}
+					Sprite? outlineSprite = ModLoader.GetSprite($"{name}_outline", style);
+
+					if (outlineSprite != null)
+					{
+						visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
+					}
 				}
 			}
 		}
