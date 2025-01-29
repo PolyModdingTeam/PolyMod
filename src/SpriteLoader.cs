@@ -56,11 +56,11 @@ namespace PolyMod
 		[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(SkinVisualsTransientData))]
 		private static void Resource_UpdateObject(Resource __instance, SkinVisualsTransientData transientSkinData)
 		{
-			if (__instance.data != null)
+			if (__instance.data != null && transientSkinData != null)
 			{
 				string style = transientSkinData.tileClimateSettings.skin != SkinType.Default
-					? EnumCache<SkinType>.GetName(transientSkinData.tileClimateSettings.skin)
-					: EnumCache<TribeData.Type>.GetName(transientSkinData.tileClimateSettings.tribe);
+				? EnumCache<SkinType>.GetName(transientSkinData.tileClimateSettings.skin)
+				: EnumCache<TribeData.Type>.GetName(transientSkinData.tileClimateSettings.tribe);
 
 				string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
 				foreach (var visualPart in __instance._skinVis.visualParts)
