@@ -48,7 +48,8 @@
 	},
 	"polymod_hub_mod_status_dependenciesunsatisfied": {
 		"English": "required dependencies not found",
-		"Russian": "необходимые зависимости не найдены"
+		"Russian": "необходимые зависимости не найдены",
+		"French (France)": "les dépendances requises n'ont pas été trouvé"
 	},
 	"polymod_signature_incompatible": {
 		"English": "Current mods are not compatible with original mods!",
@@ -78,9 +79,9 @@
 		"French (France)": "Les versions ne correspondent pas"
 	},
 	"polymod_version_mismatch_description": {
-		"English": "PolyMod of this version is not designed for the current version of the game and may not work correctly!",
+		"English": "This version of PolyMod is not designed for the current version of the game and may not work correctly!",
 		"Russian": "PolyMod этой версии не предназначен для текущей версии игры и может работать некорректно!",
 		"Turkish": "PolyMod'un bu sürümü mevcut oyun sürümü için tasarlanmamıştır ve düzgün çalışmayabilir!",
-		"French (France)": "PolyMod de cette version n'est pas conçu pour la version actuelle du jeu et peut ne pas fonctionner correctement!"
+		"French (France)": "Cette version de PolyMod n'est pas conçu pour la version actuelle du jeu et peut ne pas fonctionner correctement!"
 	}
 }
