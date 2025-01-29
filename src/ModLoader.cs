@@ -667,7 +667,7 @@ namespace PolyMod
 				if (name.StartsWith("tribeskins")) name = "TribeSkins/" + name;
 				TermData term = LocalizationManager.Sources[0].AddTerm(name);
 				List<string> strings = new();
-				foreach (string language in LocalizationManager.GetAllLanguages())
+				foreach (string language in LocalizationManager.GetAllLanguages(false))
 				{
 					strings.Add(data.GetOrDefault(language, data.GetOrDefault("English", term.Term))!);
 				}
