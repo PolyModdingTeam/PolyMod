@@ -72,8 +72,8 @@
 	"polymod_hub_mod_status_dependenciesunsatisfied": {
 		"English": "required dependencies not found",
 		"Russian": "необходимые зависимости не найдены",
-		"Turkish": "<MISSING>",
-		"Spanish (Mexico)": "<MISSING>",
+		"Turkish": "gerekli bağımlılıklar bulunamadı",
+		"Spanish (Mexico)": "no se han encontrado las dependencias necesarias",
 		"French (France)": "les dépendances requises n'ont pas été trouvé",
 		"Polish": "wymagane zależności nie zostały znalezione",
 		"Portuguese (Brazil)": "as dependências requisitadas não foram encontradas",
