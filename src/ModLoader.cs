@@ -191,6 +191,13 @@ namespace PolyMod
 			}
 		}
 
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(GameManager), nameof(GameManager.MatchEnded))]
+		private static void GameManager_MatchEnded(bool localPlayerIsWinner, ScoreDetails scoreDetails, byte winnerId)
+		{
+			File.Delete(Path.Combine(Application.persistentDataPath, $"{GameManager.Client.gameId}.signatures"));
+		} 
+
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(ClientBase), nameof(ClientBase.CreateSession), typeof(GameSettings), typeof(Il2CppSystem.Guid))]
 		private static void ClientBase_CreateSession(GameSettings settings, Il2CppSystem.Guid gameId)
