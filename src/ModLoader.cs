@@ -32,9 +32,9 @@ namespace PolyMod
 			public record File(string name, byte[] bytes);
 			public enum Status
 			{
-				SUCCESS,
-				ERROR,
-				DEPENDENCIES_UNSATISFIED,
+				Success,
+				Error,
+				DependenciesUnsatisfied,
 			}
 
 			public string? name;
@@ -156,6 +156,7 @@ namespace PolyMod
 		{
 			if (logLine.Contains("Failed to find atlas") && type == LogType.Warning) return false;
 			if (logLine.Contains("Could not find sprite") && type == LogType.Warning) return false;
+			if (logLine.Contains("Missing name for value") && type == LogType.Warning) return false;
 			return true;
 		}
 
@@ -174,10 +175,10 @@ namespace PolyMod
 		}
 
 		[HarmonyPostfix]
-		[HarmonyPatch(typeof(ClientBase), nameof(ClientBase.DeletePassAndPlayGame))]
-		private static void ClientBase_DeletePassAndPlayGame(string gameId)
+		[HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.DeletePaPGame))]
+		private static void ClientBase_DeletePassAndPlayGame(GameInfoPopup __instance)
 		{
-			File.Delete(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+			File.Delete(Path.Combine(Application.persistentDataPath, $"{__instance.gameId}.signatures"));
 		}
 
 		[HarmonyPrefix]
@@ -314,7 +315,7 @@ namespace PolyMod
 					}
 					mods.Add(manifest.id, new(
 						manifest,
-						Mod.Status.SUCCESS,
+						Mod.Status.Success,
 						files
 					));
 					Plugin.logger.LogInfo($"Registered mod {manifest.id}");
@@ -361,7 +362,7 @@ namespace PolyMod
 						if (dependency.required)
 						{
 							Plugin.logger.LogError(message);
-							mod.status = Mod.Status.DEPENDENCIES_UNSATISFIED;
+							mod.status = Mod.Status.DependenciesUnsatisfied;
 						}
 						else
 						{
@@ -369,7 +370,7 @@ namespace PolyMod
 						}
 					}
 				}
-				if (mod.status != Mod.Status.SUCCESS) continue;
+				if (mod.status != Mod.Status.Success) continue;
 				foreach (var file in mod.files)
 				{
 					if (Path.GetExtension(file.name) == ".dll")
@@ -401,7 +402,7 @@ namespace PolyMod
 							if (exception.InnerException != null)
 							{
 								Plugin.logger.LogError($"Error on loading assembly from {id} mod: {exception.InnerException.Message}");
-								mod.status = Mod.Status.ERROR;
+								mod.status = Mod.Status.Error;
 							}
 						}
 					}
@@ -444,14 +445,14 @@ namespace PolyMod
 				new string[] { "Midjiwan AB" },
 				Array.Empty<Mod.Dependency>()
 			);
-			mods.Add(polytopia.id, new(polytopia, Mod.Status.SUCCESS, new()));
+			mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
 			LocalizationPatch(JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
 				Plugin.GetResource("localization.json")
 			)!);
 
 			foreach (var (id, mod) in mods)
 			{
-				if (mod.status != Mod.Status.SUCCESS) continue;
+				if (mod.status != Mod.Status.Success) continue;
 				foreach (var file in mod.files)
 				{
 					if (Path.GetFileName(file.name) == "patch.json")
@@ -464,7 +465,7 @@ namespace PolyMod
 						catch (Exception e)
 						{
 							Plugin.logger.LogError($"Error on loading patch from {id} mod: {e.Message}");
-							mod.status = Mod.Status.ERROR;
+							mod.status = Mod.Status.Error;
 						}
 					}
 					if (Path.GetFileName(file.name) == "localization.json")
