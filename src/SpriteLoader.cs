@@ -70,10 +70,6 @@ namespace PolyMod
 
 						if (sprite != null)
 						{
-							Console.Write("FOUND");
-							Console.Write(visualPart.DefaultSpriteName);
-							Console.Write(unitTypeName);
-							Console.Write(style);
 							visualPart.renderer.spriteRenderer.sprite = sprite;
 						}
 
