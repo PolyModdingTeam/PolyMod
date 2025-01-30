@@ -37,7 +37,7 @@
 		"French (France)": "Bienvenue!\nIci vous pouvez voir tous les mods chargés:",
 		"Polish": "Witaj!\nTutaj możesz zobaczyć listę wszystkich aktualnie załadowanych modów:",
 		"Portuguese (Brazil)": "Bem vindo!\nAqui você pode ver a lista dos mods carregados:",
-		"Elyrion": "þr∑∑Ŧ!\ŋţ∑r∑ ₺ #aŋ ^∑∑ iii #₺rr∑ŋŦ∫ỹ ∫ȱaΔ∑Δ mȱΔ^:"
+		"Elyrion": "þr∑∑Ŧ!\nţ∑r∑ ₺ #aŋ ^∑∑ iii #₺rr∑ŋŦ∫ỹ ∫ȱaΔ∑Δ mȱΔ^:"
 	},
 	"polymod_hub_mod": {
 		"English": "Name: {0}\nStatus: {1}\nAuthors: {2}\nVersion: {3}",
@@ -47,7 +47,7 @@
 		"French (France)": "Titre: {0}\nEtat: {1}\nAuteurs: {2}\nVersion: {3}",
 		"Polish": "Nazwa: {0}\nStatus: {1}\nAutorzy: {2}\nWersja: {3}",
 		"Portuguese (Brazil)": "Nome: {0}\nStatus: {1}\nAutores: {2}\nVersão: {3}",
-		"Elyrion": "r⋔: {0}\ŋ^ŦaŦ₺^: {1}\ŋa₺Ŧţȱr^: {2}\ŋ‡∑r^iȱŋ: {3}"
+		"Elyrion": "r⋔: {0}\n^ŦaŦ₺^: {1}\na₺Ŧţȱr^: {2}\n‡∑r^iȱŋ: {3}"
 	},
 	"polymod_hub_mod_status_error": {
 		"English": "had loading error",
