@@ -6,7 +6,8 @@
 		"Spanish (Mexico)": "Repositorio de PolyMod",
 		"French (France)": "Centre PolyMod",
 		"Polish": "Centrum PolyMod",
-		"Portuguese (Brazil)": "Hub do PolyMod"
+		"Portuguese (Brazil)": "Hub do PolyMod",
+		"Elyrion": "πȱ∫ỹmȱΔ ţ₺o"
 	},
 	"polymod_hub_discord": {
 		"English": "OUR DISCORD",
@@ -15,7 +16,8 @@
 		"Spanish (Mexico)": "NUESTRO DISCORD",
 		"French (France)": "NOTRE DISCORD",
 		"Polish": "NASZ DISCORD",
-		"Portuguese (Brazil)": "NOSSO DISCORD"
+		"Portuguese (Brazil)": "NOSSO DISCORD",
+		"Elyrion": "ȱ₺r Δi^#ȱrΔ"
 	},
 	"polymod_hub_footer": {
 		"English": "Join our discord! Feel free to discuss mods, create them and ask for help!",
@@ -24,7 +26,8 @@
 		"Spanish (Mexico)": "Unete a nuestro discord! Aqui se puede discutir sobre la modificacion del juego, guias para crear su propio, preguntar a los creadores, y mas!",
 		"French (France)": "Rejoignez notre discord! N'hésitez pas à discuter des mods, à en créer et à demander de l'aide!",
 		"Polish": "Dołącz do naszego discorda! Zachęcamy do omawiania modów, tworzenia ich lub proszenia o pomoc!",
-		"Portuguese (Brazil)": "Entre no nosso Discord! Sinta-se à vontade para discutir sobre os mods, criar novos mods e pedir ajuda!"
+		"Portuguese (Brazil)": "Entre no nosso Discord! Sinta-se à vontade para discutir sobre os mods, criar novos mods e pedir ajuda!",
+		"Elyrion": "ƒȱiŋ ȱ₺r Δi^#ȱrΔ! ₼∑∑∫ ⋔∑∑⋔ Ŧȱ Δi^#₺^^ mȱΔ^, #r∑aŦ∑ Ŧţ∑m aŋΔ a^š ₼ȱr ţ∑∫π!"
 	},
 	"polymod_hub_header": {
 		"English": "Welcome!\nHere you can see the list of all currently loaded mods:",
@@ -33,7 +36,8 @@
 		"Spanish (Mexico)": "Bienvenidos!\nAqui puedes ver un compilacion actualicado de todo los mods cargados:",
 		"French (France)": "Bienvenue!\nIci vous pouvez voir tous les mods chargés:",
 		"Polish": "Witaj!\nTutaj możesz zobaczyć listę wszystkich aktualnie załadowanych modów:",
-		"Portuguese (Brazil)": "Bem vindo!\nAqui você pode ver a lista dos mods carregados:"
+		"Portuguese (Brazil)": "Bem vindo!\nAqui você pode ver a lista dos mods carregados:",
+		"Elyrion": "þr∑∑Ŧ!\nţ∑r∑ ₺ #aŋ ^∑∑ iii #₺rr∑ŋŦ∫ỹ ∫ȱaΔ∑Δ mȱΔ^:"
 	},
 	"polymod_hub_mod": {
 		"English": "Name: {0}\nStatus: {1}\nAuthors: {2}\nVersion: {3}",
@@ -42,7 +46,8 @@
 		"Spanish (Mexico)": "Titulo: {0}\nEstado: {1}\nPublicador: {2}\nVersion: {3}",
 		"French (France)": "Titre: {0}\nEtat: {1}\nAuteurs: {2}\nVersion: {3}",
 		"Polish": "Nazwa: {0}\nStatus: {1}\nAutorzy: {2}\nWersja: {3}",
-		"Portuguese (Brazil)": "Nome: {0}\nStatus: {1}\nAutores: {2}\nVersão: {3}"
+		"Portuguese (Brazil)": "Nome: {0}\nStatus: {1}\nAutores: {2}\nVersão: {3}",
+		"Elyrion": "r⋔: {0}\n^ŦaŦ₺^: {1}\na₺Ŧţȱr^: {2}\n‡∑r^iȱŋ: {3}"
 	},
 	"polymod_hub_mod_status_error": {
 		"English": "had loading error",
@@ -51,7 +56,8 @@
 		"Spanish (Mexico)": "error en cargando",
 		"French (France)": "a eu une erreur de chargement",
 		"Polish": "wystąpił błąd ładowania",
-		"Portuguese (Brazil)": "houve um erro de carregamento"
+		"Portuguese (Brazil)": "houve um erro de carregamento",
+		"Elyrion": "ỹỹ#∑š π∫∑a ƒ§§π ∑rrȱr"
 	},
 	"polymod_hub_mod_status_success": {
 		"English": "loaded successfully",
@@ -60,16 +66,18 @@
 		"Spanish (Mexico)": "cargado exitosamente",
 		"French (France)": "chargé avec succès",
 		"Polish": "załadowano pomyślnie",
-		"Portuguese (Brazil)": "carregado com êxito"
+		"Portuguese (Brazil)": "carregado com êxito",
+		"Elyrion": "ỹỹ#∑š π∫∑a ƒ§§π ^₺##∑^^₼₺∫∫ỹ"
 	},
 	"polymod_hub_mod_status_dependenciesunsatisfied": {
 		"English": "required dependencies not found",
 		"Russian": "необходимые зависимости не найдены",
-		"Turkish": "<MISSING>",
-		"Spanish (Mexico)": "<MISSING>",
+		"Turkish": "gerekli bağımlılıklar bulunamadı",
+		"Spanish (Mexico)": "no se han encontrado las dependencias necesarias",
 		"French (France)": "les dépendances requises n'ont pas été trouvé",
 		"Polish": "wymagane zależności nie zostały znalezione",
-		"Portuguese (Brazil)": "as dependências requisitadas não foram encontradas"
+		"Portuguese (Brazil)": "as dependências requisitadas não foram encontradas",
+		"Elyrion": "r∑¦₺ir∑Δ Δ∑π∑ŋΔ∑ŋ#i∑^ ŋȱŦ ∑∫ỹr"
 	},
 	"polymod_signature_incompatible": {
 		"English": "Current mods are not compatible with original mods!",
@@ -78,7 +86,8 @@
 		"Spanish (Mexico)": "Falta de compatibilidad entre los mods concurrientes!",
 		"French (France)": "Les mods actuels ne sont pas compatibles avec les mods originaux!",
 		"Polish": "Obecne mody nie są kompatybilne z oryginalnymi modami!",
-		"Portuguese (Brazil)": "Incompatibilidade entre os mods carregados!"
+		"Portuguese (Brazil)": "Incompatibilidade entre os mods carregados!",
+		"Elyrion": "#₺rr∑ŋŦ mȱΔ^ ar∑ ⋔π₺þþţ∫ ∑ȱa^i ȱriþiŋa∫ mȱΔ^!"
 	},
 	"polymod_signature_maybe_incompatible": {
 		"English": "Current mods may not be compatible with original mods!",
@@ -87,7 +96,8 @@
 		"Spanish (Mexico)": "Es posible que este mod no sea compatibile con el original!",
 		"French (France)": "Les mods actuels peuvent ne pas être compatibles avec les mods originaux!",
 		"Polish": "Obecne mody mogą nie być kompatybilne z oryginalnymi modami!",
-		"Portuguese (Brazil)": "É possível que os mods carregados não sejam compatíveis com os mods originais"
+		"Portuguese (Brazil)": "É possível que os mods carregados não sejam compatíveis com os mods originais",
+		"Elyrion": "#₺rr∑ŋŦ mȱΔ^ maỹ ȱ∑ ⋔π₺þþţ∫ ∑ȱa^ ȱriþiŋa∫ mȱΔ^!"
 	},
 	"polymod_signature_mismatch": {
 		"English": "Signature mismatch",
@@ -96,7 +106,8 @@
 		"Spanish (Mexico)": "Falta de coincidencia en la firma",
 		"French (France)": "Les signatures ne correspondent pas",
 		"Polish": "Niezgodność podpisu",
-		"Portuguese (Brazil)": "As assinaturas não correspondem"
+		"Portuguese (Brazil)": "As assinaturas não correspondem",
+		"Elyrion": "^iþŋaŦ₺r∑ mi^maŦ#ţ"
 	},
 	"polymod_version_mismatch": {
 		"English": "Version mismatch",
@@ -105,7 +116,8 @@
 		"Spanish (Mexico)": "Falta de coincidencia de version",
 		"French (France)": "Les versions ne correspondent pas",
 		"Polish": "Niezgodność wersji",
-		"Portuguese (Brazil)": "As versões não correspondem"
+		"Portuguese (Brazil)": "As versões não correspondem",
+		"Elyrion": "‡∑r^iȱŋ mi^maŦ#ţ"
 	},
 	"polymod_version_mismatch_description": {
 		"English": "This version of PolyMod is not designed for the current version of the game and may not work correctly!",
@@ -114,6 +126,7 @@
 		"Spanish (Mexico)": "¡El version de PolyMod no es diseñado para este version del juego y es posible que no funcione correctamente!",
 		"French (France)": "Cette version de PolyMod n'est pas conçu pour la version actuelle du jeu et peut ne pas fonctionner correctement!",
 		"Polish": "Ta wersja PolyMod nie jest przeznaczona dla bieżącej wersji gry i może nie działać poprawnie!",
-		"Portuguese (Brazil)": "Essa versão do PolyMod não foi desenvolvida para a atual versão do jogo e pode não funcionar corretamente!"
+		"Portuguese (Brazil)": "Essa versão do PolyMod não foi desenvolvida para a atual versão do jogo e pode não funcionar corretamente!",
+		"Elyrion": "Ŧţi^ πȱ∫ỹmȱΔ ‡∑r^iȱŋ i^ ŋȱŦ Δ∑^iþŋ∑Δ ₼ȱr Ŧţ∑ #₺rr∑ŋŦ ‡∑r^iȱŋ ȱ₼ Ŧţ∑ Ŧa§∑ aŋΔ maỹ ŋȱŦ ~ȱrš #ȱrr∑#Ŧ∫ỹ!"
 	}
 }

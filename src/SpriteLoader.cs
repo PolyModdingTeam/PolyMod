@@ -9,6 +9,7 @@ namespace PolyMod
 	public class SpritesLoader
 	{
 		private static bool firstTimeOpeningPreview = true;
+		private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(TechItem), nameof(TechItem.SetupComplete))]
@@ -16,64 +17,105 @@ namespace PolyMod
 		{
 		}
 
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(Unit), nameof(Unit.SetVisible))]
-		private static void Unit_SetVisible(Unit __instance)
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
+		private static void StartScreen_Start()
 		{
-			string style = __instance.Owner.skinType != SkinType.Default
-				? EnumCache<SkinType>.GetName(__instance.Owner.skinType)
-				: EnumCache<TribeData.Type>.GetName(__instance.Owner.tribe);
+			firstTimeOpeningPreview = true;
+		}
 
-			foreach (var visualPart in __instance.skinVisuals.visualParts)
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
+		private static bool UIUnitRenderer_CreateUnit_Prefix(UIUnitRenderer __instance)
+		{
+			currentUnitTypeUI = __instance.unitType;
+			return true;
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
+		private static void UIUnitRenderer_CreateUnit_Postfix(UIUnitRenderer __instance)
+		{
+			currentUnitTypeUI = UnitData.Type.None;
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(SkinVisualsRenderer), nameof(SkinVisualsRenderer.SkinWorldObject))]
+		private static void SkinVisualsRenderer_SkinWorldObject(SkinVisualsRenderer.SkinWorldType type, SkinVisualsReference skinVisuals, SkinVisualsTransientData transientSkinData, bool checkOutlines, int level)
+		{
+			if(type == SkinVisualsRenderer.SkinWorldType.Unit)
 			{
-				string baseName = visualPart.DefaultSpriteName.Split('_')[0];
-				string unitTypeName = EnumCache<UnitData.Type>.GetName(__instance.unitData.type);
-
-				Sprite? sprite = ModLoader.GetSprite($"{baseName}_{unitTypeName}", style);
-				if (sprite == null && baseName == "head")
+				if(skinVisuals != null && transientSkinData != null)
 				{
-					sprite = ModLoader.GetSprite(baseName, style);
-				}
+					Unit unit = skinVisuals.gameObject.GetComponent<Unit>();
+					string style = transientSkinData.unitSettings.skin != SkinType.Default
+						? EnumCache<SkinType>.GetName(transientSkinData.unitSettings.skin)
+						: EnumCache<TribeData.Type>.GetName(transientSkinData.unitSettings.tribe);
+					foreach (var visualPart in skinVisuals.visualParts)
+					{
+						string baseName = visualPart.DefaultSpriteName.Split('_')[0];
+						string unitTypeName = EnumCache<UnitData.Type>.GetName(UnitData.Type.Warrior);
+						if(unit.unitData != null){
+							unitTypeName = EnumCache<UnitData.Type>.GetName(unit.unitData.type);
+						}
+						if(currentUnitTypeUI != UnitData.Type.None)
+						{
+							unitTypeName = EnumCache<UnitData.Type>.GetName(currentUnitTypeUI);
+						}
+						Sprite? sprite = ModLoader.GetSprite($"{visualPart.DefaultSpriteName}_{unitTypeName}", style);
+						if (sprite == null && baseName == "head")
+						{
+							sprite = ModLoader.GetSprite(baseName, style);
+						}
 
-				if (sprite != null)
-				{
-					visualPart.renderer.spriteRenderer.sprite = sprite;
-				}
+						if (sprite != null)
+						{
+							Console.Write("FOUND");
+							Console.Write(visualPart.DefaultSpriteName);
+							Console.Write(unitTypeName);
+							Console.Write(style);
+							visualPart.renderer.spriteRenderer.sprite = sprite;
+						}
 
-				Sprite? outlineSprite = ModLoader.GetSprite($"{baseName}_{unitTypeName}_outline", style);
-				if (outlineSprite == null && baseName == "head")
-				{
-					outlineSprite = ModLoader.GetSprite($"{baseName}_outline", style);
-				}
+						Sprite? outlineSprite = ModLoader.GetSprite($"{baseName}_{unitTypeName}_outline", style);
+						if (outlineSprite == null && baseName == "head")
+						{
+							outlineSprite = ModLoader.GetSprite($"{baseName}_outline", style);
+						}
 
-				if (outlineSprite != null)
-				{
-					visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
+						if (outlineSprite != null)
+						{
+							visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
+						}
+					}
 				}
 			}
 		}
 
 		[HarmonyPostfix]
-		[HarmonyPatch(typeof(Resource), nameof(Resource.SetVisible))]
-		private static void Resource_SetVisible(Resource __instance)
+		[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(SkinVisualsTransientData))]
+		private static void Resource_UpdateObject(Resource __instance, SkinVisualsTransientData transientSkinData)
 		{
-			string style = __instance.tile.data.Skin != SkinType.Default
-				? EnumCache<SkinType>.GetName(__instance.tile.data.Skin)
-				: EnumCache<TribeData.Type>.GetName(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(__instance.tile.data.climate));
-
-			string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
-			foreach (var visualPart in __instance._skinVis.visualParts)
+			if (__instance.data != null && transientSkinData != null)
 			{
-				Sprite? sprite = ModLoader.GetSprite(name, style);
-				if (sprite != null)
-				{
-					visualPart.renderer.spriteRenderer.sprite = sprite;
-				}
-				Sprite? outlineSprite = ModLoader.GetSprite($"{name}_outline", style);
+				string style = transientSkinData.tileClimateSettings.skin != SkinType.Default
+				? EnumCache<SkinType>.GetName(transientSkinData.tileClimateSettings.skin)
+				: EnumCache<TribeData.Type>.GetName(transientSkinData.tileClimateSettings.tribe);
 
-				if (outlineSprite != null)
+				string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
+				foreach (var visualPart in __instance._skinVis.visualParts)
 				{
-					visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
+					Sprite? sprite = ModLoader.GetSprite(name, style);
+					if (sprite != null)
+					{
+						visualPart.renderer.spriteRenderer.sprite = sprite;
+					}
+					Sprite? outlineSprite = ModLoader.GetSprite($"{name}_outline", style);
+
+					if (outlineSprite != null)
+					{
+						visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
+					}
 				}
 			}
 		}
@@ -224,13 +266,6 @@ namespace PolyMod
 			}
 		}
 
-		[HarmonyPrefix]
-		[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-		private static void StartScreen_Start()
-		{
-			firstTimeOpeningPreview = true;
-		}
-
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.AddImprovementButtons))]
 		private static void InteractionBar_AddImprovementButtons(InteractionBar __instance, Tile tile)
@@ -293,33 +328,6 @@ namespace PolyMod
 				__result.SetNativeSize();
 			}
 		}
-
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
-		private static void UIUnitRenderer_CreateUnit(UIUnitRenderer __instance)
-		{
-			Transform? headTransform = __instance.transform.Find("Head");
-
-			if (headTransform != null)
-			{
-				GameObject childGameObject = headTransform.gameObject;
-				Image headImage = childGameObject.GetComponent<Image>();
-
-				string style = EnumCache<TribeData.Type>.GetName(__instance.tribe);
-				if (__instance.skin != SkinType.Default)
-				{
-					style = EnumCache<SkinType>.GetName(__instance.skin);
-				}
-				Sprite? sprite = ModLoader.GetSprite("head", style);
-
-				if (sprite != null)
-				{
-					headImage.sprite = sprite;
-					headImage.SetNativeSize();
-				}
-			}
-		}
-
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetTile))]
