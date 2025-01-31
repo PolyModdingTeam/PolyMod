@@ -77,7 +77,7 @@ namespace PolyMod
 			public ImprovementData.Type improvementType = ImprovementData.Type.None;
 		}
 
-		public record DataSprite(float? pixelsPerUnit, Vector2? pivot, bool? alphaIsTransparency);
+		public record DataSprite(float? pixelsPerUnit, Vector2? pivot);
 
 		public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
 		public static Dictionary<string, Sprite> sprites = new();
