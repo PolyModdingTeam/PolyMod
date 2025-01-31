@@ -47,7 +47,7 @@
 		"French (France)": "Titre: {0}\nEtat: {1}\nAuteurs: {2}\nVersion: {3}",
 		"Polish": "Nazwa: {0}\nStatus: {1}\nAutorzy: {2}\nWersja: {3}",
 		"Portuguese (Brazil)": "Nome: {0}\nStatus: {1}\nAutores: {2}\nVersão: {3}",
-		"Elyrion": "r₼: {0}\n^ŦaŦ₺^: {1}\na₺Ŧţȱr: {2}\nrrirΔ: {3}"
+		"Elyrion": "r₼: {0}\n^ŦaŦ₺^: {1}\na₺Ŧţȱr: {2}\nƒƒƒƒƒƒƒ: {3}"
 	},
 	"polymod_hub_mod_status_error": {
 		"English": "had loading error",
@@ -117,16 +117,16 @@
 		"French (France)": "Les versions ne correspondent pas",
 		"Polish": "Niezgodność wersji",
 		"Portuguese (Brazil)": "As versões não correspondem",
-		"Elyrion": "rrirΔ ₼π₺þþţ∫"
+		"Elyrion": "ƒƒƒƒƒƒƒ ₼π₺þþţ∫"
 	},
 	"polymod_version_mismatch_description": {
-		"English": "This version of PolyMod is not designed for the current version of the game and may not work correctly!",
-		"Russian": "PolyMod этой версии не предназначен для текущей версии игры и может работать некорректно!",
-		"Turkish": "PolyMod'un bu sürümü mevcut oyun sürümü için tasarlanmamıştır ve düzgün çalışmayabilir!",
-		"Spanish (Mexico)": "¡El version de PolyMod no es diseñado para este version del juego y es posible que no funcione correctamente!",
-		"French (France)": "Cette version de PolyMod n'est pas conçu pour la version actuelle du jeu et peut ne pas fonctionner correctement!",
-		"Polish": "Ta wersja PolyMod nie jest przeznaczona dla bieżącej wersji gry i może nie działać poprawnie!",
-		"Portuguese (Brazil)": "Essa versão do PolyMod não foi desenvolvida para a atual versão do jogo e pode não funcionar corretamente!",
-		"Elyrion": "πȱ∫ỹmȱδ rrirδ ŋȱŧ ȱrrȱ #₺rr∑ŋŧ ŧa§∑ rrirδ ỹ maỹ ŋȱŧ ~ȱr§ #ȱrr∑#ŧ∫ỹ!"
+		"English": "This version of PolyMod is not designed for the current version of the application and may not work correctly!",
+		"Russian": "PolyMod этой версии не предназначен для текущей версии приложения и может работать некорректно!",
+		"Turkish": "PolyMod'un bu sürümü mevcut uygulama sürümü için tasarlanmamıştır ve düzgün çalışmayabilir!",
+		"Spanish (Mexico)": "¡El version de PolyMod no es diseñado para este version de la aplicación y es posible que no funcione correctamente!",
+		"French (France)": "Cette version de PolyMod n'est pas conçu pour la version actuelle de l'application et peut ne pas fonctionner correctement!",
+		"Polish": "Ta wersja PolyMod nie jest przeznaczona dla bieżącej wersji aplikacji i może nie działać poprawnie!",
+		"Portuguese (Brazil)": "Essa versão do PolyMod não foi desenvolvida para a versão atual do aplicativo e pode não funcionar corretamente!",
+		"Elyrion": "πȱ∫ỹmȱδ ƒƒƒƒƒƒƒ ŋȱŧ ȱrrȱ #₺rr∑ŋŧ ƒƒƒƒƒƒƒ ỹ maỹ ŋȱŧ ~ȱr§ #ȱrr∑#ŧ∫ỹ!"
 	}
 }
