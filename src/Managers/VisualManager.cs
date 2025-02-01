@@ -1,13 +1,14 @@
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
+using PolyMod.Loaders;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace PolyMod
+namespace PolyMod.Managers
 {
-    internal static class Visual
+    internal static class VisualManager
     {
         [HarmonyPrefix]
         [HarmonyPatch(typeof(SplashController), nameof(SplashController.LoadAndPlayClip))]
@@ -63,12 +64,12 @@ namespace PolyMod
                 BasicPopup popup = PopupManager.GetBasicPopup();
                 popup.Header = Localization.Get("polymod.hub");
                 popup.Description = Localization.Get("polymod.hub.header") + "\n\n";
-                foreach (var mod in ModLoader.mods.Values)
+                foreach (var mod in ModManager.mods.Values)
                 {
                     popup.Description += Localization.Get("polymod.hub.mod", new Il2CppSystem.Object[] {
                         mod.name,
                         Localization.Get("polymod.hub.mod.status."
-                            + Enum.GetName(typeof(ModLoader.Mod.Status), mod.status)!.ToLower()),
+                            + Enum.GetName(typeof(ModManager.Mod.Status), mod.status)!.ToLower()),
                         string.Join(", ", mod.authors),
                         mod.version.ToString()
                     });
@@ -92,7 +93,7 @@ namespace PolyMod
 
         internal static void Init()
         {
-            Harmony.CreateAndPatchAll(typeof(Visual));
+            Harmony.CreateAndPatchAll(typeof(VisualManager));
         }
     }
 }

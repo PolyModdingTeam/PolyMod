@@ -1,12 +1,10 @@
 ﻿using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-using Il2CppInterop.Runtime;
-using Il2CppInterop.Runtime.Injection;
+using PolyMod.Loaders;
+using PolyMod.Managers;
 
 namespace PolyMod
 {
@@ -45,11 +43,14 @@ namespace PolyMod
 			logger = Log;
 			ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
 
-			VersionChecker.Init();
+			CompatibilityManager.Init();
+
 			AudioClipLoader.Init();
-			ModLoader.Init();
+			LocalizationLoader.Init();
 			SpritesLoader.Init();
-			Visual.Init();
+			VisualManager.Init();
+
+			ModManager.Init();
 		}
 
 		internal static Stream GetResource(string id)
@@ -57,18 +58,6 @@ namespace PolyMod
 			return Assembly.GetExecutingAssembly().GetManifestResourceStream(
 				$"{typeof(Plugin).Namespace}.resources.{id}"
 			)!;
-		}
-
-		internal static Il2CppSystem.Type WrapType<T>() where T : class
-		{
-			if (!ClassInjector.IsTypeRegisteredInIl2Cpp<T>())
-				ClassInjector.RegisterTypeInIl2Cpp<T>();
-			return Il2CppType.From(typeof(T));
-		}
-
-		internal static string Hash(object data)
-		{
-			return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(data.ToString()!)));
 		}
 	}
 }
