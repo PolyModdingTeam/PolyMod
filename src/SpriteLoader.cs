@@ -530,7 +530,26 @@ namespace PolyMod
 
 			if(__instance.icon.sprite == null)
 			{
-				__instance.LoadFaceIcon(SpriteData.SpecialFaceIcon.robot);
+				__instance.LoadFaceIcon(SpriteData.SpecialFaceIcon.neutral);
+			}
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(PlayerInfoIcon), nameof(PlayerInfoIcon.SetData), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteData.SpecialFaceIcon),  typeof(Color), typeof(DiplomacyRelationState), typeof(PlayerInfoIcon.Mood))]
+		private static void PlayerInfoIcon_SetData(PlayerInfoIcon __instance, TribeData.Type tribe, SkinType skin, SpriteData.SpecialFaceIcon face, Color color, DiplomacyRelationState diplomacyState, PlayerInfoIcon.Mood mood)
+		{
+			if (face == SpriteData.SpecialFaceIcon.tribe)
+			{
+				string style = skin != SkinType.Default
+					? EnumCache<SkinType>.GetName(skin)
+					: EnumCache<TribeData.Type>.GetName(tribe);
+				Sprite? sprite = ModLoader.GetSprite("head", style);
+				if(sprite != null)
+				{
+					__instance.HeadImage.sprite = sprite;
+					Vector2 size = sprite.rect.size;
+					__instance.HeadImage.rectTransform.sizeDelta = size * __instance.rectTransform.GetHeight() / 512f;
+				}
 			}
 		}
 
