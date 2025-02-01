@@ -47,7 +47,7 @@ namespace PolyMod.Managers
                         new(
                             "OK",
                             callback: (UIButtonBase.ButtonAction)((int buttonId, BaseEventData baseEventData) => {
-                                sawIncompatibilityWarning = true;
+                                sawSignatureWarning = true;
                                 action(id, eventData);
                             })
                         )
