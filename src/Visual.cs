@@ -44,14 +44,20 @@ namespace PolyMod
             button.gameObject.name = "PolyModHubButton";
             button.transform.position = originalButton.transform.position - new Vector3(90, 0, 0);
             button.active = true;
+
             Transform descriptionText = button.transform.Find("DescriptionText");
             descriptionText.gameObject.SetActive(true);
             descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
-            Transform iconContainer = button.transform.Find("IconContainer");
-            iconContainer.GetComponentInChildren<Image>().sprite
-                = SpritesLoader.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
+
             UIRoundButton buttonObject = button.GetComponent<UIRoundButton>();
+            buttonObject.bg.sprite = SpritesLoader.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
+            buttonObject.bg.transform.localScale = new Vector3(1.2f, 1.2f, 0);
+            buttonObject.bg.color = Color.white;
+
+            buttonObject.outline.gameObject.SetActive(false);
+            buttonObject.iconContainer.gameObject.SetActive(false);
             buttonObject.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
+
             static void PolyModHubButtonClicked(int buttonId, BaseEventData eventData)
             {
                 BasicPopup popup = PopupManager.GetBasicPopup();
