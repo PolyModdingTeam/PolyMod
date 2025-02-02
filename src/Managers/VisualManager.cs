@@ -37,7 +37,7 @@ namespace PolyMod.Managers
             rect.anchorMin = new(0, 0);
             text.GetComponent<TextMeshProUGUI>().fontSize = 18;
             text.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.BottomLeft;
-            text.GetComponent<TMPLocalizer>().Text = $"PolyMod {(Plugin.DEV ? "Dev" : Plugin.VERSION)}";
+            text.GetComponent<TMPLocalizer>().Text = $"PolyMod {(Plugin.DEV ? "Dev" : Plugin.VERSION)} by PolyModdingTeam";
             text.AddComponent<LayoutElement>().ignoreLayout = true;
 
             GameObject originalButton = GameObject.Find("StartScreen/NewsButton");
