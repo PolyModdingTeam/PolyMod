@@ -12,6 +12,8 @@ namespace PolyMod.Loaders
 		private static bool firstTimeOpeningPreview = true;
 		private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
 
+		#region General
+
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(TechItem), nameof(TechItem.SetupComplete))]
 		private static void TechItem_SetupComplete()
@@ -24,6 +26,26 @@ namespace PolyMod.Loaders
 		{
 			firstTimeOpeningPreview = true;
 		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.GetSpriteFromAtlas), typeof(SpriteAtlas), typeof(string))]
+		private static void SpriteAtlasManager_GetSpriteFromAtlas(ref Sprite __result, SpriteAtlas spriteAtlas, string sprite)
+		{
+			try
+			{
+				string[] names = sprite.Split('_');
+				Sprite? newSprite = ModManager.GetSprite(names[0], names[1]);
+				if (newSprite != null)
+				{
+					__result = newSprite;
+				}
+				return;
+			}
+			catch { }
+		}
+
+		#endregion
+		#region Units
 
 		[HarmonyPrefix]
 		[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
@@ -42,53 +64,33 @@ namespace PolyMod.Loaders
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(SkinVisualsRenderer), nameof(SkinVisualsRenderer.SkinWorldObject))]
-		private static void SkinVisualsRenderer_SkinWorldObject(SkinVisualsRenderer.SkinWorldType type, SkinVisualsReference skinVisuals, SkinVisualsTransientData transientSkinData, bool checkOutlines, int level)
+		private static void SkinVisualsRenderer_SkinWorldObject(
+			SkinVisualsRenderer.SkinWorldType type,
+			SkinVisualsReference skinVisuals,
+			SkinVisualsTransientData transientSkinData,
+			bool checkOutlines,
+			int level)
 		{
-			if (type == SkinVisualsRenderer.SkinWorldType.Unit)
+			if (type != SkinVisualsRenderer.SkinWorldType.Unit || skinVisuals == null || transientSkinData == null)
+				return;
+
+			Unit unit = skinVisuals.gameObject.GetComponent<Unit>();
+			string unitTypeName = unit?.unitData != null
+				? EnumCache<UnitData.Type>.GetName(unit.unitData.type)
+				: EnumCache<UnitData.Type>.GetName(UnitData.Type.Warrior);
+			if (currentUnitTypeUI != UnitData.Type.None)
+				unitTypeName = EnumCache<UnitData.Type>.GetName(currentUnitTypeUI);
+
+			string style = GetStyle(transientSkinData.unitSettings.tribe, transientSkinData.unitSettings.skin);
+
+			foreach (var visualPart in skinVisuals.visualParts)
 			{
-				if (skinVisuals != null && transientSkinData != null)
-				{
-					Unit unit = skinVisuals.gameObject.GetComponent<Unit>();
-					string style = transientSkinData.unitSettings.skin != SkinType.Default
-						? EnumCache<SkinType>.GetName(transientSkinData.unitSettings.skin)
-						: EnumCache<TribeData.Type>.GetName(transientSkinData.unitSettings.tribe);
-					foreach (var visualPart in skinVisuals.visualParts)
-					{
-						string baseName = visualPart.DefaultSpriteName.Split('_')[0];
-						string unitTypeName = EnumCache<UnitData.Type>.GetName(UnitData.Type.Warrior);
-						if (unit.unitData != null)
-						{
-							unitTypeName = EnumCache<UnitData.Type>.GetName(unit.unitData.type);
-						}
-						if (currentUnitTypeUI != UnitData.Type.None)
-						{
-							unitTypeName = EnumCache<UnitData.Type>.GetName(currentUnitTypeUI);
-						}
-						Sprite? sprite = ModManager.GetSprite($"{visualPart.DefaultSpriteName}_{unitTypeName}", style);
-						if (sprite == null && baseName == "head")
-						{
-							sprite = ModManager.GetSprite(baseName, style);
-						}
-
-						if (sprite != null)
-						{
-							visualPart.renderer.spriteRenderer.sprite = sprite;
-						}
-
-						Sprite? outlineSprite = ModManager.GetSprite($"{baseName}_{unitTypeName}_outline", style);
-						if (outlineSprite == null && baseName == "head")
-						{
-							outlineSprite = ModManager.GetSprite($"{baseName}_outline", style);
-						}
-
-						if (outlineSprite != null)
-						{
-							visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
-						}
-					}
-				}
+				UpdateVisualPart(visualPart, $"{visualPart.DefaultSpriteName}_{unitTypeName}", visualPart.DefaultSpriteName.Split('_')[0], style);
 			}
 		}
+
+		#endregion
+		#region Level
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(SkinVisualsTransientData))]
@@ -96,24 +98,12 @@ namespace PolyMod.Loaders
 		{
 			if (__instance.data != null && transientSkinData != null)
 			{
-				string style = transientSkinData.tileClimateSettings.skin != SkinType.Default
-				? EnumCache<SkinType>.GetName(transientSkinData.tileClimateSettings.skin)
-				: EnumCache<TribeData.Type>.GetName(transientSkinData.tileClimateSettings.tribe);
-
+				string style = GetStyle(transientSkinData.tileClimateSettings.tribe, transientSkinData.tileClimateSettings.skin);
 				string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
+
 				foreach (var visualPart in __instance._skinVis.visualParts)
 				{
-					Sprite? sprite = ModManager.GetSprite(name, style);
-					if (sprite != null)
-					{
-						visualPart.renderer.spriteRenderer.sprite = sprite;
-					}
-					Sprite? outlineSprite = ModManager.GetSprite($"{name}_outline", style);
-
-					if (outlineSprite != null)
-					{
-						visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
-					}
+					UpdateVisualPart(visualPart, name, "", style);
 				}
 			}
 		}
@@ -122,10 +112,7 @@ namespace PolyMod.Loaders
 		[HarmonyPatch(typeof(Building), nameof(Building.UpdateObject), typeof(SkinVisualsTransientData))]
 		private static void Building_UpdateObject(Building __instance, SkinVisualsTransientData transientSkinData)
 		{
-			string style = transientSkinData.foundingTribeSettings.skin != SkinType.Default
-				? EnumCache<SkinType>.GetName(transientSkinData.foundingTribeSettings.skin)
-				: EnumCache<TribeData.Type>
-								.GetName(transientSkinData.foundingTribeSettings.tribe);
+			string style = GetStyle(transientSkinData.foundingTribeSettings.tribe, transientSkinData.foundingTribeSettings.skin);
 			string name = EnumCache<ImprovementData.Type>.GetName(__instance.tile.data.improvement.type);
 			Sprite? sprite = ModManager.GetSprite(name, style, __instance.Level);
 			if (sprite != null)
@@ -147,10 +134,7 @@ namespace PolyMod.Loaders
 				{
 					name = "field";
 				}
-				Sprite? sprite = GetSpriteForTile(
-					tile,
-					name
-				);
+				Sprite? sprite = ModManager.GetSprite(name, GetStyle(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate), tile.data.Skin));
 				if (sprite != null)
 				{
 					__instance.spriteRenderer.Sprite = sprite;
@@ -174,10 +158,8 @@ namespace PolyMod.Loaders
 						Tile? tile = tileTransform.GetComponent<Tile>();
 						if (tile != null)
 						{
-							Sprite? sprite = GetSpriteForTile(
-								tile,
-								EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain)
-							);
+							Sprite? sprite = ModManager.GetSprite(EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain),
+								GetStyle(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate), tile.data.Skin));
 							if (sprite != null)
 							{
 								__instance.Sprite = sprite;
@@ -199,22 +181,8 @@ namespace PolyMod.Loaders
 			}
 		}
 
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.GetSpriteFromAtlas), typeof(SpriteAtlas), typeof(string))]
-		private static void SpriteAtlasManager_GetSpriteFromAtlas(ref Sprite __result, SpriteAtlas spriteAtlas, string sprite)
-		{
-			try
-			{
-				string[] names = sprite.Split('_');
-				Sprite? newSprite = ModManager.GetSprite(names[0], names[1]);
-				if (newSprite != null)
-				{
-					__result = newSprite;
-				}
-				return;
-			}
-			catch { }
-		}
+		#endregion
+		#region TribePreview
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UIWorldPreviewData), nameof(UIWorldPreviewData.TryGetData))]
@@ -264,6 +232,9 @@ namespace PolyMod.Loaders
 			}
 		}
 
+		#endregion
+		#region InteractionBar
+
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.AddImprovementButtons))]
 		private static void InteractionBar_AddImprovementButtons(InteractionBar __instance, Tile tile)
@@ -273,26 +244,18 @@ namespace PolyMod.Loaders
 			{
 				return;
 			}
-			GameState gameState = GameManager.GameState;
 			Il2CppSystem.Collections.Generic.List<CommandBase> buildableImprovementsCommands
-				= CommandUtils.GetBuildableImprovements(gameState, player, tile.Data, true);
+				= CommandUtils.GetBuildableImprovements(GameManager.GameState, player, tile.Data, true);
 			for (int key = 0; key < buildableImprovementsCommands.Count; ++key)
 			{
 				UIRoundButton uiroundButton = __instance.quickActions.buttons[key];
 				BuildCommand buildCommand = buildableImprovementsCommands[key].Cast<BuildCommand>();
-				gameState.GameLogicData.TryGetData(buildCommand.Type, out ImprovementData improvementData2);
-				UnitData.Type type = improvementData2.CreatesUnit();
-				if (type == UnitData.Type.None)
+				GameManager.GameState.GameLogicData.TryGetData(buildCommand.Type, out ImprovementData improvementData);
+				if (improvementData.CreatesUnit() == UnitData.Type.None)
 				{
 					if (uiroundButton.icon.sprite == null || uiroundButton.icon.sprite.name == "placeholder")
 					{
-						string improvementType = EnumCache<ImprovementData.Type>.GetName(improvementData2.type);
-						string style = EnumCache<TribeData.Type>.GetName(player.tribe);
-						if (player.skinType != SkinType.Default)
-						{
-							style = EnumCache<SkinType>.GetName(player.skinType);
-						}
-						Sprite? sprite = ModManager.GetSprite(improvementType, style);
+						Sprite? sprite = ModManager.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvementData.type), GetStyle(player.tribe, player.skinType));
 						if (sprite != null)
 						{
 							uiroundButton.SetSprite(sprite);
@@ -302,30 +265,8 @@ namespace PolyMod.Loaders
 			}
 		}
 
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(UIIconData), nameof(UIIconData.GetImage))]
-		private static void UIIconData_GetImage(ref Image __result, string id)
-		{
-			Sprite? sprite;
-			if (GameManager.LocalPlayer != null)
-			{
-				string style = GameManager.LocalPlayer.skinType != SkinType.Default
-					? EnumCache<SkinType>.GetName(GameManager.LocalPlayer.skinType)
-					: EnumCache<TribeData.Type>
-									.GetName(GameManager.LocalPlayer.tribe);
-				sprite = ModManager.GetSprite(id, style);
-			}
-			else
-			{
-				sprite = ModManager.GetSprite(id);
-			}
-			if (sprite != null)
-			{
-				__result.sprite = sprite;
-				__result.useSpriteMesh = true;
-				__result.SetNativeSize();
-			}
-		}
+		#endregion
+		#region UI
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetTile))]
@@ -357,12 +298,7 @@ namespace PolyMod.Loaders
 		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteAtlasManager))]
 		private static void UIUtils_GetImprovementSprite(ref Sprite __result, ImprovementData.Type improvement, TribeData.Type tribe, SkinType skin, SpriteAtlasManager atlasManager)
 		{
-			string style = EnumCache<TribeData.Type>.GetName(tribe);
-			if (skin != SkinType.Default)
-			{
-				style = EnumCache<SkinType>.GetName(skin);
-			}
-			Sprite? sprite = ModManager.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvement), style);
+			Sprite? sprite = ModManager.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvement), GetStyle(tribe, skin));
 			if (sprite != null)
 			{
 				__result = sprite;
@@ -384,12 +320,8 @@ namespace PolyMod.Loaders
 		{
 			TribeData.Type tribe = data.tileClimateSettings.tribe;
 			SkinType skin = data.tileClimateSettings.skin;
-			string style = EnumCache<TribeData.Type>.GetName(tribe);
-			if (skin != SkinType.Default)
-			{
-				style = EnumCache<SkinType>.GetName(skin);
-			}
-			Sprite? sprite = ModManager.GetSprite(EnumCache<ResourceData.Type>.GetName(resource), style);
+
+			Sprite? sprite = ModManager.GetSprite(EnumCache<ResourceData.Type>.GetName(resource), GetStyle(tribe, skin));
 			if (sprite != null)
 			{
 				__result = sprite;
@@ -400,16 +332,12 @@ namespace PolyMod.Loaders
 		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetTerrainSprite))]
 		private static void UIUtils_GetTerrainSprite(ref UIUtils.SkinnedTerrainSprites __result, SkinVisualsTransientData data, Polytopia.Data.TerrainData.Type terrain, SpriteAtlasManager atlasManager)
 		{
-			TribeData.Type tribe = data.tileClimateSettings.tribe;
-			SkinType skin = data.tileClimateSettings.skin;
-			string style = EnumCache<TribeData.Type>.GetName(tribe);
+			string style = GetStyle(data.tileClimateSettings.tribe, data.tileClimateSettings.skin);
+
 			Sprite? sprite;
 			Sprite? groundSprite = __result.groundTerrain;
 			Sprite? forestOrMountainSprite = __result.forestOrMountainTerrain;
-			if (skin != SkinType.Default)
-			{
-				style = EnumCache<SkinType>.GetName(skin);
-			}
+
 			if (terrain == Polytopia.Data.TerrainData.Type.Mountain || terrain == Polytopia.Data.TerrainData.Type.Forest)
 			{
 				sprite = ModManager.GetSprite("field", style);
@@ -435,6 +363,9 @@ namespace PolyMod.Loaders
 			__result.forestOrMountainTerrain = forestOrMountainSprite;
 		}
 
+		#endregion
+		#region Houses
+
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(CityRenderer), nameof(CityRenderer.GetHouse))]
 		private static void CityRenderer_GetHouse(ref PolytopiaSpriteRenderer __result, CityRenderer __instance, TribeData.Type tribe, int type, SkinType skinType)
@@ -443,12 +374,7 @@ namespace PolyMod.Loaders
 
 			if (type != __instance.HOUSE_WORKSHOP && type != __instance.HOUSE_PARK)
 			{
-				string style = EnumCache<TribeData.Type>.GetName(tribe);
-				if (skinType != SkinType.Default)
-				{
-					style = EnumCache<SkinType>.GetName(skinType);
-				}
-				Sprite? sprite = ModManager.GetSprite("house", style, type);
+				Sprite? sprite = ModManager.GetSprite("house", GetStyle(tribe, skinType), type);
 				if (sprite != null)
 				{
 					polytopiaSpriteRenderer.Sprite = sprite;
@@ -462,8 +388,7 @@ namespace PolyMod.Loaders
 		[HarmonyPatch(typeof(UICityRenderer), nameof(UICityRenderer.GetResource))]
 		private static void UICityRenderer_GetResource(ref GameObject __result, string baseName, Polytopia.Data.TribeData.Type tribe, Polytopia.Data.SkinType skin)
 		{
-			GameObject resourceObject = __result;
-			Image imageComponent = resourceObject.GetComponent<Image>();
+			Image imageComponent = __result.GetComponent<Image>();
 			string[] tokens = baseName.Split('_');
 			if (tokens.Length > 0)
 			{
@@ -475,26 +400,38 @@ namespace PolyMod.Loaders
 						_ = int.TryParse(tokens[1], out level);
 					}
 
-					string style;
-					if (skin != SkinType.Default)
-					{
-						style = EnumCache<SkinType>.GetName(skin);
-					}
-					else
-					{
-						style = EnumCache<TribeData.Type>.GetName(tribe);
-					}
-
-					Sprite? sprite = ModManager.GetSprite("house", style, level);
+					Sprite? sprite = ModManager.GetSprite("house", GetStyle(tribe, skin), level);
 					if (sprite == null)
 					{
 						return;
 					}
 					imageComponent.sprite = sprite;
 					imageComponent.SetNativeSize();
-
-					__result = resourceObject;
 				}
+			}
+		}
+
+		#endregion
+		#region Icons
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(UIIconData), nameof(UIIconData.GetImage))]
+		private static void UIIconData_GetImage(ref Image __result, string id)
+		{
+			Sprite? sprite;
+			if (GameManager.LocalPlayer != null)
+			{
+				sprite = ModManager.GetSprite(id, GetStyle(GameManager.LocalPlayer.tribe, GameManager.LocalPlayer.skinType));
+			}
+			else
+			{
+				sprite = ModManager.GetSprite(id);
+			}
+			if (sprite != null)
+			{
+				__result.sprite = sprite;
+				__result.useSpriteMesh = true;
+				__result.SetNativeSize();
 			}
 		}
 
@@ -518,12 +455,7 @@ namespace PolyMod.Loaders
 				}
 			}
 
-			if (skinType != SkinType.Default)
-			{
-				style = EnumCache<SkinType>.GetName(skinType);
-			}
-
-			Sprite? sprite = ModManager.GetSprite("head", style);
+			Sprite? sprite = ModManager.GetSprite("head", GetStyle(type, skinType));
 
 			if (sprite != null)
 			{
@@ -542,10 +474,7 @@ namespace PolyMod.Loaders
 		{
 			if (face == SpriteData.SpecialFaceIcon.tribe)
 			{
-				string style = skin != SkinType.Default
-					? EnumCache<SkinType>.GetName(skin)
-					: EnumCache<TribeData.Type>.GetName(tribe);
-				Sprite? sprite = ModManager.GetSprite("head", style);
+				Sprite? sprite = ModManager.GetSprite("head", GetStyle(tribe, skin));
 				if (sprite != null)
 				{
 					__instance.HeadImage.sprite = sprite;
@@ -555,15 +484,27 @@ namespace PolyMod.Loaders
 			}
 		}
 
-		private static Sprite? GetSpriteForTile(Tile tile, string name, int level = 0)
-		{
-			string style = EnumCache<TribeData.Type>.GetName(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate));
-			if (tile.data.Skin != SkinType.Default)
-			{
-				style = EnumCache<SkinType>.GetName(tile.data.Skin);
-			}
+		#endregion
 
-			return ModManager.GetSprite(name, style, level);
+		private static void UpdateVisualPart(SkinVisualsReference.VisualPart visualPart, string primaryKey, string fallbackKey, string style)
+		{
+			Sprite? sprite = ModManager.GetSprite(primaryKey, style) ?? ModManager.GetSprite(fallbackKey, style);
+
+			if(sprite != null && visualPart.renderer.spriteRenderer != null)
+			{
+				visualPart.renderer.spriteRenderer.sprite = sprite;
+			}
+			Sprite? outlineSprite = ModManager.GetSprite($"{primaryKey}_outline", style) ?? ModManager.GetSprite($"{fallbackKey}_outline", style);
+
+			if(outlineSprite != null)
+			{
+				visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
+			}
+		}
+
+		public static string GetStyle(TribeData.Type tribe, SkinType skin)
+		{
+			return skin != SkinType.Default ? EnumCache<SkinType>.GetName(skin) : EnumCache<TribeData.Type>.GetName(tribe);
 		}
 
 		public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
