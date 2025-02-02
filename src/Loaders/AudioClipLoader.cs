@@ -1,8 +1,9 @@
 using HarmonyLib;
+using PolyMod.Managers;
 using Polytopia.Data;
 using UnityEngine;
 
-namespace PolyMod
+namespace PolyMod.Loaders
 {
     public static class AudioClipLoader
     {
@@ -10,10 +11,10 @@ namespace PolyMod
         [HarmonyPatch(typeof(MusicData), nameof(MusicData.GetNatureAudioClip))]
         private static bool MusicData_GetNatureAudioClip(ref AudioClip __result, TribeData.Type type, SkinType skinType)
         {
-            AudioClip? audioClip = ModLoader.GetAudioClip("nature", EnumCache<TribeData.Type>.GetName(type));
+            AudioClip? audioClip = ModManager.GetAudioClip("nature", EnumCache<TribeData.Type>.GetName(type));
             if (skinType != SkinType.Default)
             {
-                audioClip = ModLoader.GetAudioClip("nature", EnumCache<SkinType>.GetName(skinType));
+                audioClip = ModManager.GetAudioClip("nature", EnumCache<SkinType>.GetName(skinType));
             }
             if (audioClip != null)
             {
@@ -27,10 +28,10 @@ namespace PolyMod
         [HarmonyPatch(typeof(MusicData), nameof(MusicData.GetMusicAudioClip))]
         private static bool MusicData_GetMusicAudioClip(ref AudioClip __result, TribeData.Type type, SkinType skinType)
         {
-            AudioClip? audioClip = ModLoader.GetAudioClip("music", EnumCache<TribeData.Type>.GetName(type));
+            AudioClip? audioClip = ModManager.GetAudioClip("music", EnumCache<TribeData.Type>.GetName(type));
             if (skinType != SkinType.Default)
             {
-                audioClip = ModLoader.GetAudioClip("music", EnumCache<SkinType>.GetName(skinType));
+                audioClip = ModManager.GetAudioClip("music", EnumCache<SkinType>.GetName(skinType));
             }
             if (audioClip != null)
             {

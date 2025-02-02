@@ -2,12 +2,11 @@
 using BepInEx.Unity.IL2CPP.Logging;
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
-using I2.Loc;
-using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppSystem.Linq;
 using LibCpp2IL;
 using Newtonsoft.Json.Linq;
 using PolyMod.Json;
+using PolyMod.Loaders;
 using Polytopia.Data;
 using System.Data;
 using System.Diagnostics;
@@ -19,11 +18,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
-namespace PolyMod
+namespace PolyMod.Managers
 {
-	public static class ModLoader
+	public static class ModManager
 	{
 		public class Mod
 		{
@@ -87,9 +85,6 @@ namespace PolyMod
 		public static Dictionary<string, DataSprite> spriteDatas = new();
 		private static readonly Stopwatch stopwatch = new();
 		private static int maxTechTier = TechItem.techTierFirebaseId.Count - 1;
-		private static string signature = string.Empty;
-		private static string looseSignature = string.Empty;
-		private static bool sawIncompatibilityWarning;
 		private static List<TribeData.Type> customTribes = new();
 		private static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 		private static bool shouldInitializeSprites = true;
@@ -160,105 +155,10 @@ namespace PolyMod
 			return true;
 		}
 
-		[HarmonyPrefix]
-		[HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.OnMainButtonClicked))]
-		private static bool GameInfoPopup_OnMainButtonClicked(GameInfoPopup __instance, int id, BaseEventData eventData)
-		{
-			return CheckSignatures(__instance.OnMainButtonClicked, id, eventData, __instance.gameId);
-		}
-
-		[HarmonyPrefix]
-		[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnResumeButtonClick))]
-		private static bool StartScreen_OnResumeButtonClick(StartScreen __instance, int id, BaseEventData eventData)
-		{
-			return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, ClientBase.GetSinglePlayerSessions()[0]);
-		}
-
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.DeletePaPGame))]
-		private static void ClientBase_DeletePassAndPlayGame(GameInfoPopup __instance)
-		{
-			File.Delete(Path.Combine(Application.persistentDataPath, $"{__instance.gameId}.signatures"));
-		}
-
-		[HarmonyPrefix]
-		[HarmonyPatch(typeof(ClientBase), nameof(ClientBase.DeleteSinglePlayerGames))]
-		private static void ClientBase_DeleteSinglePlayerGames()
-		{
-			foreach (var gameId in ClientBase.GetSinglePlayerSessions())
-			{
-				File.Delete(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
-			}
-		}
-
-		[HarmonyPrefix]
-		[HarmonyPatch(typeof(GameManager), nameof(GameManager.MatchEnded))]
-		private static void GameManager_MatchEnded(bool localPlayerIsWinner, ScoreDetails scoreDetails, byte winnerId)
-		{
-			File.Delete(Path.Combine(Application.persistentDataPath, $"{GameManager.Client.gameId}.signatures"));
-		} 
-
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(ClientBase), nameof(ClientBase.CreateSession), typeof(GameSettings), typeof(Il2CppSystem.Guid))]
-		private static void ClientBase_CreateSession(GameSettings settings, Il2CppSystem.Guid gameId)
-		{
-			File.WriteAllLinesAsync(
-				Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"),
-				new string[] { looseSignature, signature }
-			);
-		}
-
-		private static bool CheckSignatures(Action<int, BaseEventData> action, int id, BaseEventData eventData, Il2CppSystem.Guid gameId)
-		{
-			if (sawIncompatibilityWarning)
-			{
-				sawIncompatibilityWarning = false;
-				return true;
-			}
-
-			string[] signatures = { string.Empty, string.Empty };
-			try
-			{
-				signatures = File.ReadAllLines(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
-			}
-			catch { }
-			if (signatures[0] == string.Empty && signatures[1] == string.Empty) return true;
-			if (Plugin.config.debug) return true;
-			if (looseSignature != signatures[0])
-			{
-				PopupManager.GetBasicPopup(new(
-					Localization.Get("polymod.signature.mismatch"),
-					Localization.Get("polymod.signature.incompatible"),
-					new(new PopupBase.PopupButtonData[] {
-						new("OK")
-					}))
-				).Show();
-				return false;
-			}
-			if (signature != signatures[1])
-			{
-				PopupManager.GetBasicPopup(new(
-					Localization.Get("polymod.signature.mismatch"),
-					Localization.Get("polymod.signature.maybe.incompatible"),
-					new(new PopupBase.PopupButtonData[] {
-						new(
-							"OK",
-							callback: (UIButtonBase.ButtonAction)((int buttonId, BaseEventData baseEventData) => {
-								sawIncompatibilityWarning = true;
-								action(id, eventData);
-							})
-						)
-					}))
-				).Show();
-				return false;
-			}
-			return true;
-		}
-
 		internal static void Init()
 		{
 			stopwatch.Start();
-			Harmony.CreateAndPatchAll(typeof(ModLoader));
+			Harmony.CreateAndPatchAll(typeof(ModManager));
 
 			Directory.CreateDirectory(Plugin.MODS_PATH);
 			string[] modContainers = Directory.GetDirectories(Plugin.MODS_PATH)
@@ -435,8 +335,8 @@ namespace PolyMod
 					}
 				}
 			}
-			looseSignature = Plugin.Hash(looseSignatureString);
-			signature = Plugin.Hash(signatureString);
+			CompatibilityManager.looseSignature = Utility.Hash(looseSignatureString);
+			CompatibilityManager.signature = Utility.Hash(signatureString);
 
 			stopwatch.Stop();
 		}
@@ -453,9 +353,11 @@ namespace PolyMod
 				Array.Empty<Mod.Dependency>()
 			);
 			mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
-			LocalizationPatch(JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
-				Plugin.GetResource("localization.json")
-			)!);
+			LocalizationLoader.BuildAndLoadLocalization(
+				JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
+					Plugin.GetResource("localization.json")
+				)!
+			);
 
 			foreach (var (id, mod) in mods)
 			{
@@ -479,7 +381,7 @@ namespace PolyMod
 					{
 						try
 						{
-							LocalizationPatch(JsonSerializer
+							LocalizationLoader.BuildAndLoadLocalization(JsonSerializer
 								.Deserialize<Dictionary<string, Dictionary<string, string>>>(file.bytes)!);
 							Plugin.logger.LogInfo($"Registried localization from {id} mod");
 						}
@@ -575,8 +477,8 @@ namespace PolyMod
 
 				if (token["idx"] != null && (int)token["idx"] == -1)
 				{
-					string id = GetJTokenName(token);
-					string dataType = GetJTokenName(token, 2);
+					string id = Utility.GetJTokenName(token);
+					string dataType = Utility.GetJTokenName(token, 2);
 					token["idx"] = autoidx;
 					switch (dataType)
 					{
@@ -661,26 +563,10 @@ namespace PolyMod
 				if (token["preview"] != null)
 				{
 					PreviewTile[] preview = JsonSerializer.Deserialize<PreviewTile[]>(token["preview"].ToString())!;
-					tribePreviews[GetJTokenName(token)] = preview;
+					tribePreviews[Utility.GetJTokenName(token)] = preview;
 				}
 			}
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
-		}
-
-		private static void LocalizationPatch(Dictionary<string, Dictionary<string, string>> localization)
-		{
-			foreach (var (key, data) in localization)
-			{
-				string name = key.Replace("_", ".");
-				if (name.StartsWith("tribeskins")) name = "TribeSkins/" + name;
-				TermData term = LocalizationManager.Sources[0].AddTerm(name);
-				List<string> strings = new();
-				foreach (string language in LocalizationManager.GetAllLanguages(false))
-				{
-					strings.Add(data.GetOrDefault(language, data.GetOrDefault("English", term.Term))!);
-				}
-				term.Languages = new Il2CppStringArray(strings.ToArray());
-			}
 		}
 
 		public static Sprite? GetSprite(string name, string style = "", int level = 0)
@@ -703,11 +589,6 @@ namespace PolyMod
 			audioSource = audioClips.GetOrDefault($"{name}_{style}", audioSource);
 			if (audioSource == null) return null;
 			return audioSource.clip;
-		}
-
-		public static string GetJTokenName(JToken token, int n = 1)
-		{
-			return token.Path.Split('.')[^n];
 		}
 	}
 }
