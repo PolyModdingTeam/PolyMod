@@ -87,7 +87,7 @@ namespace PolyMod.Managers
 		private static int maxTechTier = TechItem.techTierFirebaseId.Count - 1;
 		private static List<TribeData.Type> customTribes = new();
 		private static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
-		private static bool shouldInitializeSprites = true;
+		private static bool fullyInitialized;
 
 
 		[HarmonyPrefix]
@@ -343,21 +343,7 @@ namespace PolyMod.Managers
 
 		internal static void Load(JObject gameLogicdata)
 		{
-			stopwatch.Start();
-			GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
-			Mod.Manifest polytopia = new(
-				"polytopia",
-				"The Battle of Polytopia",
-				new(VersionManager.SemanticVersion.ToString()),
-				new string[] { "Midjiwan AB" },
-				Array.Empty<Mod.Dependency>()
-			);
-			mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
-			LocalizationLoader.BuildAndLoadLocalization(
-				JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
-					Plugin.GetResource("localization.json")
-				)!
-			);
+			if (!fullyInitialized) stopwatch.Start();
 
 			foreach (var (id, mod) in mods)
 			{
@@ -377,7 +363,7 @@ namespace PolyMod.Managers
 							mod.status = Mod.Status.Error;
 						}
 					}
-					if (Path.GetFileName(file.name) == "localization.json")
+					if (Path.GetFileName(file.name) == "localization.json" && !fullyInitialized)
 					{
 						try
 						{
@@ -390,7 +376,7 @@ namespace PolyMod.Managers
 							Plugin.logger.LogError($"Error on loading locatization from {id} mod: {e.Message}");
 						}
 					}
-					if (Path.GetExtension(file.name) == ".png" && shouldInitializeSprites)
+					if (Path.GetExtension(file.name) == ".png" && !fullyInitialized)
 					{
 						string name = Path.GetFileNameWithoutExtension(file.name);
 						Vector2 pivot = name.Split("_")[0] switch
@@ -407,6 +393,7 @@ namespace PolyMod.Managers
 							pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
 						}
 						Sprite sprite = SpritesLoader.BuildSprite(file.bytes, pivot, pixelsPerUnit);
+						GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
 						GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
 						sprites.Add(name, sprite);
 					}
@@ -419,15 +406,29 @@ namespace PolyMod.Managers
 					}
 				}
 			}
-
+			
+			if (fullyInitialized) return;
 			TechItem.techTierFirebaseId.Clear();
 			for (int i = 0; i <= maxTechTier; i++)
 			{
 				TechItem.techTierFirebaseId.Add($"tech_research_{i}");
 			}
-			shouldInitializeSprites = false;
+			Mod.Manifest polytopia = new(
+				"polytopia",
+				"The Battle of Polytopia",
+				new(VersionManager.SemanticVersion.ToString()),
+				new string[] { "Midjiwan AB" },
+				Array.Empty<Mod.Dependency>()
+			);
+			mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
+			LocalizationLoader.BuildAndLoadLocalization(
+				JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
+					Plugin.GetResource("localization.json")
+				)!
+			);
 			stopwatch.Stop();
 			Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
+			fullyInitialized = true;
 		}
 
 		private static void GameLogicDataPatch(JObject gld, JObject patch)
