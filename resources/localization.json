@@ -20,8 +20,8 @@
 		"Elyrion": "Δi^#ȱrΔ"
 	},
 	"polymod_hub_footer": {
-		"English": "Join our discord! Feel free to discuss mods, create them and ask for help!",
-		"Russian": "Присоединяйтесь к нашему дискорду! Не стесняйтесь обсуждать моды, создавать их и просить о помощи!",
+		"English": "Join our discord! Feel free to discuss mods, create them and ask for help!\n\n{0}Special thanks{1}\nVaM for icon\nBrober for Polish translation\nCitillan for Spanish translation\nWhail for ∑∫ỹriȱŋ translation\nhflyer for Turkish translatio\nMRB and hflyer for help with French translation",
+		"Russian": "Присоединяйтесь к нашему дискорду! Не стесняйтесь обсуждать моды, создавать их и просить о помощи!\n\n{0}Особая благодарность{1}\nVaM за иконку\nBrober за перевод на польский язык\nCitillan за перевод на испанский\nWhail за перевод на ∑∫ỹriȱŋ\nhflyer за перевод на турецкий язык\nMRB и hflyer за помощь с переводом на французский язык",
 		"Turkish": "Discord sunucumuza katıl! Orada modlar oluşturabilir, tartışabilir ve yardım isteyebilirsin!",
 		"Spanish (Mexico)": "Unete a nuestro discord! Aqui se puede discutir sobre la modificacion del juego, guias para crear su propio, preguntar a los creadores, y mas!",
 		"French (France)": "Rejoignez notre discord! N'hésitez pas à discuter des mods, à en créer et à demander de l'aide!",
@@ -30,14 +30,14 @@
 		"Elyrion": "§ii∫ Δi^#ȱrΔ! Δi^#₺^^ mȱΔ#, ȱrrȱ ỹ a^š ỹȱπ!"
 	},
 	"polymod_hub_header": {
-		"English": "Welcome!\nHere you can see the list of all currently loaded mods:",
-		"Russian": "Добро пожаловать!\nЗдесь вы можете увидеть список всех загруженных на данный момент модов:",
-		"Turkish": "Hoş geldin!\nBurada yüklenmiş modların listesini bulabilirsin:",
-		"Spanish (Mexico)": "Bienvenidos!\nAqui puedes ver un compilacion actualicado de todo los mods cargados:",
-		"French (France)": "Bienvenue!\nIci vous pouvez voir tous les mods chargés:",
-		"Polish": "Witaj!\nTutaj możesz zobaczyć listę wszystkich aktualnie załadowanych modów:",
-		"Portuguese (Brazil)": "Bem vindo!\nAqui você pode ver a lista dos mods carregados:",
-		"Elyrion": "þr∑∑Ŧ!\niii ŋ∑ƒ ƒ§§π mȱΔ#:"
+		"English": "{0}Welcome!{1}\nHere you can see the list of all currently loaded mods:",
+		"Russian": "{0}Добро пожаловать!{1}\nЗдесь вы можете увидеть список всех загруженных на данный момент модов:",
+		"Turkish": "{0}Hoş geldin!{1}\nBurada yüklenmiş modların listesini bulabilirsin:",
+		"Spanish (Mexico)": "{0}Bienvenidos!{1}\nAqui puedes ver un compilacion actualicado de todo los mods cargados:",
+		"French (France)": "{0}Bienvenue!{1}\nIci vous pouvez voir tous les mods chargés:",
+		"Polish": "{0}Witaj!{1}\nTutaj możesz zobaczyć listę wszystkich aktualnie załadowanych modów:",
+		"Portuguese (Brazil)": "{0}Bem vindo!{1}\nAqui você pode ver a lista dos mods carregados:",
+		"Elyrion": "{0}þr∑∑Ŧ!{1}\niii ŋ∑ƒ ƒ§§π mȱΔ#:"
 	},
 	"polymod_hub_mod": {
 		"English": "Name: {0}\nStatus: {1}\nAuthors: {2}\nVersion: {3}",

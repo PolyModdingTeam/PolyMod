@@ -10,6 +10,9 @@ namespace PolyMod.Managers
 {
     internal static class VisualManager
     {
+        private const string HEADER_PREFIX = "<align=\"center\"><size=150%><b>";
+        private const string HEADER_POSTFIX = "</b></size><align=\"left\">";
+
         [HarmonyPrefix]
         [HarmonyPatch(typeof(SplashController), nameof(SplashController.LoadAndPlayClip))]
         private static bool SplashController_LoadAndPlayClip(SplashController __instance)
@@ -63,7 +66,10 @@ namespace PolyMod.Managers
             {
                 BasicPopup popup = PopupManager.GetBasicPopup();
                 popup.Header = Localization.Get("polymod.hub");
-                popup.Description = Localization.Get("polymod.hub.header") + "\n\n";
+                popup.Description = Localization.Get("polymod.hub.header", new Il2CppSystem.Object[] {
+                    HEADER_PREFIX,
+                    HEADER_POSTFIX
+                }) + "\n\n";
                 foreach (var mod in ModManager.mods.Values)
                 {
                     popup.Description += Localization.Get("polymod.hub.mod", new Il2CppSystem.Object[] {
@@ -75,7 +81,10 @@ namespace PolyMod.Managers
                     });
                     popup.Description += "\n\n";
                 }
-                popup.Description += Localization.Get("polymod.hub.footer");
+                popup.Description += Localization.Get("polymod.hub.footer", new Il2CppSystem.Object[] {
+                    HEADER_PREFIX,
+                    HEADER_POSTFIX
+                });
                 List<PopupBase.PopupButtonData> popupButtons = new()
                 {
                     new("buttons.back"),
