@@ -94,7 +94,11 @@ namespace PolyMod.Managers
 		[HarmonyPatch(typeof(GameLogicData), nameof(GameLogicData.AddGameLogicPlaceholders))]
 		private static void GameLogicData_Parse(JObject rootObject)
 		{
-			Load(rootObject);
+			if (!fullyInitialized)
+			{
+				Load(rootObject);
+				fullyInitialized = true;
+			}
 		}
 
 		[HarmonyPostfix]
@@ -343,7 +347,7 @@ namespace PolyMod.Managers
 
 		internal static void Load(JObject gameLogicdata)
 		{
-			if (!fullyInitialized) stopwatch.Start();
+			stopwatch.Start();
 
 			foreach (var (id, mod) in mods)
 			{
@@ -363,7 +367,7 @@ namespace PolyMod.Managers
 							mod.status = Mod.Status.Error;
 						}
 					}
-					if (Path.GetFileName(file.name) == "localization.json" && !fullyInitialized)
+					if (Path.GetFileName(file.name) == "localization.json")
 					{
 						try
 						{
@@ -376,7 +380,7 @@ namespace PolyMod.Managers
 							Plugin.logger.LogError($"Error on loading locatization from {id} mod: {e.Message}");
 						}
 					}
-					if (Path.GetExtension(file.name) == ".png" && !fullyInitialized)
+					if (Path.GetExtension(file.name) == ".png")
 					{
 						string name = Path.GetFileNameWithoutExtension(file.name);
 						Vector2 pivot = name.Split("_")[0] switch
@@ -407,7 +411,6 @@ namespace PolyMod.Managers
 				}
 			}
 			
-			if (fullyInitialized) return;
 			TechItem.techTierFirebaseId.Clear();
 			for (int i = 0; i <= maxTechTier; i++)
 			{
@@ -428,7 +431,6 @@ namespace PolyMod.Managers
 			);
 			stopwatch.Stop();
 			Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
-			fullyInitialized = true;
 		}
 
 		private static void GameLogicDataPatch(JObject gld, JObject patch)
