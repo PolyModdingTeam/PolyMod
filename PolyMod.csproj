@@ -21,4 +21,8 @@
     <EmbeddedResource Include="resources\*.*" />
   </ItemGroup>
 
+  <Target Name="AB" AfterTargets="AfterBuild">
+      <Exec Command="xcopy /y /s $(TargetPath) &quot;E:\dev\PolytopiaV109\BepInEx\plugins&quot;&#xD;&#xA;start E:\dev\PolytopiaV109\Polytopia.exe" />
+  </Target>
+
 </Project>
