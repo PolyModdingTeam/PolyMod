@@ -49,6 +49,14 @@
 		"Portuguese (Brazil)": "Nome: {0}\nStatus: {1}\nAutores: {2}\nVersão: {3}",
 		"Elyrion": "r₼: {0}\n^ŦaŦ₺^: {1}\na₺Ŧţȱr: {2}\nƒƒƒƒƒƒƒ: {3}"
 	},
+	"polymod_hub_dump": {
+		"English": "DUMP DATA",
+		"Russian": "ЗАДАМПИТЬ ДАННЫЕ"
+	},
+	"polymod_hub_dumped": {
+		"English": "Dump completed successfully!",
+		"Russian": "Дамп завершен успешно!"
+	},
 	"polymod_hub_mod_status_error": {
 		"English": "had loading error",
 		"Russian": "произошла ошибка загрузки",

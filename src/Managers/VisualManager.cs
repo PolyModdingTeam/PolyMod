@@ -2,6 +2,7 @@ using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using PolyMod.Loaders;
 using TMPro;
+using Unity.Services.Core.Internal;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -12,6 +13,8 @@ namespace PolyMod.Managers
     {
         private const string HEADER_PREFIX = "<align=\"center\"><size=150%><b>";
         private const string HEADER_POSTFIX = "</b></size><align=\"left\">";
+
+        private static Dictionary<int, int> basicPopupWidths = new();
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(SplashController), nameof(SplashController.LoadAndPlayClip))]
@@ -24,6 +27,37 @@ namespace PolyMod.Managers
             __instance.videoPlayer.url = path;
             __instance.videoPlayer.Play();
             return false;
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.Update))]
+        private static void BasicPopup_Update(BasicPopup __instance)
+        {
+            int id = __instance.GetInstanceID();
+            if (basicPopupWidths.ContainsKey(id))
+                __instance.rectTransform.SetWidth(basicPopupWidths[id]);
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
+        private static void PopupBase_Hide(PopupBase __instance)
+        {
+            basicPopupWidths.Remove(__instance.GetInstanceID());
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(PopupButtonContainer), nameof(PopupButtonContainer.SetButtonData))]
+        private static void PopupButtonContainer_SetButtonData(PopupButtonContainer __instance)
+        {
+            int num = __instance.buttons.Length;
+            for (int i = 0; i < num; i++)
+            {
+                UITextButton uitextButton = __instance.buttons[i];
+                Vector2 vector = new((num == 1) ? 0.5f : (i / (num - 1.0f)), 0.5f);
+                uitextButton.rectTransform.anchorMin = vector;
+                uitextButton.rectTransform.anchorMax = vector;
+                uitextButton.rectTransform.pivot = vector;
+            }
         }
 
         [HarmonyPrefix]
@@ -90,14 +124,40 @@ namespace PolyMod.Managers
                     new("buttons.back"),
                     new(
                         "polymod.hub.discord",
-                        PopupBase.PopupButtonData.States.None,
-                        (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
+                        callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
                             NativeHelpers.OpenURL("https://discord.gg/eWPdhWtfVy", false))
                     )
                 };
+                if (Plugin.config.debug)
+                    popupButtons.Add(new(
+                        "polymod.hub.dump",
+                        callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) => {
+                            //TODO: fix dump
+                            Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
+                            foreach (int version in PolytopiaDataManager.gameLogicDatas.Keys)
+                            {
+                                File.WriteAllTextAsync(
+                                    Path.Combine(Plugin.DUMPED_DATA_PATH, $"gameLogicData{version}.json"),
+                                    PolytopiaDataManager.provider.LoadGameLogicData(version)
+                                );
+                            }
+                            File.WriteAllTextAsync(
+                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"avatarData.json"),
+                                PolytopiaDataManager.provider.LoadAvatarData(1337)
+                            );
+                            NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
+                        }),
+                        closesPopup: false
+                    ));
                 popup.buttonData = popupButtons.ToArray();
-                popup.Show();
+                popup.ShowSetWidth(1000);
             }
+        }
+
+        internal static void ShowSetWidth(this BasicPopup self, int width)
+        {
+            basicPopupWidths.Add(self.GetInstanceID(), width);
+            self.Show();
         }
 
         internal static void Init()

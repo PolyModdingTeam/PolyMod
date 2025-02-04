@@ -20,6 +20,7 @@ namespace PolyMod
 		internal const int AUTOIDX_STARTS_FROM = 1000;
 		public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
 		public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
+		public static readonly string DUMPED_DATA_PATH = Path.Combine(BASE_PATH, "DumpedData");
 		internal static readonly string CONFIG_PATH = Path.Combine(BASE_PATH, "PolyMod.json");
 		internal static readonly Il2CppSystem.Version POLYTOPIA_VERSION = new(0, 0, 0);
 

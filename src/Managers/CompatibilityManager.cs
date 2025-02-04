@@ -46,7 +46,7 @@ namespace PolyMod.Managers
                     new(new PopupBase.PopupButtonData[] {
                         new(
                             "OK",
-                            callback: (UIButtonBase.ButtonAction)((int buttonId, BaseEventData baseEventData) => {
+                            callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) => {
                                 sawSignatureWarning = true;
                                 action(id, eventData);
                             })
