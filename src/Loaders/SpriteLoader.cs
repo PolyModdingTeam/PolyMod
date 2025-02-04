@@ -85,7 +85,7 @@ namespace PolyMod.Loaders
 
 			foreach (var visualPart in skinVisuals.visualParts)
 			{
-				UpdateVisualPart(visualPart, $"{visualPart.DefaultSpriteName}_{unitTypeName}", visualPart.DefaultSpriteName.Split('_')[0], style);
+				UpdateVisualPart(visualPart, $"{visualPart.visualPart.name}_{unitTypeName}", style);
 			}
 		}
 
@@ -103,7 +103,7 @@ namespace PolyMod.Loaders
 
 				foreach (var visualPart in __instance._skinVis.visualParts)
 				{
-					UpdateVisualPart(visualPart, name, "", style);
+					UpdateVisualPart(visualPart, name, style);
 				}
 			}
 		}
@@ -486,17 +486,17 @@ namespace PolyMod.Loaders
 
 		#endregion
 
-		private static void UpdateVisualPart(SkinVisualsReference.VisualPart visualPart, string primaryKey, string fallbackKey, string style)
+		private static void UpdateVisualPart(SkinVisualsReference.VisualPart visualPart, string name, string style)
 		{
-			Sprite? sprite = ModManager.GetSprite(primaryKey, style) ?? ModManager.GetSprite(fallbackKey, style);
+			Sprite? sprite = ModManager.GetSprite(name, style) ?? ModManager.GetSprite(visualPart.visualPart.name, style);
 
 			if(sprite != null && visualPart.renderer.spriteRenderer != null)
 			{
 				visualPart.renderer.spriteRenderer.sprite = sprite;
 			}
-			Sprite? outlineSprite = ModManager.GetSprite($"{primaryKey}_outline", style) ?? ModManager.GetSprite($"{fallbackKey}_outline", style);
+			Sprite? outlineSprite = ModManager.GetSprite($"{name}_outline", style) ?? ModManager.GetSprite($"{visualPart.visualPart.name}_outline", style);
 
-			if(outlineSprite != null)
+			if(outlineSprite != null && visualPart.outlineRenderer.spriteRenderer != null)
 			{
 				visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
 			}
