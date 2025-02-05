@@ -107,6 +107,14 @@ namespace PolyMod.Managers
 			}
 		}
 
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlockedInternal))]
+		private static bool PurchaseManager_IsSkinUnlockedInternal(ref bool __result) //TODO: investigate
+		{
+			__result = true;
+			return false;
+		}
+
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsTribeUnlocked))]
 		private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeData.Type type)

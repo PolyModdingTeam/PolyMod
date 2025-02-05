@@ -22,7 +22,7 @@ namespace PolyMod
 		public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
 		public static readonly string DUMPED_DATA_PATH = Path.Combine(BASE_PATH, "DumpedData");
 		internal static readonly string CONFIG_PATH = Path.Combine(BASE_PATH, "PolyMod.json");
-		internal static readonly Il2CppSystem.Version POLYTOPIA_VERSION = new(0, 0, 0);
+		internal static readonly Il2CppSystem.Version POLYTOPIA_VERSION = new(2, 12, 0);
 
 #pragma warning disable CS8618
 		internal static PolyConfig config;
