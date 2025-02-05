@@ -62,7 +62,7 @@ namespace PolyMod.Managers
         [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
         private static void StartScreen_Start()
         {
-            if (!Plugin.DEV && !sawIncompatibilityWarning && !VersionManager.SemanticVersion.EqualNoRevision(Plugin.POLYTOPIA_VERSION))
+            if (!sawIncompatibilityWarning && !VersionManager.SemanticVersion.EqualNoRevision(Plugin.POLYTOPIA_VERSION))
             {
                 PopupManager.GetBasicPopup(new(
                     Localization.Get("polymod.version.mismatch"),
