@@ -2,7 +2,6 @@ using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using PolyMod.Loaders;
 using TMPro;
-using Unity.Services.Core.Internal;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -131,16 +130,13 @@ namespace PolyMod.Managers
                 if (Plugin.config.debug)
                     popupButtons.Add(new(
                         "polymod.hub.dump",
-                        callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) => {
-                            //TODO: fix dump
+                        callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
+                        {
                             Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
-                            foreach (int version in PolytopiaDataManager.gameLogicDatas.Keys)
-                            {
-                                File.WriteAllTextAsync(
-                                    Path.Combine(Plugin.DUMPED_DATA_PATH, $"gameLogicData{version}.json"),
-                                    PolytopiaDataManager.provider.LoadGameLogicData(version)
-                                );
-                            }
+                            File.WriteAllTextAsync(
+                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"gameLogicData.json"),
+                                PolytopiaDataManager.provider.LoadGameLogicData(VersionManager.GameLogicDataVersion)
+                            );
                             File.WriteAllTextAsync(
                                 Path.Combine(Plugin.DUMPED_DATA_PATH, $"avatarData.json"),
                                 PolytopiaDataManager.provider.LoadAvatarData(1337)
