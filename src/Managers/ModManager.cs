@@ -88,15 +88,21 @@ namespace PolyMod.Managers
 		private static List<TribeData.Type> customTribes = new();
 		private static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 		private static bool fullyInitialized;
+		private static Dictionary<string, int> skinsToReplace = new();
+		private static Dictionary<int, SkinData> skinDatasToReplace = new();
 
 
 		[HarmonyPrefix]
 		[HarmonyPatch(typeof(GameLogicData), nameof(GameLogicData.AddGameLogicPlaceholders))]
-		private static void GameLogicData_Parse(JObject rootObject)
+		private static void GameLogicData_Parse(GameLogicData __instance, JObject rootObject)
 		{
 			if (!fullyInitialized)
 			{
 				Load(rootObject);
+				foreach (var entry in skinDatasToReplace)
+				{
+					__instance.skinData[(SkinType)entry.Key] = entry.Value;
+				}
 				fullyInitialized = true;
 			}
 		}
@@ -155,7 +161,6 @@ namespace PolyMod.Managers
 		{
 			if (logLine.Contains("Failed to find atlas") && type == LogType.Warning) return false;
 			if (logLine.Contains("Could not find sprite") && type == LogType.Warning) return false;
-			if (logLine.Contains("Missing name for value") && type == LogType.Warning) return false;
 			return true;
 		}
 
@@ -442,7 +447,6 @@ namespace PolyMod.Managers
 				if (token["skins"] != null)
 				{
 					JArray skins = token["skins"].Cast<JArray>();
-					Dictionary<string, int> skinsToReplace = new();
 
 					foreach (var skin in skins._values)
 					{
@@ -473,7 +477,25 @@ namespace PolyMod.Managers
 					}
 				}
 			}
-
+			foreach (JToken jtoken in patch.SelectTokens("$.skinData.*").ToArray())
+			{
+				JObject token = jtoken.Cast<JObject>();
+				string id = Utility.GetJTokenName(token);
+				if(skinsToReplace.ContainsKey(id))
+				{
+					SkinData skinData = new SkinData();
+					if(token["color"] != null)
+					{
+						skinData.color = (int)token["color"];
+					}
+					if(token["language"] != null)
+					{
+						skinData.language = token["language"].ToString();
+					}
+					skinDatasToReplace[skinsToReplace[id]] = skinData;
+				}
+			}
+			patch.Remove("skinData");
 			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
 			{
 				JObject token = jtoken.Cast<JObject>();
