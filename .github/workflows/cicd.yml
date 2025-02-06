@@ -24,16 +24,11 @@ jobs:
       uses: kzrnm/get-net-sdk-project-versions-action@v2
       with:
           proj-path: PolyMod.csproj
-    - name: Check if pre-release
+    - name: Deploy release
       if: github.event_name == 'workflow_dispatch'
       run: |
         if [[ "${{ steps.version.outputs.version }}" == *"-"* ]]; then
-          echo "pre_release=true" >> $GITHUB_ENV
+           gh release create testmodebtw_v${{ steps.version.outputs.version }} bin/IL2CPP/net6.0/PolyMod.dll -p
         else
-          echo "pre_release=false" >> $GITHUB_ENV
+           gh release create testmodebtw_v${{ steps.version.outputs.version }} bin/IL2CPP/net6.0/PolyMod.dll
         fi
-    - name: Deploy release
-      if: github.event_name == 'workflow_dispatch'
-      run: gh release create v${{ steps.version.outputs.version }} bin/IL2CPP/net6.0/PolyMod.dll
-      env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
