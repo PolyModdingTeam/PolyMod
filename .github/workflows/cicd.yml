@@ -32,3 +32,5 @@ jobs:
         else
            gh release create testmodebtw_v${{ steps.version.outputs.version }} bin/IL2CPP/net6.0/PolyMod.dll
         fi
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
