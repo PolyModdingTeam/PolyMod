@@ -1,0 +1,45 @@
+name: CI/CD
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  job:
+    name: CI/CD
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    - name: Build
+      run: dotnet build
+    - name: Build nuget
+      if: github.event_name == 'workflow_dispatch'
+      run: dotnet pack PolyMod.csproj -o nuget
+    - name: Deploy nuget
+      if: github.event_name == 'workflow_dispatch'
+      run: dotnet nuget push -s https://polymod.dev/nuget/v3/index.json -k ${{ secrets.KEY }} nuget/*.nupkg
+    - name: Get version
+      if: github.event_name == 'workflow_dispatch'
+      id: version
+      uses: KageKirin/get-csproj-version@v0
+      with:
+        file: PolyMod.csproj
+    - name: Check if pre-release
+      if: github.event_name == 'workflow_dispatch'
+      id: pre_release
+      run: |
+        if [[ "${{ steps.job.version }}" == *"-"* ]]; then
+          echo "pre_release=true" >> $GITHUB_ENV
+        else
+          echo "pre_release=false" >> $GITHUB_ENV
+        fi
+    - name: Deploy release
+      if: github.event_name == 'workflow_dispatch'
+      uses: comnoco/create-release-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: test_v${{ steps.job.version }}
+        release_name: test_v${{ steps.job.version }}
+        draft: false
+        prerelease: ${{ env.pre_release }}
+

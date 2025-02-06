@@ -1,11 +1,5 @@
-name: Installer CI
-on:
-  push:
-    paths:
-      - 'installer/**'
-  pull_request:
-    paths:
-      - 'installer/**'
+name: Installer
+on: workflow_dispatch
 jobs:
   job:
     defaults:
@@ -15,7 +9,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-    name: Installer CI on ${{ matrix.os }}
+    name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4

@@ -1,24 +1,45 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RestoreAdditionalProjectSources>
+            https://api.nuget.org/v3/index.json;
+            https://nuget.bepinex.dev/v3/index.json;
+            https://nuget.samboy.dev/v3/index.json;
+            https://polymod.dev/nuget/v3/index.json;
+        </RestoreAdditionalProjectSources>
+        <Configurations>IL2CPP</Configurations>
+        <Version>1.1.0-pre</Version>
+        <Authors>PolyModdingTeam</Authors>
+        <Description>The Battle of Polytopia's mod loader.</Description>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <RestoreAdditionalProjectSources>
-      https://api.nuget.org/v3/index.json;
-      https://nuget.bepinex.dev/v3/index.json;
-      https://nuget.samboy.dev/v3/index.json;
-      https://polymod.dev/nuget/v3/index.json;
-    </RestoreAdditionalProjectSources>
-    <Configurations>IL2CPP</Configurations>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.725" />
-    <PackageReference Include="TheBattleOfPolytopia" Version="2.12.0.13763">
+    <ItemGroup>
+        <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.725" />
+        <PackageReference Include="TheBattleOfPolytopia" Version="2.12.0.13763">
       <NoWarn>NU1701</NoWarn>
-    </PackageReference>
-    <EmbeddedResource Include="resources\*.*" />
-  </ItemGroup>
+        </PackageReference>
+        <EmbeddedResource Include="resources\*.*" />
+    </ItemGroup>
 
+    <Target Name="AddGeneratedFile" BeforeTargets="BeforeCompile;CoreCompile" Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)GeneratedFile.cs">
+        <PropertyGroup>
+            <GeneratedText><![CDATA[
+namespace PolyMod
+{
+    internal static class Props
+    {
+        internal const string VERSION = "$(Version)"%3B
+    }
+}
+      ]]></GeneratedText>
+            <GeneratedFilePath>$(IntermediateOutputPath)Props.cs</GeneratedFilePath>
+        </PropertyGroup>
+        <ItemGroup>
+            <Compile Include="$(GeneratedFilePath)" />
+            <FileWrites Include="$(GeneratedFilePath)" />
+        </ItemGroup>
+        <WriteLinesToFile Lines="$(GeneratedText)" File="$(GeneratedFilePath)" WriteOnlyWhenDifferent="true" Overwrite="true" />
+    </Target>
 </Project>
