@@ -22,6 +22,7 @@ jobs:
       id: version
       uses: KageKirin/get-csproj-version@v0
       with:
+        regex: .*
         file: PolyMod.csproj
     - name: Check if pre-release
       if: github.event_name == 'workflow_dispatch'
