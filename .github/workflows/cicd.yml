@@ -26,21 +26,14 @@ jobs:
           proj-path: PolyMod.csproj
     - name: Check if pre-release
       if: github.event_name == 'workflow_dispatch'
-      id: pre_release
       run: |
-        if [[ "${{ steps.job.outputs.version }}" == *"-"* ]]; then
+        if [[ "${{ steps.version.outputs.version }}" == *"-"* ]]; then
           echo "pre_release=true" >> $GITHUB_ENV
         else
           echo "pre_release=false" >> $GITHUB_ENV
         fi
     - name: Deploy release
       if: github.event_name == 'workflow_dispatch'
-      uses: comnoco/create-release-action@v2
+      run: gh release create v${{ steps.version.outputs.version }} bin/IL2CPP/net6.0/PolyMod.dll
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: test_v${{ steps.job.outputs.version }}
-        release_name: test_v${{ steps.job.outputs.version }}
-        draft: false
-        prerelease: ${{ env.pre_release }}
-
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
