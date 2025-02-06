@@ -16,7 +16,7 @@ jobs:
       if: github.event_name == 'workflow_dispatch'
       run: dotnet pack PolyMod.csproj -o nuget
     - name: Deploy nuget
-      if: github.event_name == 'workflow_dispatch_testmodebtw'
+      if: github.event_name == 'workflow_dispatch'
       run: dotnet nuget push -s https://polymod.dev/nuget/v3/index.json -k ${{ secrets.KEY }} nuget/*.nupkg
     - name: Get version
       if: github.event_name == 'workflow_dispatch'
@@ -28,9 +28,9 @@ jobs:
       if: github.event_name == 'workflow_dispatch'
       run: |
         if [[ "${{ steps.version.outputs.version }}" == *"-"* ]]; then
-           gh release create testmodebtw_v${{ steps.version.outputs.version }} bin/IL2CPP/net6.0/PolyMod.dll -p
+           gh release create v${{ steps.version.outputs.version }} bin/IL2CPP/net6.0/PolyMod.dll -p
         else
-           gh release create testmodebtw_v${{ steps.version.outputs.version }} bin/IL2CPP/net6.0/PolyMod.dll
+           gh release create v${{ steps.version.outputs.version }} bin/IL2CPP/net6.0/PolyMod.dll
         fi
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
