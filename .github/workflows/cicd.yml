@@ -2,6 +2,7 @@ name: CI/CD
 on: [push, pull_request, workflow_dispatch]
 jobs:
   job:
+    permissions: write-all
     name: CI/CD
     runs-on: ubuntu-latest
     steps:
