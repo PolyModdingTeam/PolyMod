@@ -20,15 +20,14 @@ jobs:
     - name: Get version
       if: github.event_name == 'workflow_dispatch'
       id: version
-      uses: KageKirin/get-csproj-version@v0
+      uses: kzrnm/get-net-sdk-project-versions-action@v2
       with:
-        regex: .*
-        file: PolyMod.csproj
+          proj-path: PolyMod.csproj
     - name: Check if pre-release
       if: github.event_name == 'workflow_dispatch'
       id: pre_release
       run: |
-        if [[ "${{ steps.job.version }}" == *"-"* ]]; then
+        if [[ "${{ steps.job.outputs.version }}" == *"-"* ]]; then
           echo "pre_release=true" >> $GITHUB_ENV
         else
           echo "pre_release=false" >> $GITHUB_ENV
@@ -39,8 +38,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: test_v${{ steps.job.version }}
-        release_name: test_v${{ steps.job.version }}
+        tag_name: test_v${{ steps.job.outputs.version }}
+        release_name: test_v${{ steps.job.outputs.version }}
         draft: false
         prerelease: ${{ env.pre_release }}
 
