@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/github/downloads/PolyModdingTeam/PolyMod/total)
 ![](https://img.shields.io/codefactor/grade/github/PolyModdingTeam/PolyMod)
-![](https://img.shields.io/github/actions/workflow/status/PolyModdingTeam/PolyMod/ci.yml)
+![](https://img.shields.io/github/actions/workflow/status/PolyModdingTeam/PolyMod/cicd.yml)
 
 |       Windows      |        Linux       |      MacOS      | Android | IOS |
 |:------------------:|:------------------:|:---------------:|:-------:|:---:|
