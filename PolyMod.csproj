@@ -11,13 +11,14 @@
         </RestoreAdditionalProjectSources>
         <Configurations>IL2CPP</Configurations>
         <Version>1.1.0-pre</Version>
+        <PolytopiaVersion>2.12.0.13763</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.725" />
-        <PackageReference Include="TheBattleOfPolytopia" Version="2.12.0.13763">
+        <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)">
       <NoWarn>NU1701</NoWarn>
         </PackageReference>
         <EmbeddedResource Include="resources\*.*" />
@@ -28,9 +29,10 @@
             <GeneratedText><![CDATA[
 namespace PolyMod
 {
-    internal static class Props
+    public partial class Plugin
     {
         internal const string VERSION = "$(Version)"%3B
+        internal static readonly Il2CppSystem.Version POLYTOPIA_VERSION = new("$(PolytopiaVersion)")%3B
     }
 }
       ]]></GeneratedText>
