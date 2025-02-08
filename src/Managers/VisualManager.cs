@@ -148,6 +148,25 @@ namespace PolyMod.Managers
                 popup.buttonData = popupButtons.ToArray();
                 popup.ShowSetWidth(1000);
             }
+
+            if (ModManager.dependencyCycle)
+            {
+                var popup = PopupManager.GetBasicPopup(new(
+                    Localization.Get("polymod.cycle"),
+                    Localization.Get("polymod.cycle.description"),
+                    new(new PopupBase.PopupButtonData[] {
+                        new(
+                            "buttons.exitgame", 
+                            PopupBase.PopupButtonData.States.None, 
+                            (Il2CppSystem.Action)Application.Quit, 
+                            closesPopup: false,
+                            customColorStates: ColorConstants.redButtonColorStates
+                        )
+                    })
+                ));
+                popup.IsUnskippable = true;
+                popup.Show();
+            }
         }
 
         internal static void ShowSetWidth(this BasicPopup self, int width)

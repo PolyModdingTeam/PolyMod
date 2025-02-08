@@ -34,8 +34,8 @@ namespace PolyMod.Managers
                     Localization.Get("polymod.signature.incompatible"),
                     new(new PopupBase.PopupButtonData[] {
                         new("OK")
-                    }))
-                ).Show();
+                    })
+                )).Show();
                 return false;
             }
             if (signature != signatures[1])
@@ -51,8 +51,8 @@ namespace PolyMod.Managers
                                 action(id, eventData);
                             })
                         )
-                    }))
-                ).Show();
+                    })
+                )).Show();
                 return false;
             }
             return true;
@@ -69,7 +69,12 @@ namespace PolyMod.Managers
                     Localization.Get("polymod.version.mismatch.description"),
                     new(new PopupBase.PopupButtonData[] {
                         new("buttons.stay", customColorStates: ColorConstants.redButtonColorStates),
-                        new("buttons.exitgame", PopupBase.PopupButtonData.States.None, (Il2CppSystem.Action)Application.Quit)
+                        new(
+                            "buttons.exitgame", 
+                            PopupBase.PopupButtonData.States.None, 
+                            (Il2CppSystem.Action)Application.Quit, 
+                            closesPopup: false
+                        )
                     }))
                 ).Show();
                 sawIncompatibilityWarning = true;

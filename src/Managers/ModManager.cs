@@ -4,6 +4,7 @@ using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using Il2CppSystem.Linq;
 using LibCpp2IL;
+using MonoMod.Utils;
 using Newtonsoft.Json.Linq;
 using PolyMod.Json;
 using PolyMod.Loaders;
@@ -89,6 +90,7 @@ namespace PolyMod.Managers
 		private static List<Tuple<int, string, SkinData>> skinInfo = new();
 		private static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 		private static bool fullyInitialized;
+		internal static bool dependencyCycle;
 
 
 
@@ -240,18 +242,8 @@ namespace PolyMod.Managers
 				}
 			}
 
-			StringBuilder looseSignatureString = new();
-			StringBuilder signatureString = new();
 			foreach (var (id, mod) in mods)
 			{
-				if (!mod.client && id != "polytopia")
-				{
-					looseSignatureString.Append(id);
-					looseSignatureString.Append(mod.version.Major);
-
-					signatureString.Append(id);
-					signatureString.Append(mod.version.ToString());
-				}
 				foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
 				{
 					string? message = null;
@@ -284,7 +276,24 @@ namespace PolyMod.Managers
 						}
 					}
 				}
+			}
+
+			dependencyCycle = !SortMods();
+			if (dependencyCycle) return;
+
+			StringBuilder looseSignatureString = new();
+			StringBuilder signatureString = new();
+			foreach (var (id, mod) in mods)
+			{
 				if (mod.status != Mod.Status.Success) continue;
+				if (!mod.client && id != "polytopia")
+				{
+					looseSignatureString.Append(id);
+					looseSignatureString.Append(mod.version.Major);
+
+					signatureString.Append(id);
+					signatureString.Append(mod.version.ToString());
+				}
 				foreach (var file in mod.files)
 				{
 					if (Path.GetExtension(file.name) == ".dll")
@@ -351,6 +360,25 @@ namespace PolyMod.Managers
 		internal static void Load(JObject gameLogicdata)
 		{
 			stopwatch.Start();
+			TechItem.techTierFirebaseId.Clear();
+			for (int i = 0; i <= maxTechTier; i++)
+			{
+				TechItem.techTierFirebaseId.Add($"tech_research_{i}");
+			}
+			Mod.Manifest polytopia = new(
+				"polytopia",
+				"The Battle of Polytopia",
+				new(VersionManager.SemanticVersion.ToString()),
+				new string[] { "Midjiwan AB" },
+				Array.Empty<Mod.Dependency>()
+			);
+			mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
+			LocalizationLoader.BuildAndLoadLocalization(
+				JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
+					Plugin.GetResource("localization.json")
+				)!
+			);	
+			if (dependencyCycle) return;
 
 			foreach (var (id, mod) in mods)
 			{
@@ -413,25 +441,7 @@ namespace PolyMod.Managers
 					}
 				}
 			}
-			
-			TechItem.techTierFirebaseId.Clear();
-			for (int i = 0; i <= maxTechTier; i++)
-			{
-				TechItem.techTierFirebaseId.Add($"tech_research_{i}");
-			}
-			Mod.Manifest polytopia = new(
-				"polytopia",
-				"The Battle of Polytopia",
-				new(VersionManager.SemanticVersion.ToString()),
-				new string[] { "Midjiwan AB" },
-				Array.Empty<Mod.Dependency>()
-			);
-			mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
-			LocalizationLoader.BuildAndLoadLocalization(
-				JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
-					Plugin.GetResource("localization.json")
-				)!
-			);
+
 			stopwatch.Stop();
 			Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
 		}
@@ -464,10 +474,6 @@ namespace PolyMod.Managers
 						{
 							skins._values.Remove(skin.Item2);
 							skins._values.Add(skin.Item1);
-						}
-						foreach(var item in skins._values)
-						{
-							Console.Write(item);
 						}
 					}
 					JToken originalSkins = gld.SelectToken(skins.Path, false);
@@ -593,6 +599,63 @@ namespace PolyMod.Managers
 				}
 			}
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
+		}
+
+		private static bool SortMods()
+		{
+			Dictionary<string, List<string>> graph = new();
+        	Dictionary<string, int> inDegree = new();
+			Dictionary<string, Mod> successfulMods = new();
+			Dictionary<string, Mod> unsuccessfulMods = new();
+			foreach (var (id, mod) in mods)
+			{
+				if (mod.status == Mod.Status.Success) successfulMods.Add(id, mod);
+				else unsuccessfulMods.Add(id, mod);
+			}
+			foreach (var (id, _) in successfulMods)
+			{
+				graph[id] = new();
+            	inDegree[id] = 0;
+			}
+			foreach (var (id, mod) in successfulMods)
+			{
+				foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
+				{
+					graph[dependency.id].Add(id);
+					inDegree[id]++;
+				}
+			}
+			Queue<string> queue = new();
+			foreach (var (id, _) in successfulMods)
+			{
+				if (inDegree[id] == 0)
+				{
+					queue.Enqueue(id);
+				}
+			}
+			Dictionary<string, Mod> sorted = new();
+			while (queue.Count > 0)
+			{
+				var id = queue.Dequeue();
+				var mod = successfulMods[id];
+				sorted.Add(id, mod);
+				foreach (var neighbor in graph[id])
+				{
+					inDegree[neighbor]--;
+					if (inDegree[neighbor] == 0)
+					{
+						queue.Enqueue(neighbor);
+					}
+				}
+			}
+			if (sorted.Count != successfulMods.Count) 
+			{
+				return false;
+			}
+			mods.Clear();
+			mods.AddRange(sorted);
+			mods.AddRange(unsuccessfulMods);
+			return true;
 		}
 
 		public static Sprite? GetSprite(string name, string style = "", int level = 0)
