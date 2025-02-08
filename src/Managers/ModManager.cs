@@ -86,10 +86,10 @@ namespace PolyMod.Managers
 		private static readonly Stopwatch stopwatch = new();
 		private static int maxTechTier = TechItem.techTierFirebaseId.Count - 1;
 		private static List<TribeData.Type> customTribes = new();
+		private static List<Tuple<int, string, SkinData>> skinInfo = new();
 		private static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 		private static bool fullyInitialized;
-		private static Dictionary<string, int> skinsToReplace = new();
-		private static Dictionary<int, SkinData> skinDatasToReplace = new();
+
 
 
 		[HarmonyPrefix]
@@ -99,27 +99,12 @@ namespace PolyMod.Managers
 			if (!fullyInitialized)
 			{
 				Load(rootObject);
-				foreach (var entry in skinDatasToReplace)
+				foreach (Tuple<int, string, SkinData> skin in skinInfo)
 				{
-					__instance.skinData[(SkinType)entry.Key] = entry.Value;
+					__instance.skinData[(SkinType)skin.Item1] = skin.Item3;
 				}
 				fullyInitialized = true;
 			}
-		}
-
-		[HarmonyPrefix]
-		[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlockedInternal))]
-		private static bool PurchaseManager_IsSkinUnlockedInternal(ref bool __result) //TODO: investigate
-		{
-			__result = true;
-			return false;
-		}
-
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsTribeUnlocked))]
-		private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeData.Type type)
-		{
-			__result = (int)type >= Plugin.AUTOIDX_STARTS_FROM || __result;
 		}
 
 		[HarmonyPostfix]
@@ -127,6 +112,25 @@ namespace PolyMod.Managers
 		private static void PurchaseManager_IsSkinUnlocked(ref bool __result, SkinType skinType)
 		{
 			__result = ((int)skinType >= Plugin.AUTOIDX_STARTS_FROM && (int)skinType != 2000) || __result;
+		}
+
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlockedInternal))]
+		private static bool PurchaseManager_IsSkinUnlockedInternal(ref bool __result, SkinType skinType)
+		{
+			if ((int)skinType >= Plugin.AUTOIDX_STARTS_FROM && (int)skinType != 2000)
+			{
+				__result = true;
+				return false;
+			}
+			return true;
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsTribeUnlocked))]
+		private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeData.Type type)
+		{
+			__result = (int)type >= Plugin.AUTOIDX_STARTS_FROM || __result;
 		}
 
 		[HarmonyPostfix]
@@ -146,20 +150,6 @@ namespace PolyMod.Managers
 			if (climate > 16)
 			{
 				climate = 1;
-			}
-		}
-
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(SelectTribePopup), nameof(SelectTribePopup.SetDescription))]
-		private static void SetDescription(SelectTribePopup __instance)
-		{
-			if ((int)__instance.SkinType >= Plugin.AUTOIDX_STARTS_FROM)
-			{
-				__instance.Description = Localization.Get(__instance.SkinType.GetLocalizationDescriptionKey()) + "\n\n" + Localization.GetSkinned(__instance.SkinType, __instance.tribeData.description2, new Il2CppSystem.Object[]
-				{
-					__instance.tribeName,
-					Localization.Get(__instance.startTechSid, Array.Empty<Il2CppSystem.Object>())
-				});
 			}
 		}
 
@@ -463,21 +453,23 @@ namespace PolyMod.Managers
 						if (!Enum.TryParse<SkinType>(skinValue, out _))
 						{
 							EnumCache<SkinType>.AddMapping(skinValue, (SkinType)autoidx);
-							skinsToReplace[skinValue] = autoidx;
+							skinInfo.Add(new Tuple<int, string, SkinData>(autoidx, skinValue, new SkinData()));
 							Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + autoidx);
 							autoidx++;
 						}
 					}
-
-					foreach (var entry in skinsToReplace)
+					foreach (var skin in skinInfo)
 					{
-						if (skins._values.Contains(entry.Key))
+						if (skins._values.Contains(skin.Item2))
 						{
-							skins._values.Remove(entry.Key);
-							skins._values.Add(entry.Value);
+							skins._values.Remove(skin.Item2);
+							skins._values.Add(skin.Item1);
+						}
+						foreach(var item in skins._values)
+						{
+							Console.Write(item);
 						}
 					}
-
 					JToken originalSkins = gld.SelectToken(skins.Path, false);
 					if (originalSkins != null)
 					{
@@ -489,7 +481,8 @@ namespace PolyMod.Managers
 			{
 				JObject token = jtoken.Cast<JObject>();
 				string id = Utility.GetJTokenName(token);
-				if(skinsToReplace.ContainsKey(id))
+				int index = skinInfo.FindIndex(t => t.Item2 == id);
+				if(skinInfo.ElementAtOrDefault(index) != null)
 				{
 					SkinData skinData = new SkinData();
 					if(token["color"] != null)
@@ -500,7 +493,7 @@ namespace PolyMod.Managers
 					{
 						skinData.language = token["language"].ToString();
 					}
-					skinDatasToReplace[skinsToReplace[id]] = skinData;
+					skinInfo[index] = new Tuple<int, string, SkinData>(skinInfo[index].Item1, skinInfo[index].Item2, skinData);
 				}
 			}
 			patch.Remove("skinData");
