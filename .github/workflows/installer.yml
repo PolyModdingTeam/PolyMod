@@ -24,6 +24,8 @@ jobs:
       with:
         name: ${{ matrix.os }}
         path: installer/dist/
+    - name: Show info
+      run: file installer/dist/*
   merge:
     name: Merge artifacts
     runs-on: ubuntu-latest
