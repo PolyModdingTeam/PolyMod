@@ -20,12 +20,12 @@ jobs:
       run: pip install -r requirements.txt
     - name: Build
       run: python build.py
+    - name: Show info
+      run: file installer/dist/*
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.os }}
         path: installer/dist/
-    - name: Show info
-      run: file installer/dist/*
   merge:
     name: Merge artifacts
     runs-on: ubuntu-latest
