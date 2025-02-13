@@ -24,7 +24,6 @@ jobs:
       with:
         name: ${{ matrix.os }}
         path: installer/dist/
-        separate-directories: true
   merge:
     name: Merge artifacts
     runs-on: ubuntu-latest
@@ -34,4 +33,5 @@ jobs:
       with:
         name: artifacts
         delete-merged: true
+        separate-directories: true
     
