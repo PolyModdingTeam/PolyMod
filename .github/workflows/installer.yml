@@ -39,4 +39,5 @@ jobs:
       with:
         name: artifacts
         delete-merged: true
+        separate-directories: true
     

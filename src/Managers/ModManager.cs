@@ -87,7 +87,7 @@ namespace PolyMod.Managers
 		private static readonly Stopwatch stopwatch = new();
 		private static int maxTechTier = TechItem.techTierFirebaseId.Count - 1;
 		private static List<TribeData.Type> customTribes = new();
-		private static List<Tuple<int, string, SkinData>> skinInfo = new();
+		private static List<Tuple<int, string, SkinData?>> skinInfo = new();
 		private static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 		private static bool fullyInitialized;
 		internal static bool dependencyCycle;
@@ -103,29 +103,20 @@ namespace PolyMod.Managers
 				Load(rootObject);
 				foreach (Tuple<int, string, SkinData> skin in skinInfo)
 				{
-					__instance.skinData[(SkinType)skin.Item1] = skin.Item3;
+					if(skin.Item3 != null)
+						__instance.skinData[(SkinType)skin.Item1] = skin.Item3;
 				}
 				fullyInitialized = true;
 			}
 		}
 
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlocked))]
-		private static void PurchaseManager_IsSkinUnlocked(ref bool __result, SkinType skinType)
-		{
-			__result = ((int)skinType >= Plugin.AUTOIDX_STARTS_FROM && (int)skinType != 2000) || __result;
-		}
-
 		[HarmonyPrefix]
+		[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlocked))]
 		[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlockedInternal))]
 		private static bool PurchaseManager_IsSkinUnlockedInternal(ref bool __result, SkinType skinType)
 		{
-			if ((int)skinType >= Plugin.AUTOIDX_STARTS_FROM && (int)skinType != 2000)
-			{
-				__result = true;
-				return false;
-			}
-			return true;
+			__result = (int)skinType >= Plugin.AUTOIDX_STARTS_FROM && skinType != SkinType.Test;
+			return !__result;
 		}
 
 		[HarmonyPostfix]
@@ -463,7 +454,7 @@ namespace PolyMod.Managers
 						if (!Enum.TryParse<SkinType>(skinValue, out _))
 						{
 							EnumCache<SkinType>.AddMapping(skinValue, (SkinType)autoidx);
-							skinInfo.Add(new Tuple<int, string, SkinData>(autoidx, skinValue, new SkinData()));
+							skinInfo.Add(new Tuple<int, string, SkinData?>(autoidx, skinValue, null));
 							Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + autoidx);
 							autoidx++;
 						}
@@ -499,7 +490,7 @@ namespace PolyMod.Managers
 					{
 						skinData.language = token["language"].ToString();
 					}
-					skinInfo[index] = new Tuple<int, string, SkinData>(skinInfo[index].Item1, skinInfo[index].Item2, skinData);
+					skinInfo[index] = new Tuple<int, string, SkinData?>(skinInfo[index].Item1, skinInfo[index].Item2, skinData);
 				}
 			}
 			patch.Remove("skinData");

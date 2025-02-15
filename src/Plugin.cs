@@ -47,6 +47,8 @@ namespace PolyMod
 			LocalizationLoader.Init();
 			SpritesLoader.Init();
 			VisualManager.Init();
+			ValidationManager.Init();
+			//PolyConnectManager.Init();
 
 			ModManager.Init();
 		}
