@@ -1,5 +1,11 @@
 name: Installer
-on: workflow_dispatch
+on:
+  push:
+    paths:
+    - 'installer/**'
+  pull_request:
+    paths:
+    - 'installer/**'
 jobs:
   job:
     defaults:

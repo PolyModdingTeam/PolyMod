@@ -84,7 +84,8 @@ def launch():
 
 app = customtkinter.CTk()
 app.title("PolyMod")
-app.iconbitmap(default=resource_path("icon.ico"))
+if OS != "linux":
+    app.iconbitmap(default=resource_path("icon.ico"))
 app.resizable(False, False)
 
 path_entry = customtkinter.CTkEntry(
