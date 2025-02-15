@@ -101,7 +101,7 @@ namespace PolyMod.Managers
 			if (!fullyInitialized)
 			{
 				Load(rootObject);
-				foreach (Tuple<int, string, SkinData> skin in skinInfo)
+				foreach (Tuple<int, string, SkinData?> skin in skinInfo)
 				{
 					if(skin.Item3 != null)
 						__instance.skinData[(SkinType)skin.Item1] = skin.Item3;

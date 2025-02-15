@@ -3,6 +3,7 @@ using System.Text;
 using Il2CppInterop.Runtime;
 using Il2CppInterop.Runtime.Injection;
 using Newtonsoft.Json.Linq;
+using Polytopia.Data;
 
 namespace PolyMod
 {
@@ -29,5 +30,10 @@ namespace PolyMod
         {
             return self.Major == version.Major && self.Minor == version.Minor && self.Build == version.Build;
         }
+
+        internal static string GetStyle(TribeData.Type tribe, SkinType skin)
+		{
+			return skin != SkinType.Default ? EnumCache<SkinType>.GetName(skin) : EnumCache<TribeData.Type>.GetName(tribe);
+		}
     }
 }
