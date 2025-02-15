@@ -15,6 +15,7 @@ namespace PolyMod.Managers
         [HarmonyPatch(typeof(ResearchCommand), nameof(ResearchCommand.IsValid))]
         [HarmonyPatch(typeof(DestroyCommand), nameof(DestroyCommand.IsValid))]
         [HarmonyPatch(typeof(DisbandCommand), nameof(DisbandCommand.IsValid))]
+        [HarmonyPatch(typeof(DisembarkCommand), nameof(DisembarkCommand.IsValid))]
         [HarmonyPatch(typeof(ExamineRuinsCommand), nameof(ExamineRuinsCommand.IsValid))]
         [HarmonyPatch(typeof(EndTurnCommand), nameof(EndTurnCommand.IsValid))]
         [HarmonyPatch(typeof(FreezeAreaCommand), nameof(FreezeAreaCommand.IsValid))]
@@ -28,6 +29,8 @@ namespace PolyMod.Managers
         [HarmonyPatch(typeof(PeaceRequestResponseCommand), nameof(PeaceRequestResponseCommand.IsValid))]
         [HarmonyPatch(typeof(BreakPeaceCommand), nameof(BreakPeaceCommand.IsValid))]
         [HarmonyPatch(typeof(ResignCommand), nameof(ResignCommand.IsValid))]
+        [HarmonyPatch(typeof(HideCommand), nameof(HideCommand.IsValid))]
+        [HarmonyPatch(typeof(FloodCommand), nameof(FloodCommand.IsValid))]
         private static bool IsValid(ref bool __result, GameState state, ref string validationError)
         {
             __result = true;
