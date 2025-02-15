@@ -8,8 +8,9 @@ import customtkinter
 import CTkMessagebox as messagebox
 
 OS = {
-    "win32": "win",
+    "linux": "linux",
     "linux2": "linux",
+    "win32": "win",
     "darwin": "macos",
 }[sys.platform]
 BEPINEX = f"725/BepInEx-Unity.IL2CPP-{OS}-x64-6.0.0-be.725%2Be1974e2"
