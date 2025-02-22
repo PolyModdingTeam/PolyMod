@@ -96,12 +96,18 @@ namespace PolyMod.Loaders
 		[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(SkinVisualsTransientData))]
 		private static void Resource_UpdateObject(Resource __instance, SkinVisualsTransientData transientSkinData)
 		{
-			if (__instance.data != null && transientSkinData != null)
+			if (__instance.data != null)
 			{
-				string style = Utility.GetStyle(transientSkinData.tileClimateSettings.tribe, transientSkinData.tileClimateSettings.skin);
+				string style = Utility.GetStyle(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(__instance.tile.data.climate), __instance.tile.data.Skin);
 				string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
 
-				foreach (var visualPart in __instance._skinVis.visualParts)
+				// Sprite? sprite = ModManager.GetSprite(name, style);
+				// if(sprite != null)
+				// {
+				// 	__instance.Sprite = sprite;
+				// } after capturing with a custom skin: THIS SHIT WORKS BUT WHY NOT VIS???? AND HOW DO I SET FREAKING OUTLINE THEN??????????????????????????????????????
+
+				foreach (SkinVisualsReference.VisualPart visualPart in __instance.GetSkinVisualsReference().visualParts)
 				{
 					UpdateVisualPart(visualPart, name, style);
 				}
@@ -169,15 +175,12 @@ namespace PolyMod.Loaders
 				}
 			}
 
-			if (__instance.atlasName != null)
+			if(__instance.sprite != null)
 			{
-				if (string.IsNullOrEmpty(__instance.atlasName))
-				{
-					MaterialPropertyBlock materialPropertyBlock = new();
-					materialPropertyBlock.SetVector("_Flip", new Vector4(1f, 1f, 0f, 0f));
-					materialPropertyBlock.SetTexture("_MainTex", __instance.sprite.texture);
-					__instance.meshRenderer.SetPropertyBlock(materialPropertyBlock);
-				}
+				MaterialPropertyBlock materialPropertyBlock = new();
+				materialPropertyBlock.SetVector("_Flip", new Vector4(1f, 1f, 0f, 0f));
+				materialPropertyBlock.SetTexture("_MainTex", __instance.sprite.texture);
+				__instance.meshRenderer.SetPropertyBlock(materialPropertyBlock);
 			}
 		}
 
@@ -215,7 +218,7 @@ namespace PolyMod.Loaders
 		[HarmonyPatch(typeof(UIWorldPreview), nameof(UIWorldPreview.SetPreview), new Type[] { })]
 		private static void UIWorldPreview_SetPreview(UIWorldPreview __instance)
 		{
-			if (Plugin.config.debug)
+			if (Plugin.config.debug && UIManager.Instance.CurrentScreen == UIConstants.Screens.TribeSelector)
 			{
 				if (firstTimeOpeningPreview)
 				{
@@ -270,7 +273,7 @@ namespace PolyMod.Loaders
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetTile))]
-		private static void UIUtils_GetTile(ref RectTransform __result, Polytopia.Data.TerrainData.Type type, int climate, SkinType skin)
+		private static void UIUtils_GetTile(ref RectTransform __result, Polytopia.Data.TerrainData.Type type, int climate, SkinType skin) //TODO: fix crash when no sprites
 		{
 			RectTransform rectTransform = __result;
 			TribeData.Type tribeTypeFromStyle = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(climate);

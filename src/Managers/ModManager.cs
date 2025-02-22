@@ -138,21 +138,17 @@ namespace PolyMod.Managers
 
 		[HarmonyPrefix]
 		[HarmonyPatch(typeof(AudioManager), nameof(AudioManager.SetAmbienceClimate))]
-		private static void AudioManager_SetAmbienceClimatePrefix(ref int climate)
+		private static void AudioManager_SetAmbienceClimatePrefix(ref int climate) //TODO CHECK
 		{
 			if (climate > 16)
-			{
 				climate = 1;
-			}
 		}
 
 		[HarmonyPrefix]
 		[HarmonyPatch(typeof(IL2CPPUnityLogSource), nameof(IL2CPPUnityLogSource.UnityLogCallback))]
 		private static bool IL2CPPUnityLogSource_UnityLogCallback(string logLine, string exception, LogType type)
 		{
-			if (logLine.Contains("Failed to find atlas") && type == LogType.Warning) return false;
-			if (logLine.Contains("Could not find sprite") && type == LogType.Warning) return false;
-			return true;
+			return !(type == LogType.Warning && (logLine.Contains("Failed to find atlas") || logLine.Contains("Could not find sprite") || logLine.Contains("Couldn't find prefab for type")));
 		}
 
 		internal static void Init()
