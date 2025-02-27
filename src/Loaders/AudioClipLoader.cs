@@ -38,7 +38,7 @@ namespace PolyMod.Loaders
         private static bool AudioSFXData_GetClip(ref AudioClip __result, SFXTypes id, SkinType skinType)
         {
             AudioClip? audioClip = ModManager.GetAudioClip(
-                EnumCache<SFXTypes>.GetName(id), 
+                EnumCache<SFXTypes>.GetName(id),
                 EnumCache<SkinType>.GetName(skinType)
             );
             if (audioClip != null)

@@ -103,7 +103,7 @@ namespace PolyMod.Managers
 				Load(rootObject);
 				foreach (Tuple<int, string, SkinData?> skin in skinInfo)
 				{
-					if(skin.Item3 != null)
+					if (skin.Item3 != null)
 						__instance.skinData[(SkinType)skin.Item1] = skin.Item3;
 				}
 				fullyInitialized = true;
@@ -364,7 +364,7 @@ namespace PolyMod.Managers
 				JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
 					Plugin.GetResource("localization.json")
 				)!
-			);	
+			);
 			if (dependencyCycle) return;
 
 			foreach (var (id, mod) in mods)
@@ -475,14 +475,14 @@ namespace PolyMod.Managers
 				JObject token = jtoken.Cast<JObject>();
 				string id = Utility.GetJTokenName(token);
 				int index = skinInfo.FindIndex(t => t.Item2 == id);
-				if(skinInfo.ElementAtOrDefault(index) != null)
+				if (skinInfo.ElementAtOrDefault(index) != null)
 				{
 					SkinData skinData = new SkinData();
-					if(token["color"] != null)
+					if (token["color"] != null)
 					{
 						skinData.color = (int)token["color"];
 					}
-					if(token["language"] != null)
+					if (token["language"] != null)
 					{
 						skinData.language = token["language"].ToString();
 					}
@@ -590,8 +590,9 @@ namespace PolyMod.Managers
 
 		private static bool SortMods()
 		{
+			Stopwatch s = new();
 			Dictionary<string, List<string>> graph = new();
-        	Dictionary<string, int> inDegree = new();
+			Dictionary<string, int> inDegree = new();
 			Dictionary<string, Mod> successfulMods = new();
 			Dictionary<string, Mod> unsuccessfulMods = new();
 			foreach (var (id, mod) in mods)
@@ -602,7 +603,7 @@ namespace PolyMod.Managers
 			foreach (var (id, _) in successfulMods)
 			{
 				graph[id] = new();
-            	inDegree[id] = 0;
+				inDegree[id] = 0;
 			}
 			foreach (var (id, mod) in successfulMods)
 			{
@@ -635,13 +636,14 @@ namespace PolyMod.Managers
 					}
 				}
 			}
-			if (sorted.Count != successfulMods.Count) 
+			if (sorted.Count != successfulMods.Count)
 			{
 				return false;
 			}
 			mods.Clear();
 			mods.AddRange(sorted);
 			mods.AddRange(unsuccessfulMods);
+			Console.WriteLine(s.ElapsedMilliseconds);
 			return true;
 		}
 

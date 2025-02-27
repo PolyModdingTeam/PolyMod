@@ -101,12 +101,6 @@ namespace PolyMod.Loaders
 				string style = Utility.GetStyle(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(__instance.tile.data.climate), __instance.tile.data.Skin);
 				string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
 
-				// Sprite? sprite = ModManager.GetSprite(name, style);
-				// if(sprite != null)
-				// {
-				// 	__instance.Sprite = sprite;
-				// } after capturing with a custom skin: THIS SHIT WORKS BUT WHY NOT VIS???? AND HOW DO I SET FREAKING OUTLINE THEN??????????????????????????????????????
-
 				foreach (SkinVisualsReference.VisualPart visualPart in __instance.GetSkinVisualsReference().visualParts)
 				{
 					UpdateVisualPart(visualPart, name, style);
@@ -175,7 +169,7 @@ namespace PolyMod.Loaders
 				}
 			}
 
-			if(__instance.sprite != null)
+			if (__instance.sprite != null)
 			{
 				MaterialPropertyBlock materialPropertyBlock = new();
 				materialPropertyBlock.SetVector("_Flip", new Vector4(1f, 1f, 0f, 0f));
@@ -492,16 +486,21 @@ namespace PolyMod.Loaders
 		private static void UpdateVisualPart(SkinVisualsReference.VisualPart visualPart, string name, string style)
 		{
 			Sprite? sprite = ModManager.GetSprite(name, style) ?? ModManager.GetSprite(visualPart.visualPart.name, style);
-
-			if(sprite != null && visualPart.renderer.spriteRenderer != null)
+			if (sprite != null)
 			{
-				visualPart.renderer.spriteRenderer.sprite = sprite;
+				if (visualPart.renderer.spriteRenderer != null) 
+					visualPart.renderer.spriteRenderer.sprite = sprite;
+				if (visualPart.renderer.polytopiaSpriteRenderer != null) 
+					visualPart.renderer.polytopiaSpriteRenderer.sprite = sprite;
 			}
-			Sprite? outlineSprite = ModManager.GetSprite($"{name}_outline", style) ?? ModManager.GetSprite($"{visualPart.visualPart.name}_outline", style);
 
-			if(outlineSprite != null && visualPart.outlineRenderer.spriteRenderer != null)
+			Sprite? outlineSprite = ModManager.GetSprite($"{name}_outline", style) ?? ModManager.GetSprite($"{visualPart.visualPart.name}_outline", style);
+			if (outlineSprite != null)
 			{
-				visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
+				if (visualPart.outlineRenderer.spriteRenderer != null) 
+					visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
+				if (visualPart.outlineRenderer.polytopiaSpriteRenderer != null) 
+					visualPart.outlineRenderer.polytopiaSpriteRenderer.sprite = outlineSprite;
 			}
 		}
 
