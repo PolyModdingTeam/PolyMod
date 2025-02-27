@@ -14,13 +14,12 @@
         <PolytopiaVersion>2.12.0.13763</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
+        <NoWarn>NU1701</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.725" />
-        <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)">
-      <NoWarn>NU1701</NoWarn>
-        </PackageReference>
+        <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)" />
         <EmbeddedResource Include="resources\*.*" />
     </ItemGroup>
 
