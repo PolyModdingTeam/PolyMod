@@ -490,7 +490,7 @@ namespace PolyMod.Loaders
 			{
 				if (visualPart.renderer.spriteRenderer != null) 
 					visualPart.renderer.spriteRenderer.sprite = sprite;
-				if (visualPart.renderer.polytopiaSpriteRenderer != null) 
+				else if (visualPart.renderer.polytopiaSpriteRenderer != null) 
 					visualPart.renderer.polytopiaSpriteRenderer.sprite = sprite;
 			}
 
@@ -499,7 +499,7 @@ namespace PolyMod.Loaders
 			{
 				if (visualPart.outlineRenderer.spriteRenderer != null) 
 					visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
-				if (visualPart.outlineRenderer.polytopiaSpriteRenderer != null) 
+				else if (visualPart.outlineRenderer.polytopiaSpriteRenderer != null) 
 					visualPart.outlineRenderer.polytopiaSpriteRenderer.sprite = outlineSprite;
 			}
 		}
