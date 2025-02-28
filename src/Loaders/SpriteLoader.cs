@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using HarmonyLib;
 using PolyMod.Managers;
 using Polytopia.Data;
@@ -506,9 +507,10 @@ namespace PolyMod.Loaders
 
 		public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
 		{
-			Texture2D tempTexture = new(1, 1);
-			tempTexture.LoadImage(data);
-			Texture2D texture = new(tempTexture.width, tempTexture.height)
+			Texture2D texture = new(
+				Utility.SetEndianess(false, BitConverter.ToInt32(data, 16)),
+				Utility.SetEndianess(false, BitConverter.ToInt32(data, 20))
+			)
 			{
 				filterMode = FilterMode.Trilinear
 			};
