@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 using Il2CppInterop.Runtime;
@@ -30,13 +29,6 @@ namespace PolyMod
         internal static bool EqualNoRevision(this Il2CppSystem.Version self, Il2CppSystem.Version version)
         {
             return self.Major == version.Major && self.Minor == version.Minor && self.Build == version.Build;
-        }
-
-        internal static int SetEndianess(bool littleEndian, int value)
-        {
-            if (BitConverter.IsLittleEndian != littleEndian) 
-                value = BinaryPrimitives.ReverseEndianness(value);
-            return value;
         }
 
         internal static string GetStyle(TribeData.Type tribe, SkinType skin)

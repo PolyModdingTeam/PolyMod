@@ -199,7 +199,7 @@ namespace PolyMod.Managers
 							);
 							continue;
 						}
-						else files.Add(new(entry.FullName, entry.ReadBytes()));
+						files.Add(new(entry.FullName, entry.ReadBytes()));
 					}
 				}
 
@@ -340,6 +340,8 @@ namespace PolyMod.Managers
 			}
 			CompatibilityManager.looseSignature = Utility.Hash(looseSignatureString);
 			CompatibilityManager.signature = Utility.Hash(signatureString);
+
+			stopwatch.Stop();
 		}
 
 		internal static void Load(JObject gameLogicdata)
@@ -588,6 +590,7 @@ namespace PolyMod.Managers
 
 		private static bool SortMods()
 		{
+			Stopwatch s = new();
 			Dictionary<string, List<string>> graph = new();
 			Dictionary<string, int> inDegree = new();
 			Dictionary<string, Mod> successfulMods = new();
@@ -640,6 +643,7 @@ namespace PolyMod.Managers
 			mods.Clear();
 			mods.AddRange(sorted);
 			mods.AddRange(unsuccessfulMods);
+			Console.WriteLine(s.ElapsedMilliseconds);
 			return true;
 		}
 
