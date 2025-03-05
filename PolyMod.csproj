@@ -10,7 +10,7 @@
             https://polymod.dev/nuget/v3/index.json;
         </RestoreAdditionalProjectSources>
         <Configurations>IL2CPP</Configurations>
-        <Version>1.1.0-pre</Version>
+        <Version>1.1.0-pre.1</Version>
         <PolytopiaVersion>2.12.0.13763</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
