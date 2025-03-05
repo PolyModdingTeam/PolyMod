@@ -125,20 +125,36 @@ namespace PolyMod.Loaders
 		[HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))]
 		private static void TerrainRenderer_UpdateGraphics(TerrainRenderer __instance, Tile tile)
 		{
-			if (!(tile.data.effects.Contains(TileData.EffectType.Flooded) || tile.data.effects.Contains(TileData.EffectType.Swamped)))
+			string name = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain) ?? string.Empty;
+			if (tile.data.terrain is Polytopia.Data.TerrainData.Type.Forest or Polytopia.Data.TerrainData.Type.Mountain)
 			{
-				string? name = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain);
-				if (tile.data.terrain == Polytopia.Data.TerrainData.Type.Forest
-					|| tile.data.terrain == Polytopia.Data.TerrainData.Type.Mountain
-				)
+				name = "field";
+			}
+
+			TribeData.Type tribe = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate);
+			SkinType skinType = tile.data.Skin;
+
+			if(tile.data.effects.Contains(TileData.EffectType.Flooded))
+			{
+				name += "_flooded";
+				foreach (TileData.EffectType effect in tile.data.effects)
 				{
-					name = "field";
+					if(effect == TileData.EffectType.Swamped)
+					{
+						skinType = SkinType.Swamp;
+						break;
+					}
+					if((int)effect >= Plugin.AUTOIDX_STARTS_FROM)
+					{
+						skinType = (SkinType)(int)effect;
+					}
 				}
-				Sprite? sprite = ModManager.GetSprite(name, Utility.GetStyle(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate), tile.data.Skin));
-				if (sprite != null)
-				{
-					__instance.spriteRenderer.Sprite = sprite;
-				}
+			}
+
+			Sprite? sprite = ModManager.GetSprite(name, Utility.GetStyle(tribe, skinType));
+			if (sprite != null)
+			{
+				__instance.spriteRenderer.Sprite = sprite;
 			}
 		}
 
@@ -175,6 +191,20 @@ namespace PolyMod.Loaders
 				materialPropertyBlock.SetVector("_Flip", new Vector4(1f, 1f, 0f, 0f));
 				materialPropertyBlock.SetTexture("_MainTex", __instance.sprite.texture);
 				__instance.meshRenderer.SetPropertyBlock(materialPropertyBlock);
+			}
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(TileData), nameof(TileData.Flood))]
+		private static void TileData_Flood(TileData __instance, PlayerState playerState)
+		{
+			if (playerState == null || (int)playerState.skinType < Plugin.AUTOIDX_STARTS_FROM)
+				return;
+			GameLogicData gld = PolytopiaDataManager.gameLogicDatas[VersionManager.GAME_LOGIC_DATA_VERSION];
+			if (gld.TryGetData(TribeData.Type.Aquarion, out TribeData tribeData) &&
+				tribeData.skins.Contains(playerState.skinType))
+			{
+				__instance.AddEffect((TileData.EffectType)(int)playerState.skinType);
 			}
 		}
 

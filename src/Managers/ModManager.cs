@@ -452,6 +452,10 @@ namespace PolyMod.Managers
 							EnumCache<SkinType>.AddMapping(skinValue, (SkinType)autoidx);
 							skinInfo.Add(new Tuple<int, string, SkinData?>(autoidx, skinValue, null));
 							Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + autoidx);
+							if(Utility.GetJTokenName(token) == "aquarion")
+							{
+								EnumCache<TileData.EffectType>.AddMapping(skinValue, (TileData.EffectType)autoidx);
+							}
 							autoidx++;
 						}
 					}
