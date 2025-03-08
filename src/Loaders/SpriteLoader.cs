@@ -1,3 +1,4 @@
+using System.Reflection;
 using HarmonyLib;
 using PolyMod.Managers;
 using Polytopia.Data;
@@ -125,18 +126,15 @@ namespace PolyMod.Loaders
 		[HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))]
 		private static void TerrainRenderer_UpdateGraphics(TerrainRenderer __instance, Tile tile)
 		{
-			string name = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain) ?? string.Empty;
-			if (tile.data.terrain is Polytopia.Data.TerrainData.Type.Forest or Polytopia.Data.TerrainData.Type.Mountain)
-			{
-				name = "field";
-			}
+			string terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain) ?? string.Empty;
 
 			TribeData.Type tribe = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate);
 			SkinType skinType = tile.data.Skin;
 
+			string flood = "";
 			if(tile.data.effects.Contains(TileData.EffectType.Flooded))
 			{
-				name += "_flooded";
+				flood = "_flooded";
 				foreach (TileData.EffectType effect in tile.data.effects)
 				{
 					if(effect == TileData.EffectType.Swamped)
@@ -150,8 +148,40 @@ namespace PolyMod.Loaders
 					}
 				}
 			}
+			if (tile.data.terrain is Polytopia.Data.TerrainData.Type.Forest or Polytopia.Data.TerrainData.Type.Mountain)
+			{
+				string propertyName = terrain.ToLower();
+				terrain = "field";
+				// Sprite? mountainSprite = ModManager.GetSprite("mountain" + flood, Utility.GetStyle(tribe, skinType));
+				// if (mountainSprite != null)
+				// {
+				// 	tile.mountainRenderer.Sprite = mountainSprite;
+				// }
+				// Sprite? forestSprite = ModManager.GetSprite("forest" + flood, Utility.GetStyle(tribe, skinType));
+				// if (forestSprite != null)
+				// {
+				// 	tile.forestRenderer.Sprite = forestSprite;
+				// }
 
-			Sprite? sprite = ModManager.GetSprite(name, Utility.GetStyle(tribe, skinType));
+				PropertyInfo? rendererProperty = tile.GetType().GetProperty(propertyName + "Renderer",
+					BindingFlags.Public | BindingFlags.Instance);
+
+				if (rendererProperty != null)
+				{
+					PolytopiaSpriteRenderer? renderer = (PolytopiaSpriteRenderer?)rendererProperty.GetValue(tile);
+					if(renderer != null)
+					{
+						Sprite? additionalSprite = ModManager.GetSprite(propertyName + flood, Utility.GetStyle(tribe, skinType));
+						if (additionalSprite != null)
+						{
+							renderer.Sprite = additionalSprite;
+							rendererProperty.SetValue(tile, renderer);
+						}
+					}
+				}
+			}
+
+			Sprite? sprite = ModManager.GetSprite(terrain + flood, Utility.GetStyle(tribe, skinType));
 			if (sprite != null)
 			{
 				__instance.spriteRenderer.Sprite = sprite;
@@ -162,29 +192,6 @@ namespace PolyMod.Loaders
 		[HarmonyPatch(typeof(PolytopiaSpriteRenderer), nameof(PolytopiaSpriteRenderer.ForceUpdateMesh))]
 		private static void PolytopiaSpriteRenderer_ForceUpdateMesh(PolytopiaSpriteRenderer __instance)
 		{
-			string name = __instance.gameObject.name.ToLower();
-			if (name.Contains("forest") || name.Contains("mountain"))
-			{
-				Transform? terrainTranform = __instance.transform.parent;
-				if (terrainTranform != null)
-				{
-					Transform? tileTransform = terrainTranform.parent;
-					if (tileTransform != null)
-					{
-						Tile? tile = tileTransform.GetComponent<Tile>();
-						if (tile != null)
-						{
-							Sprite? sprite = ModManager.GetSprite(EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain),
-								Utility.GetStyle(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate), tile.data.Skin));
-							if (sprite != null)
-							{
-								__instance.Sprite = sprite;
-							}
-						}
-					}
-				}
-			}
-
 			if (__instance.sprite != null)
 			{
 				MaterialPropertyBlock materialPropertyBlock = new();
@@ -232,7 +239,7 @@ namespace PolyMod.Loaders
 						resourceType = previewTile.resourceType,
 						unitType = previewTile.unitType,
 						improvementType = previewTile.improvementType,
-						tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>()
+						tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>() //TODO
 					};
 				}
 			}
