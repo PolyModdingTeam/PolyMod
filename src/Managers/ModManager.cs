@@ -433,66 +433,6 @@ namespace PolyMod.Managers
 
 		private static void GameLogicDataPatch(JObject gld, JObject patch)
 		{
-			foreach (JToken jtoken in patch.SelectTokens("$.tribeData.*").ToArray())
-			{
-				JObject token = jtoken.Cast<JObject>();
-
-				if (token["skins"] != null)
-				{
-					JArray skins = token["skins"].Cast<JArray>();
-
-					foreach (var skin in skins._values)
-					{
-						string skinValue = skin.ToString();
-
-						if (!Enum.TryParse<SkinType>(skinValue, out _))
-						{
-							EnumCache<SkinType>.AddMapping(skinValue, (SkinType)autoidx);
-							skinInfo.Add(new Tuple<int, string, SkinData?>(autoidx, skinValue, null));
-							Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + autoidx);
-							if(Utility.GetJTokenName(token) == "aquarion")
-							{
-								EnumCache<TileData.EffectType>.AddMapping(skinValue, (TileData.EffectType)autoidx);
-							}
-							autoidx++;
-						}
-					}
-					foreach (var skin in skinInfo)
-					{
-						if (skins._values.Contains(skin.Item2))
-						{
-							skins._values.Remove(skin.Item2);
-							skins._values.Add(skin.Item1);
-						}
-					}
-					JToken originalSkins = gld.SelectToken(skins.Path, false);
-					if (originalSkins != null)
-					{
-						skins.Merge(originalSkins);
-					}
-				}
-			}
-			foreach (JToken jtoken in patch.SelectTokens("$.skinData.*").ToArray())
-			{
-				JObject token = jtoken.Cast<JObject>();
-				string id = Utility.GetJTokenName(token);
-				int index = skinInfo.FindIndex(t => t.Item2 == id);
-				if (skinInfo.ElementAtOrDefault(index) != null)
-				{
-					SkinData skinData = new SkinData();
-					if (token["color"] != null)
-					{
-						skinData.color = (int)token["color"];
-					}
-					if (token["language"] != null)
-					{
-						skinData.language = token["language"].ToString();
-					}
-					skinInfo[index] = new Tuple<int, string, SkinData?>(skinInfo[index].Item1, skinInfo[index].Item2, skinData);
-				}
-			}
-			patch.Remove("skinData");
-
 			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
 			{
 				JObject token = jtoken.Cast<JObject>();
@@ -506,23 +446,65 @@ namespace PolyMod.Managers
 					if (char.IsLower(dataType[0]))
 					{
 						dataType = "Polytopia.Data." + char.ToUpper(dataType[0], CultureInfo.InvariantCulture) + dataType.Substring(1) + "+Type";
-						Console.WriteLine($"Checking type: {dataType}");
 
 						Type? type = Type.GetType($"{dataType}, GameLogicAssembly");
 						if (type != null)
 						{
-							ProcessMapping(type, token, id);
-						}
+							MethodInfo methodInfo = typeof(EnumCache<>).MakeGenericType(type).GetMethod("AddMapping");
+
+							methodInfo.Invoke(null, new object[] { id, autoidx });
+							methodInfo.Invoke(null, new object[] { id, autoidx });
+						} // todo: redo and return prefabs system
 					}
 
 					Plugin.logger.LogInfo("Created mapping for " + dataType + " with id " + id + " and index " + autoidx);
 					autoidx++;
 				}
 			}
-
 			foreach (JToken jtoken in patch.SelectTokens("$.tribeData.*").ToArray())
 			{
 				JObject token = jtoken.Cast<JObject>();
+
+				if ((int)token["idx"] >= Plugin.AUTOIDX_STARTS_FROM)
+				{
+					customTribes.Add((TribeData.Type)autoidx);
+					token["style"] = token["climate"] = climateAutoidx++;
+				}
+
+				if (token["skins"] != null)
+				{
+					JArray skins = token["skins"].Cast<JArray>();
+					foreach (var skin in skins._values)
+					{
+						string skinValue = skin.ToString();
+						if (!Enum.TryParse<SkinType>(skinValue, out _))
+						{
+							EnumCache<SkinType>.AddMapping(skinValue, (SkinType)autoidx);
+							skinInfo.Add(new Tuple<int, string, SkinData?>(autoidx, skinValue, null));
+							Plugin.logger.LogInfo($"Created mapping for skinType {skinValue} with id {autoidx}");
+
+							if (Utility.GetJTokenName(token) == "aquarion")
+								EnumCache<TileData.EffectType>.AddMapping(skinValue, (TileData.EffectType)autoidx);
+
+							autoidx++;
+						}
+					}
+
+					foreach (var skin in skinInfo)
+					{
+						if (skins._values.Contains(skin.Item2))
+						{
+							skins._values.Remove(skin.Item2);
+							skins._values.Add(skin.Item1);
+						}
+					}
+
+					JToken originalSkins = gld.SelectToken(skins.Path, false);
+					if (originalSkins != null)
+					{
+						skins.Merge(originalSkins);
+					}
+				}
 
 				if (token["preview"] != null)
 				{
@@ -530,68 +512,34 @@ namespace PolyMod.Managers
 					tribePreviews[Utility.GetJTokenName(token)] = preview;
 				}
 			}
-			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
-		}
 
-		private static void ProcessMapping(Type type, JObject token, string id)
-		{
-			MethodInfo methodInfo = typeof(EnumCache<>).MakeGenericType(type).GetMethod("AddMapping");
-
-			methodInfo.Invoke(null, new object[] { id, autoidx });
-			methodInfo.Invoke(null, new object[] { id, autoidx });
-
-			switch (type.FullName)
+			foreach (JToken jtoken in patch.SelectTokens("$.skinData.*").ToArray())
 			{
-				case "Polytopia.Data.TribeData+Type":
-					customTribes.Add((TribeData.Type)autoidx);
-					token["style"] = climateAutoidx;
-					token["climate"] = climateAutoidx;
-					climateAutoidx++;
-					break;
-				case "Polytopia.Data.TechData+Type":
-					int cost = (int)token["cost"];
-					if (cost > maxTechTier) maxTechTier = cost;
-					break;
-				case "Polytopia.Data.UnitData+Type":
-					UnitData.Type unitPrefabType = UnitData.Type.Scout;
-					if (token["prefab"] != null)
+				JObject token = jtoken.Cast<JObject>();
+				string id = Utility.GetJTokenName(token);
+				int index = skinInfo.FindIndex(t => t.Item2 == id);
+
+				if (index >= 0)
+				{
+					SkinData skinData = new SkinData
 					{
-						TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-						string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-						if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
-						{
-							unitPrefabType = parsedType;
-						}
-					}
-					PrefabManager.units.TryAdd((int)(UnitData.Type)autoidx, PrefabManager.units[(int)unitPrefabType]);
-					break;
-				case "Polytopia.Data.ImprovementData+Type":
-					ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
-					if (token["prefab"] != null)
-					{
-						TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-						string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-						if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
-						{
-							improvementPrefabType = parsedType;
-						}
-					}
-					PrefabManager.improvements.TryAdd((ImprovementData.Type)autoidx, PrefabManager.improvements[improvementPrefabType]);
-					break;
-				case "Polytopia.Data.ResourceData+Type":
-					ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
-					if (token["prefab"] != null)
-					{
-						TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-						string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-						if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
-						{
-							resourcePrefabType = parsedType;
-						}
-					}
-					PrefabManager.resources.TryAdd((ResourceData.Type)autoidx, PrefabManager.resources[resourcePrefabType]);
-					break;
+						color = token["color"] != null ? (int)token["color"] : default,
+						language = token["language"]?.ToString()
+					};
+
+					skinInfo[index] = new Tuple<int, string, SkinData?>(skinInfo[index].Item1, skinInfo[index].Item2, skinData);
+				}
 			}
+			patch.Remove("skinData");
+
+			foreach (JToken jtoken in patch.SelectTokens("$.improvementData.*").ToArray())
+			{
+				JObject token = jtoken.Cast<JObject>();
+				int cost = (int)token["cost"];
+				if (cost > maxTechTier) maxTechTier = cost;
+			}
+
+			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
 		}
 
 		private static bool SortMods()
