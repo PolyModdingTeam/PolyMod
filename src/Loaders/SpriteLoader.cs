@@ -12,6 +12,7 @@ namespace PolyMod.Loaders
 	{
 		private static bool firstTimeOpeningPreview = true;
 		private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
+		private static Dictionary<string, string> baseNameReplacements = new() { { "ground", "field" }, { "wetland", "field_flooded" } };
 
 		#region General
 
@@ -152,16 +153,6 @@ namespace PolyMod.Loaders
 			{
 				string propertyName = terrain.ToLower();
 				terrain = "field";
-				// Sprite? mountainSprite = ModManager.GetSprite("mountain" + flood, Utility.GetStyle(tribe, skinType));
-				// if (mountainSprite != null)
-				// {
-				// 	tile.mountainRenderer.Sprite = mountainSprite;
-				// }
-				// Sprite? forestSprite = ModManager.GetSprite("forest" + flood, Utility.GetStyle(tribe, skinType));
-				// if (forestSprite != null)
-				// {
-				// 	tile.forestRenderer.Sprite = forestSprite;
-				// }
 
 				PropertyInfo? rendererProperty = tile.GetType().GetProperty(propertyName + "Renderer",
 					BindingFlags.Public | BindingFlags.Instance);
@@ -192,7 +183,7 @@ namespace PolyMod.Loaders
 		[HarmonyPatch(typeof(PolytopiaSpriteRenderer), nameof(PolytopiaSpriteRenderer.ForceUpdateMesh))]
 		private static void PolytopiaSpriteRenderer_ForceUpdateMesh(PolytopiaSpriteRenderer __instance)
 		{
-			if (__instance.sprite != null)
+			if (__instance.sprite != null && string.IsNullOrEmpty(__instance.atlasName))
 			{
 				MaterialPropertyBlock materialPropertyBlock = new();
 				materialPropertyBlock.SetVector("_Flip", new Vector4(1f, 1f, 0f, 0f));
@@ -239,7 +230,7 @@ namespace PolyMod.Loaders
 						resourceType = previewTile.resourceType,
 						unitType = previewTile.unitType,
 						improvementType = previewTile.improvementType,
-						tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>() //TODO
+						tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>()
 					};
 				}
 			}
@@ -267,65 +258,19 @@ namespace PolyMod.Loaders
 		}
 
 		#endregion
-		#region InteractionBar
-
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.AddImprovementButtons))]
-		private static void InteractionBar_AddImprovementButtons(InteractionBar __instance, Tile tile)
-		{
-			PlayerState player = GameManager.LocalPlayer;
-			if (player.AutoPlay)
-			{
-				return;
-			}
-			Il2CppSystem.Collections.Generic.List<CommandBase> buildableImprovementsCommands
-				= CommandUtils.GetBuildableImprovements(GameManager.GameState, player, tile.Data, true);
-			for (int key = 0; key < buildableImprovementsCommands.Count; ++key)
-			{
-				UIRoundButton uiroundButton = __instance.quickActions.buttons[key];
-				BuildCommand buildCommand = buildableImprovementsCommands[key].Cast<BuildCommand>();
-				GameManager.GameState.GameLogicData.TryGetData(buildCommand.Type, out ImprovementData improvementData);
-				if (improvementData.CreatesUnit() == UnitData.Type.None)
-				{
-					if (uiroundButton.icon.sprite == null || uiroundButton.icon.sprite.name == "placeholder")
-					{
-						Sprite? sprite = ModManager.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvementData.type), Utility.GetStyle(player.tribe, player.skinType));
-						if (sprite != null)
-						{
-							uiroundButton.SetSprite(sprite);
-						}
-					}
-				}
-			}
-		}
-
-		#endregion
 		#region UI
 
 		[HarmonyPostfix]
-		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetTile))]
-		private static void UIUtils_GetTile(ref RectTransform __result, Polytopia.Data.TerrainData.Type type, int climate, SkinType skin) //TODO: fix crash when no sprites
+		[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
+		private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeData.Type tribe, SkinType skin, bool checkForOutline, int level)
 		{
-			RectTransform rectTransform = __result;
-			TribeData.Type tribeTypeFromStyle = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(climate);
-			SkinVisualsTransientData data = new SkinVisualsTransientData
+			foreach (string key in baseNameReplacements.Keys)
 			{
-				tileClimateSettings = new TribeAndSkin(tribeTypeFromStyle, skin)
-			};
-			UIUtils.SkinnedTerrainSprites skinnedTerrainSprites = UIUtils.GetTerrainSprite(data, type, GameManager.GetSpriteAtlasManager());
-
-			int count = 0;
-			foreach (Il2CppSystem.Object child in rectTransform)
-			{
-				Transform childTransform = child.Cast<Transform>();
-				Image image = childTransform.GetComponent<Image>();
-				Sprite? sprite = count == 0 ? skinnedTerrainSprites.groundTerrain : skinnedTerrainSprites.forestOrMountainTerrain;
-				image.name = sprite.name;
-				image.sprite = sprite;
-				image.SetNativeSize();
-				count++;
+				baseName = baseName.Replace(key, baseNameReplacements[key]);
 			}
-			__result = rectTransform;
+			Sprite? sprite = ModManager.GetSprite(baseName, Utility.GetStyle(tribe, skin), level);
+			if(sprite != null)
+				__result.sprite = sprite;
 		}
 
 		[HarmonyPostfix]
@@ -343,58 +288,18 @@ namespace PolyMod.Loaders
 		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(SkinVisualsTransientData), typeof(ImprovementData.Type), typeof(SpriteAtlasManager))]
 		private static void UIUtils_GetImprovementSprite_2(ref Sprite __result, SkinVisualsTransientData data, ImprovementData.Type improvement, SpriteAtlasManager atlasManager)
 		{
-			TribeData.Type tribe = data.foundingTribeSettings.tribe;
-			SkinType skin = data.foundingTribeSettings.skin;
-			UIUtils_GetImprovementSprite(ref __result, improvement, tribe, skin, atlasManager);
+			UIUtils_GetImprovementSprite(ref __result, improvement, data.foundingTribeSettings.tribe, data.foundingTribeSettings.skin, atlasManager);
 		}
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetResourceSprite))]
 		private static void UIUtils_GetResourceSprite(ref Sprite __result, SkinVisualsTransientData data, ResourceData.Type resource, SpriteAtlasManager atlasManager)
 		{
-			TribeData.Type tribe = data.tileClimateSettings.tribe;
-			SkinType skin = data.tileClimateSettings.skin;
-
-			Sprite? sprite = ModManager.GetSprite(EnumCache<ResourceData.Type>.GetName(resource), Utility.GetStyle(tribe, skin));
+			Sprite? sprite = ModManager.GetSprite(EnumCache<ResourceData.Type>.GetName(resource), Utility.GetStyle(data.tileClimateSettings.tribe, data.tileClimateSettings.skin));
 			if (sprite != null)
 			{
 				__result = sprite;
 			}
-		}
-
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetTerrainSprite))]
-		private static void UIUtils_GetTerrainSprite(ref UIUtils.SkinnedTerrainSprites __result, SkinVisualsTransientData data, Polytopia.Data.TerrainData.Type terrain, SpriteAtlasManager atlasManager)
-		{
-			string style = Utility.GetStyle(data.tileClimateSettings.tribe, data.tileClimateSettings.skin);
-
-			Sprite? sprite;
-			Sprite? groundSprite = __result.groundTerrain;
-			Sprite? forestOrMountainSprite = __result.forestOrMountainTerrain;
-
-			if (terrain == Polytopia.Data.TerrainData.Type.Mountain || terrain == Polytopia.Data.TerrainData.Type.Forest)
-			{
-				sprite = ModManager.GetSprite("field", style);
-				if (sprite != null)
-				{
-					groundSprite = sprite;
-				}
-				sprite = ModManager.GetSprite(EnumCache<Polytopia.Data.TerrainData.Type>.GetName(terrain), style);
-				if (sprite != null)
-				{
-					forestOrMountainSprite = sprite;
-				}
-			}
-			else
-			{
-				sprite = ModManager.GetSprite(EnumCache<Polytopia.Data.TerrainData.Type>.GetName(terrain), style);
-				if (sprite != null)
-				{
-					groundSprite = sprite;
-				}
-			}
-			__result.groundTerrain = groundSprite;
-			__result.forestOrMountainTerrain = forestOrMountainSprite;
 		}
 
 		#endregion
