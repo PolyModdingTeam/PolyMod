@@ -647,7 +647,7 @@ namespace PolyMod.Managers
 			mods.Clear();
 			mods.AddRange(sorted);
 			mods.AddRange(unsuccessfulMods);
-			Console.WriteLine(s.ElapsedMilliseconds);
+			// Plugin.logger.LogInfo(s.ElapsedMilliseconds);
 			return true;
 		}
 

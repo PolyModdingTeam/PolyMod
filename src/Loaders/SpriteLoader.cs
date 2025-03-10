@@ -12,7 +12,6 @@ namespace PolyMod.Loaders
 	{
 		private static bool firstTimeOpeningPreview = true;
 		private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
-		private static Dictionary<string, string> baseNameReplacements = new() { { "ground", "field" }, { "wetland", "field_flooded" } };
 
 		#region General
 
@@ -44,6 +43,17 @@ namespace PolyMod.Loaders
 				return;
 			}
 			catch { }
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
+		private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeData.Type tribe, SkinType skin, bool checkForOutline, int level)
+		{
+			baseName = Utility.ReverseSpriteData(baseName);
+
+			Sprite? sprite = ModManager.GetSprite(baseName, Utility.GetStyle(tribe, skin), level);
+			if(sprite != null)
+				__result.sprite = sprite;
 		}
 
 		#endregion
@@ -259,19 +269,6 @@ namespace PolyMod.Loaders
 
 		#endregion
 		#region UI
-
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
-		private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeData.Type tribe, SkinType skin, bool checkForOutline, int level)
-		{
-			foreach (string key in baseNameReplacements.Keys)
-			{
-				baseName = baseName.Replace(key, baseNameReplacements[key]);
-			}
-			Sprite? sprite = ModManager.GetSprite(baseName, Utility.GetStyle(tribe, skin), level);
-			if(sprite != null)
-				__result.sprite = sprite;
-		}
 
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteAtlasManager))]
