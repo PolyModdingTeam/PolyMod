@@ -22,15 +22,15 @@
 		"German (Germany)": "UNSER DISCORD"
 	},
 	"polymod_hub_footer": {
-		"English": "Join our discord! Feel free to discuss mods, create them and ask for help!\n\n{0}Special thanks{1}\nFor modding:\n___exploit___\njohnklipi\nhighflyer\nMRB\nArtemis\nParanoia\nFor contributions to the community:\nNyrvv\nCitillan\nLukasAyas\nFor localization help:\n∑∫ỹriȱŋ: Whail\nPolish: Brober\nGerman: Maradon\nFor icon:\nVaM",
-		"Russian": "Присоединяйтесь к нашему дискорду! Не стесняйтесь обсуждать моды, создавать их и просить о помощи!\n\n{0}Особая благодарность{1}\nЗа моддинг:\n___exploit___\njohnklipi\nhighflyer\nMRB\nArtemis\nParanoia\nЗа вклад в развитие сообщества:\nNyrvv\nCitillan\nLukasAyas\nЗа помощь в переводе:\n∑∫ỹriȱŋ: Whail\nПольский: Brober\nНемецкий: Maradon\nЗа иконку:\nVaM",
-		"Turkish": "Discord sunucumuza katıl! Orada modlar oluşturabilir, tartışabilir ve yardım isteyebilirsin!",
-		"Spanish (Mexico)": "Unete a nuestro discord! Aqui se puede discutir sobre la modificacion del juego, guias para crear su propio, preguntar a los creadores, y mas!",
-		"French (France)": "Rejoignez notre discord! N'hésitez pas à discuter des mods, à en créer et à demander de l'aide!",
-		"Polish": "Dołącz do naszego discorda! Zachęcamy do omawiania modów, tworzenia ich lub proszenia o pomoc!",
-		"Portuguese (Brazil)": "Entre no nosso Discord! Sinta-se à vontade para discutir sobre os mods, criar novos mods e pedir ajuda!",
-		"Elyrion": "§ii∫ Δi^#ȱrΔ! Δi^#₺^^ mȱΔ#, ȱrrȱ ỹ a^š ỹȱπ!",
-		"German (Germany)": "Tritt unserem Discord bei, um Hilfe zu bekommen, Mods zu diskutieren oder sogar selbst zu erstellen!"
+		"English": "Join our discord! Feel free to discuss mods, create them and ask for help!\n\n{0}Special thanks{1}\n___exploit___\njohnklipi\nhighflyer\nMRB\nArtemis\nParanoia\nNyrvv\nCitillan\nLukasAyas\nVaM\nWhail\nBrober\nMaradon",
+		"Russian": "Присоединяйтесь к нашему дискорду! Не стесняйтесь обсуждать моды, создавать их и просить о помощи!\n\n{0}Особая благодарность{1}\n___exploit___\njohnklipi\nhighflyer\nMRB\nArtemis\nParanoia\nNyrvv\nCitillan\nLukasAyas\nVaM\nWhail\nBrober\nMaradon",
+		"Turkish": "Discord sunucumuza katıl! Orada modlar oluşturabilir, tartışabilir ve yardım isteyebilirsin!\n\n{0}Hepinize çok teşekkür ederim:{1}\n___exploit___\njohnklipi\nhighflyer\nMRB\nArtemis\nParanoia\nNyrvv\nCitillan\nLukasAyas\nVaM\nWhail\nBrober\nMaradon",
+		"Spanish (Mexico)": "Unete a nuestro discord! Aqui se puede discutir sobre la modificacion del juego, guias para crear su propio, preguntar a los creadores, y mas!\n\n{0}Special thanks{1}\n___exploit___\njohnklipi\nhighflyer\nMRB\nArtemis\nParanoia\nNyrvv\nCitillan\nLukasAyas\nVaM\nWhail\nBrober\nMaradon",
+		"French (France)": "Rejoignez notre discord! N'hésitez pas à discuter des mods, à en créer et à demander de l'aide!\n\n{0}Special thanks{1}\n___exploit___\njohnklipi\nhighflyer\nMRB\nArtemis\nParanoia\nNyrvv\nCitillan\nLukasAyas\nVaM\nWhail\nBrober\nMaradon",
+		"Polish": "Dołącz do naszego discorda! Zachęcamy do omawiania modów, tworzenia ich lub proszenia o pomoc!\n\n{0}Special thanks{1}\n___exploit___\njohnklipi\nhighflyer\nMRB\nArtemis\nParanoia\nNyrvv\nCitillan\nLukasAyas\nVaM\nWhail\nBrober\nMaradon",
+		"Portuguese (Brazil)": "Entre no nosso Discord! Sinta-se à vontade para discutir sobre os mods, criar novos mods e pedir ajuda!\n\n{0}Special thanks{1}\n___exploit___\njohnklipi\nhighflyer\nMRB\nArtemis\nParanoia\nNyrvv\nCitillan\nLukasAyas\nVaM\nWhail\nBrober\nMaradon",
+		"Elyrion": "§ii∫ Δi^#ȱrΔ! Δi^#₺^^ mȱΔ#, ȱrrȱ ỹ a^š ỹȱπ!\n\n{0}Special thanks{1}\n___exploit___\njohnklipi\nhighflyer\nMRB\nArtemis\nParanoia\nNyrvv\nCitillan\nLukasAyas\nVaM\nWhail\nBrober\nMaradon",
+		"German (Germany)": "Tritt unserem Discord bei, um Hilfe zu bekommen, Mods zu diskutieren oder sogar selbst zu erstellen!\n\n{0}Special thanks{1}\n___exploit___\njohnklipi\nhighflyer\nMRB\nArtemis\nParanoia\nNyrvv\nCitillan\nLukasAyas\nVaM\nWhail\nBrober\nMaradon"
 	},
 	"polymod_hub_header": {
 		"English": "{0}Welcome!{1}\nHere you can see the list of all currently loaded mods:",
@@ -41,7 +41,7 @@
 		"Polish": "{0}Witaj!{1}\nTutaj możesz zobaczyć listę wszystkich aktualnie załadowanych modów:",
 		"Portuguese (Brazil)": "{0}Bem vindo!{1}\nAqui você pode ver a lista dos mods carregados:",
 		"Elyrion": "{0}þr∑∑Ŧ!{1}\niii ŋ∑ƒ ƒ§§π mȱΔ#:",
-		"German (Germany)": "[0} Willkommen! {1}\nDiese Mods sind gerade eben geladen:"
+		"German (Germany)": "{0} Willkommen! {1}\nDiese Mods sind gerade eben geladen:"
 	},
 	"polymod_hub_mod": {
 		"English": "Name: {0}\nStatus: {1}\nAuthors: {2}\nVersion: {3}",
@@ -93,7 +93,7 @@
 		"Polish": "załadowano pomyślnie",
 		"Portuguese (Brazil)": "carregado com êxito",
 		"Elyrion": "ƒ§§π ^₺##∑^^₼₺∫∫ỹ",
-		"German (Germany)": "Erfolgreich geladen!"
+		"German (Germany)": "Erfolgreich geladen"
 	},
 	"polymod_hub_mod_status_dependenciesunsatisfied": {
 		"English": "required dependencies not found",

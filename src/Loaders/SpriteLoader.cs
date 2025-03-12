@@ -146,18 +146,6 @@ namespace PolyMod.Loaders
 			if(tile.data.effects.Contains(TileData.EffectType.Flooded))
 			{
 				flood = "_flooded";
-				foreach (TileData.EffectType effect in tile.data.effects)
-				{
-					if(effect == TileData.EffectType.Swamped)
-					{
-						skinType = SkinType.Swamp;
-						break;
-					}
-					if((int)effect >= Plugin.AUTOIDX_STARTS_FROM)
-					{
-						skinType = (SkinType)(int)effect;
-					}
-				}
 			}
 			if (tile.data.terrain is Polytopia.Data.TerrainData.Type.Forest or Polytopia.Data.TerrainData.Type.Mountain)
 			{
@@ -202,20 +190,6 @@ namespace PolyMod.Loaders
 			}
 		}
 
-		[HarmonyPostfix]
-		[HarmonyPatch(typeof(TileData), nameof(TileData.Flood))]
-		private static void TileData_Flood(TileData __instance, PlayerState playerState)
-		{
-			if (playerState == null || (int)playerState.skinType < Plugin.AUTOIDX_STARTS_FROM)
-				return;
-			GameLogicData gld = PolytopiaDataManager.gameLogicDatas[VersionManager.GAME_LOGIC_DATA_VERSION];
-			if (gld.TryGetData(TribeData.Type.Aquarion, out TribeData tribeData) &&
-				tribeData.skins.Contains(playerState.skinType))
-			{
-				__instance.AddEffect((TileData.EffectType)(int)playerState.skinType);
-			}
-		}
-
 		#endregion
 		#region TribePreview
 
@@ -242,6 +216,7 @@ namespace PolyMod.Loaders
 						improvementType = previewTile.improvementType,
 						tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>()
 					};
+					__result = true;
 				}
 			}
 		}

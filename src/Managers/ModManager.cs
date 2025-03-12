@@ -442,20 +442,20 @@ namespace PolyMod.Managers
 				if (token["skins"] != null)
 				{
 					JArray skins = token["skins"].Cast<JArray>();
-
-					foreach (var skin in skins._values)
+					List<string> skinsToRemove = new();
+					List<JToken> skinValues = skins._values.ToArray().ToList();
+					foreach (var skin in skinValues)
 					{
 						string skinValue = skin.ToString();
-
-						if (!Enum.TryParse<SkinType>(skinValue, out _))
+						if (skinValue.StartsWith("-") && Enum.TryParse<SkinType>(skinValue.Substring(1), out _))
+						{
+							skinsToRemove.Add(skinValue.Substring(1));
+						}
+						else if (!Enum.TryParse<SkinType>(skinValue, out _))
 						{
 							EnumCache<SkinType>.AddMapping(skinValue, (SkinType)autoidx);
 							skinInfo.Add(new Tuple<int, string, SkinData?>(autoidx, skinValue, null));
 							Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + autoidx);
-							if(Utility.GetJTokenName(token) == "aquarion")
-							{
-								EnumCache<TileData.EffectType>.AddMapping(skinValue, (TileData.EffectType)autoidx);
-							}
 							autoidx++;
 						}
 					}
@@ -471,6 +471,11 @@ namespace PolyMod.Managers
 					if (originalSkins != null)
 					{
 						skins.Merge(originalSkins);
+						foreach(var skin in skinsToRemove)
+						{
+							skins._values.Remove(skin);
+							skins._values.Remove("-" + skin);
+						}
 					}
 				}
 			}
