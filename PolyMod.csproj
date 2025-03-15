@@ -27,11 +27,13 @@
     <Target Name="AddGeneratedFile" BeforeTargets="BeforeCompile;CoreCompile" Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)GeneratedFile.cs">
         <PropertyGroup>
             <GeneratedText><![CDATA[
-namespace PolyMod;
-public partial class Plugin
+namespace PolyMod
 {
-    internal const string VERSION = "$(Version)"%3B
-    internal static readonly Il2CppSystem.Version POLYTOPIA_VERSION = new("$(PolytopiaVersion)")%3B
+    public partial class Plugin
+    {
+        internal const string VERSION = "$(Version)"%3B
+        internal static readonly Il2CppSystem.Version POLYTOPIA_VERSION = new("$(PolytopiaVersion)")%3B
+    }
 }
       ]]></GeneratedText>
             <GeneratedFilePath>$(IntermediateOutputPath)Props.cs</GeneratedFilePath>
