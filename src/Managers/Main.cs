@@ -75,6 +75,14 @@ public static class Main
 	{
 		stopwatch.Start();
 		Harmony.CreateAndPatchAll(typeof(Main));
+		Mod.Manifest polytopia = new(
+			"polytopia",
+			"The Battle of Polytopia",
+			new(Application.version.ToString()),
+			new string[] { "Midjiwan AB" },
+			Array.Empty<Mod.Dependency>()
+		);
+		Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
 		Loader.LoadMods(Registry.mods);
 		dependencyCycle = !Loader.SortMods(Registry.mods);
 		if (dependencyCycle) return;
@@ -112,14 +120,6 @@ public static class Main
 	internal static void Load(JObject gameLogicdata)
 	{
 		stopwatch.Start();
-		Mod.Manifest polytopia = new(
-			"polytopia",
-			"The Battle of Polytopia",
-			new(VersionManager.SemanticVersion.ToString()),
-			new string[] { "Midjiwan AB" },
-			Array.Empty<Mod.Dependency>()
-		);
-		Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
 		Loc.BuildAndLoadLocalization(
 			JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
 				Plugin.GetResource("localization.json")
