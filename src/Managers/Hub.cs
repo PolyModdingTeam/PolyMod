@@ -104,7 +104,7 @@ internal static class Hub
                 new(
                     "polymod.hub.discord",
                     callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
-                        NativeHelpers.OpenURL("https://discord.gg/eWPdhWtfVy", false))
+                        NativeHelpers.OpenURL(Plugin.DISCORD_LINK, false))
                 )
             };
             if (Plugin.config.debug)

@@ -30,6 +30,8 @@ public static class Visual
 		[JsonConverter(typeof(EnumCacheJson<ImprovementData.Type>))]
 		public ImprovementData.Type improvementType = ImprovementData.Type.None;
 	}
+	public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot);
+	public record SkinInfo(int idx, string id, SkinData? skinData);
 	public static Dictionary<int, int> basicPopupWidths = new();
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;

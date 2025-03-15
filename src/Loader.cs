@@ -270,7 +270,7 @@ public static class Loader
 		float pixelsPerUnit = 2112f;
 		if (Registry.spriteInfos.ContainsKey(name))
 		{
-			Registry.SpriteInfo spriteData = Registry.spriteInfos[name];
+			Visual.SpriteInfo spriteData = Registry.spriteInfos[name];
 			pivot = spriteData.pivot ?? pivot;
 			pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
 		}
@@ -285,7 +285,7 @@ public static class Loader
 		try
 		{
 			Registry.spriteInfos = Registry.spriteInfos
-				.Concat(JsonSerializer.Deserialize<Dictionary<string, Registry.SpriteInfo>>(
+				.Concat(JsonSerializer.Deserialize<Dictionary<string, Visual.SpriteInfo>>(
 					file.bytes,
 					new JsonSerializerOptions()
 					{
@@ -428,17 +428,17 @@ public static class Loader
 					else if (!Enum.TryParse<SkinType>(skinValue, out _))
 					{
 						EnumCache<SkinType>.AddMapping(skinValue, (SkinType)Registry.autoidx);
-						Registry.skinInfo.Add(new Tuple<int, string, SkinData?>(Registry.autoidx, skinValue, null));
+						Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
 						Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
 						Registry.autoidx++;
 					}
 				}
 				foreach (var skin in Registry.skinInfo)
 				{
-					if (skins._values.Contains(skin.Item2))
+					if (skins._values.Contains(skin.id))
 					{
-						skins._values.Remove(skin.Item2);
-						skins._values.Add(skin.Item1);
+						skins._values.Remove(skin.id);
+						skins._values.Add(skin.idx);
 					}
 				}
 				JToken originalSkins = gld.SelectToken(skins.Path, false);
@@ -457,7 +457,7 @@ public static class Loader
 		{
 			JObject token = jtoken.Cast<JObject>();
 			string id = Util.GetJTokenName(token);
-			int index = Registry.skinInfo.FindIndex(t => t.Item2 == id);
+			int index = Registry.skinInfo.FindIndex(t => t.id == id);
 			if (Registry.skinInfo.ElementAtOrDefault(index) != null)
 			{
 				SkinData skinData = new SkinData();
@@ -469,7 +469,7 @@ public static class Loader
 				{
 					skinData.language = token["language"].ToString();
 				}
-				Registry.skinInfo[index] = new Tuple<int, string, SkinData?>(Registry.skinInfo[index].Item1, Registry.skinInfo[index].Item2, skinData);
+				Registry.skinInfo[index] = new Visual.SkinInfo(Registry.skinInfo[index].idx, Registry.skinInfo[index].id, skinData);
 			}
 		}
 		patch.Remove("skinData");

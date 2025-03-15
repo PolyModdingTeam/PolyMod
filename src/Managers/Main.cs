@@ -1,10 +1,7 @@
 using BepInEx.Unity.IL2CPP.Logging;
 using HarmonyLib;
-using Il2CppSystem.Linq;
-using LibCpp2IL;
 using Newtonsoft.Json.Linq;
 using Polytopia.Data;
-using System.Data;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -27,10 +24,10 @@ public static class Main
 		if (!fullyInitialized)
 		{
 			Load(rootObject);
-			foreach (Tuple<int, string, SkinData?> skin in Registry.skinInfo)
+			foreach (Visual.SkinInfo skin in Registry.skinInfo)
 			{
-				if (skin.Item3 != null)
-					__instance.skinData[(SkinType)skin.Item1] = skin.Item3;
+				if (skin.skinData != null)
+					__instance.skinData[(SkinType)skin.idx] = skin.skinData;
 			}
 			fullyInitialized = true;
 		}
@@ -66,7 +63,12 @@ public static class Main
 	[HarmonyPatch(typeof(IL2CPPUnityLogSource), nameof(IL2CPPUnityLogSource.UnityLogCallback))]
 	private static bool IL2CPPUnityLogSource_UnityLogCallback(string logLine, string exception, LogType type)
 	{
-		return !(type == LogType.Warning && (logLine.Contains("Failed to find atlas") || logLine.Contains("Could not find sprite") || logLine.Contains("Couldn't find prefab for type")));
+		foreach (string stringToIgnore in Plugin.LOG_MESSAGES_IGNORE)
+		{
+			if(logLine.Contains(stringToIgnore))
+				return false;
+		}
+		return true;
 	}
 
 	internal static void Init()
