@@ -15,6 +15,7 @@
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
         <NoWarn>NU1701</NoWarn>
+        <NoWarn>IDE0130</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
