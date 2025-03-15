@@ -29,8 +29,9 @@ namespace PolyMod
 			{ "resourceData", typeof(ResourceData.Type) },
 			{ "taskData", typeof(TaskData.Type) },
 			{ "tribeAbility", typeof(TribeAbility.Type) },
-			{ "unitAbility", typeof(TribeAbility.Type) },
-			{ "improvementAbility", typeof(TribeAbility.Type) }
+			{ "unitAbility", typeof(UnitAbility.Type) },
+			{ "improvementAbility", typeof(ImprovementAbility.Type) },
+			{ "playerAbility", typeof(PlayerAbility.Type) }
 		};
 
 		public static void AddPatchDataType(string typeId, Type type)
@@ -316,71 +317,73 @@ namespace PolyMod
 				HandleSkins(gld, patch);
 				foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
 				{
-					JObject token = jtoken.Cast<JObject>();
-
-					if (token["idx"] != null && (int)token["idx"] == -1)
+					JObject? token = jtoken.TryCast<JObject>();
+					if (token != null)
 					{
-						string id = Utility.GetJTokenName(token);
-						string dataType = Utility.GetJTokenName(token, 2);
-						token["idx"] = Main.autoidx;
-						if (typeMappings.TryGetValue(dataType, out Type? targetType))
+						if (token["idx"] != null && (int)token["idx"] == -1)
 						{
-							MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
-							if(methodInfo != null)
+							string id = Utility.GetJTokenName(token);
+							string dataType = Utility.GetJTokenName(token, 2);
+							token["idx"] = Main.autoidx;
+							if (typeMappings.TryGetValue(dataType, out Type? targetType))
 							{
-								methodInfo.Invoke(null, new object[] { id, Main.autoidx });
-								methodInfo.Invoke(null, new object[] { id, Main.autoidx });
-								if(targetType == typeof(TribeData.Type))
+								MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
+								if(methodInfo != null)
 								{
-										Main.customTribes.Add((TribeData.Type)Main.autoidx);
-										token["style"] = Main.climateAutoidx;
-										token["climate"] = Main.climateAutoidx;
-										Main.climateAutoidx++;
-								}
-								else if(targetType == typeof(UnitData.Type))
-								{
-									UnitData.Type unitPrefabType = UnitData.Type.Scout;
-									if (token["prefab"] != null)
+									methodInfo.Invoke(null, new object[] { id, Main.autoidx });
+									methodInfo.Invoke(null, new object[] { id, Main.autoidx });
+									if(targetType == typeof(TribeData.Type))
 									{
-										TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-										string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-										if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
-										{
-											unitPrefabType = parsedType;
-										}
+											Main.customTribes.Add((TribeData.Type)Main.autoidx);
+											token["style"] = Main.climateAutoidx;
+											token["climate"] = Main.climateAutoidx;
+											Main.climateAutoidx++;
 									}
-									PrefabManager.units.TryAdd((int)(UnitData.Type)Main.autoidx, PrefabManager.units[(int)unitPrefabType]);
-								}
-								else if(targetType == typeof(ImprovementData.Type))
-								{
-									ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
-									if (token["prefab"] != null)
+									else if(targetType == typeof(UnitData.Type))
 									{
-										TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-										string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-										if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
+										UnitData.Type unitPrefabType = UnitData.Type.Scout;
+										if (token["prefab"] != null)
 										{
-											improvementPrefabType = parsedType;
+											TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
+											string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
+											if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
+											{
+												unitPrefabType = parsedType;
+											}
 										}
+										PrefabManager.units.TryAdd((int)(UnitData.Type)Main.autoidx, PrefabManager.units[(int)unitPrefabType]);
 									}
-									PrefabManager.improvements.TryAdd((ImprovementData.Type)Main.autoidx, PrefabManager.improvements[improvementPrefabType]);
-								}
-								else if(targetType == typeof(ResourceData.Type))
-								{
-									ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
-									if (token["prefab"] != null)
+									else if(targetType == typeof(ImprovementData.Type))
 									{
-										TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-										string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-										if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
+										ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
+										if (token["prefab"] != null)
 										{
-											resourcePrefabType = parsedType;
+											TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
+											string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
+											if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
+											{
+												improvementPrefabType = parsedType;
+											}
 										}
+										PrefabManager.improvements.TryAdd((ImprovementData.Type)Main.autoidx, PrefabManager.improvements[improvementPrefabType]);
 									}
-									PrefabManager.resources.TryAdd((ResourceData.Type)Main.autoidx, PrefabManager.resources[resourcePrefabType]);
+									else if(targetType == typeof(ResourceData.Type))
+									{
+										ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
+										if (token["prefab"] != null)
+										{
+											TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
+											string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
+											if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
+											{
+												resourcePrefabType = parsedType;
+											}
+										}
+										PrefabManager.resources.TryAdd((ResourceData.Type)Main.autoidx, PrefabManager.resources[resourcePrefabType]);
+									}
+									Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + Main.autoidx);
+									Main.autoidx++;
 								}
-								Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + Main.autoidx);
-								Main.autoidx++;
 							}
 						}
 					}
