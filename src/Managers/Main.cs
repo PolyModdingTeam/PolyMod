@@ -13,18 +13,8 @@ using UnityEngine;
 namespace PolyMod.Managers;
 public static class Main
 {
-	public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot);
 
-	public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
-	public static Dictionary<string, Sprite> sprites = new();
-	public static Dictionary<string, AudioSource> audioClips = new();
-	public static Dictionary<string, Mod> mods = new();
-	public static Dictionary<string, Visual.PreviewTile[]> tribePreviews = new();
-	public static Dictionary<string, SpriteInfo> spriteInfos = new();
 	internal static readonly Stopwatch stopwatch = new();
-	internal static List<TribeData.Type> customTribes = new();
-	internal static List<Tuple<int, string, SkinData?>> skinInfo = new();
-	internal static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 	internal static bool fullyInitialized;
 	internal static bool dependencyCycle;
 
@@ -37,7 +27,7 @@ public static class Main
 		if (!fullyInitialized)
 		{
 			Load(rootObject);
-			foreach (Tuple<int, string, SkinData?> skin in skinInfo)
+			foreach (Tuple<int, string, SkinData?> skin in Registry.skinInfo)
 			{
 				if (skin.Item3 != null)
 					__instance.skinData[(SkinType)skin.Item1] = skin.Item3;
@@ -69,7 +59,7 @@ public static class Main
 		bool forceUpdate = false
 	)
 	{
-		foreach (var tribe in customTribes) __result.Add(tribe);
+		foreach (var tribe in Registry.customTribes) __result.Add(tribe);
 	}
 
 	[HarmonyPrefix]
@@ -83,13 +73,13 @@ public static class Main
 	{
 		stopwatch.Start();
 		Harmony.CreateAndPatchAll(typeof(Main));
-		Loader.LoadMods(mods);
-		dependencyCycle = !Loader.SortMods(mods);
+		Loader.LoadMods(Registry.mods);
+		dependencyCycle = !Loader.SortMods(Registry.mods);
 		if (dependencyCycle) return;
 
 		StringBuilder looseSignatureString = new();
 		StringBuilder signatureString = new();
-		foreach (var (id, mod) in mods)
+		foreach (var (id, mod) in Registry.mods)
 		{
 			if (mod.status != Mod.Status.Success) continue;
 			foreach (var file in mod.files)
@@ -127,7 +117,7 @@ public static class Main
 			new string[] { "Midjiwan AB" },
 			Array.Empty<Mod.Dependency>()
 		);
-		mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
+		Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
 		Loc.BuildAndLoadLocalization(
 			JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
 				Plugin.GetResource("localization.json")
@@ -135,7 +125,7 @@ public static class Main
 		);
 		if (dependencyCycle) return;
 
-		foreach (var (id, mod) in mods)
+		foreach (var (id, mod) in Registry.mods)
 		{
 			if (mod.status != Mod.Status.Success) continue;
 			foreach (var file in mod.files)
@@ -161,27 +151,5 @@ public static class Main
 
 		stopwatch.Stop();
 		Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
-	}
-
-	public static Sprite? GetSprite(string name, string style = "", int level = 0)
-	{
-		Sprite? sprite = null;
-		name = name.ToLower();
-		style = style.ToLower();
-		sprite = sprites.GetOrDefault($"{name}__", sprite);
-		sprite = sprites.GetOrDefault($"{name}_{style}_", sprite);
-		sprite = sprites.GetOrDefault($"{name}__{level}", sprite);
-		sprite = sprites.GetOrDefault($"{name}_{style}_{level}", sprite);
-		return sprite;
-	}
-
-	public static AudioClip? GetAudioClip(string name, string style)
-	{
-		AudioSource? audioSource = null;
-		name = name.ToLower();
-		style = style.ToLower();
-		audioSource = audioClips.GetOrDefault($"{name}_{style}", audioSource);
-		if (audioSource == null) return null;
-		return audioSource.clip;
 	}
 }

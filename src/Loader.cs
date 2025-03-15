@@ -268,24 +268,24 @@ public static class Loader
 			_ => new(0.5f, 0.5f),
 		};
 		float pixelsPerUnit = 2112f;
-		if (Main.spriteInfos.ContainsKey(name))
+		if (Registry.spriteInfos.ContainsKey(name))
 		{
-			Main.SpriteInfo spriteData = Main.spriteInfos[name];
+			Registry.SpriteInfo spriteData = Registry.spriteInfos[name];
 			pivot = spriteData.pivot ?? pivot;
 			pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
 		}
 		Sprite sprite = Visual.BuildSprite(file.bytes, pivot, pixelsPerUnit);
 		GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
 		GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
-		Main.sprites.Add(name, sprite);
+		Registry.sprites.Add(name, sprite);
 	}
 
 	public static void LoadSpriteInfoFile(Mod mod, Mod.File file)
 	{
 		try
 		{
-			Main.spriteInfos = Main.spriteInfos
-				.Concat(JsonSerializer.Deserialize<Dictionary<string, Main.SpriteInfo>>(
+			Registry.spriteInfos = Registry.spriteInfos
+				.Concat(JsonSerializer.Deserialize<Dictionary<string, Registry.SpriteInfo>>(
 					file.bytes,
 					new JsonSerializerOptions()
 					{
@@ -306,7 +306,7 @@ public static class Loader
 		AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
 		GameObject.DontDestroyOnLoad(audioSource);
 		audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
-		Main.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
+		Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
 	}
 
 	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
@@ -323,20 +323,20 @@ public static class Loader
 					{
 						string id = Util.GetJTokenName(token);
 						string dataType = Util.GetJTokenName(token, 2);
-						token["idx"] = Main.autoidx;
+						token["idx"] = Registry.autoidx;
 						if (typeMappings.TryGetValue(dataType, out Type? targetType))
 						{
 							MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
 							if (methodInfo != null)
 							{
-								methodInfo.Invoke(null, new object[] { id, Main.autoidx });
-								methodInfo.Invoke(null, new object[] { id, Main.autoidx });
+								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
+								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
 								if (targetType == typeof(TribeData.Type))
 								{
-									Main.customTribes.Add((TribeData.Type)Main.autoidx);
-									token["style"] = Main.climateAutoidx;
-									token["climate"] = Main.climateAutoidx;
-									Main.climateAutoidx++;
+									Registry.customTribes.Add((TribeData.Type)Registry.autoidx);
+									token["style"] = Registry.climateAutoidx;
+									token["climate"] = Registry.climateAutoidx;
+									Registry.climateAutoidx++;
 								}
 								else if (targetType == typeof(UnitData.Type))
 								{
@@ -350,7 +350,7 @@ public static class Loader
 											unitPrefabType = parsedType;
 										}
 									}
-									PrefabManager.units.TryAdd((int)(UnitData.Type)Main.autoidx, PrefabManager.units[(int)unitPrefabType]);
+									PrefabManager.units.TryAdd((int)(UnitData.Type)Registry.autoidx, PrefabManager.units[(int)unitPrefabType]);
 								}
 								else if (targetType == typeof(ImprovementData.Type))
 								{
@@ -364,7 +364,7 @@ public static class Loader
 											improvementPrefabType = parsedType;
 										}
 									}
-									PrefabManager.improvements.TryAdd((ImprovementData.Type)Main.autoidx, PrefabManager.improvements[improvementPrefabType]);
+									PrefabManager.improvements.TryAdd((ImprovementData.Type)Registry.autoidx, PrefabManager.improvements[improvementPrefabType]);
 								}
 								else if (targetType == typeof(ResourceData.Type))
 								{
@@ -378,10 +378,10 @@ public static class Loader
 											resourcePrefabType = parsedType;
 										}
 									}
-									PrefabManager.resources.TryAdd((ResourceData.Type)Main.autoidx, PrefabManager.resources[resourcePrefabType]);
+									PrefabManager.resources.TryAdd((ResourceData.Type)Registry.autoidx, PrefabManager.resources[resourcePrefabType]);
 								}
-								Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + Main.autoidx);
-								Main.autoidx++;
+								Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + Registry.autoidx);
+								Registry.autoidx++;
 							}
 						}
 					}
@@ -394,7 +394,7 @@ public static class Loader
 				if (token["preview"] != null)
 				{
 					Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
-					Main.tribePreviews[Util.GetJTokenName(token)] = preview;
+					Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
 				}
 			}
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
@@ -427,13 +427,13 @@ public static class Loader
 					}
 					else if (!Enum.TryParse<SkinType>(skinValue, out _))
 					{
-						EnumCache<SkinType>.AddMapping(skinValue, (SkinType)Main.autoidx);
-						Main.skinInfo.Add(new Tuple<int, string, SkinData?>(Main.autoidx, skinValue, null));
-						Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Main.autoidx);
-						Main.autoidx++;
+						EnumCache<SkinType>.AddMapping(skinValue, (SkinType)Registry.autoidx);
+						Registry.skinInfo.Add(new Tuple<int, string, SkinData?>(Registry.autoidx, skinValue, null));
+						Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
+						Registry.autoidx++;
 					}
 				}
-				foreach (var skin in Main.skinInfo)
+				foreach (var skin in Registry.skinInfo)
 				{
 					if (skins._values.Contains(skin.Item2))
 					{
@@ -457,8 +457,8 @@ public static class Loader
 		{
 			JObject token = jtoken.Cast<JObject>();
 			string id = Util.GetJTokenName(token);
-			int index = Main.skinInfo.FindIndex(t => t.Item2 == id);
-			if (Main.skinInfo.ElementAtOrDefault(index) != null)
+			int index = Registry.skinInfo.FindIndex(t => t.Item2 == id);
+			if (Registry.skinInfo.ElementAtOrDefault(index) != null)
 			{
 				SkinData skinData = new SkinData();
 				if (token["color"] != null)
@@ -469,7 +469,7 @@ public static class Loader
 				{
 					skinData.language = token["language"].ToString();
 				}
-				Main.skinInfo[index] = new Tuple<int, string, SkinData?>(Main.skinInfo[index].Item1, Main.skinInfo[index].Item2, skinData);
+				Registry.skinInfo[index] = new Tuple<int, string, SkinData?>(Registry.skinInfo[index].Item1, Registry.skinInfo[index].Item2, skinData);
 			}
 		}
 		patch.Remove("skinData");

@@ -56,7 +56,7 @@ public static class Visual
 		try
 		{
 			string[] names = sprite.Split('_');
-			Sprite? newSprite = Main.GetSprite(names[0], names[1]);
+			Sprite? newSprite = Registry.GetSprite(names[0], names[1]);
 			if (newSprite != null)
 			{
 				__result = newSprite;
@@ -72,7 +72,7 @@ public static class Visual
 	{
 		baseName = Util.ReverseSpriteData(baseName);
 
-		Sprite? sprite = Main.GetSprite(baseName, Util.GetStyle(tribe, skin), level);
+		Sprite? sprite = Registry.GetSprite(baseName, Util.GetStyle(tribe, skin), level);
 		if (sprite != null)
 			__result.sprite = sprite;
 	}
@@ -147,7 +147,7 @@ public static class Visual
 	{
 		string style = Util.GetStyle(transientSkinData.foundingTribeSettings.tribe, transientSkinData.foundingTribeSettings.skin);
 		string name = EnumCache<ImprovementData.Type>.GetName(__instance.tile.data.improvement.type);
-		Sprite? sprite = Main.GetSprite(name, style, __instance.Level);
+		Sprite? sprite = Registry.GetSprite(name, style, __instance.Level);
 		if (sprite != null)
 		{
 			__instance.Sprite = sprite;
@@ -181,7 +181,7 @@ public static class Visual
 				PolytopiaSpriteRenderer? renderer = (PolytopiaSpriteRenderer?)rendererProperty.GetValue(tile);
 				if (renderer != null)
 				{
-					Sprite? additionalSprite = Main.GetSprite(propertyName + flood, Util.GetStyle(tribe, skinType));
+					Sprite? additionalSprite = Registry.GetSprite(propertyName + flood, Util.GetStyle(tribe, skinType));
 					if (additionalSprite != null)
 					{
 						renderer.Sprite = additionalSprite;
@@ -191,7 +191,7 @@ public static class Visual
 			}
 		}
 
-		Sprite? sprite = Main.GetSprite(terrain + flood, Util.GetStyle(tribe, skinType));
+		Sprite? sprite = Registry.GetSprite(terrain + flood, Util.GetStyle(tribe, skinType));
 		if (sprite != null)
 		{
 			__instance.spriteRenderer.Sprite = sprite;
@@ -219,9 +219,9 @@ public static class Visual
 	private static void UIWorldPreviewData_TryGetData(ref bool __result, UIWorldPreviewData __instance, Vector2Int position, TribeData.Type tribeType, ref UITileData uiTile)
 	{
 		PreviewTile[]? preview = null;
-		if (Main.tribePreviews.ContainsKey(EnumCache<TribeData.Type>.GetName(tribeType).ToLower()))
+		if (Registry.tribePreviews.ContainsKey(EnumCache<TribeData.Type>.GetName(tribeType).ToLower()))
 		{
-			preview = Main.tribePreviews[EnumCache<TribeData.Type>.GetName(tribeType).ToLower()];
+			preview = Registry.tribePreviews[EnumCache<TribeData.Type>.GetName(tribeType).ToLower()];
 		}
 		if (preview != null)
 		{
@@ -270,7 +270,7 @@ public static class Visual
 	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteAtlasManager))]
 	private static void UIUtils_GetImprovementSprite(ref Sprite __result, ImprovementData.Type improvement, TribeData.Type tribe, SkinType skin, SpriteAtlasManager atlasManager)
 	{
-		Sprite? sprite = Main.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvement), Util.GetStyle(tribe, skin));
+		Sprite? sprite = Registry.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvement), Util.GetStyle(tribe, skin));
 		if (sprite != null)
 		{
 			__result = sprite;
@@ -288,7 +288,7 @@ public static class Visual
 	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetResourceSprite))]
 	private static void UIUtils_GetResourceSprite(ref Sprite __result, SkinVisualsTransientData data, ResourceData.Type resource, SpriteAtlasManager atlasManager)
 	{
-		Sprite? sprite = Main.GetSprite(EnumCache<ResourceData.Type>.GetName(resource), Util.GetStyle(data.tileClimateSettings.tribe, data.tileClimateSettings.skin));
+		Sprite? sprite = Registry.GetSprite(EnumCache<ResourceData.Type>.GetName(resource), Util.GetStyle(data.tileClimateSettings.tribe, data.tileClimateSettings.skin));
 		if (sprite != null)
 		{
 			__result = sprite;
@@ -306,7 +306,7 @@ public static class Visual
 
 		if (type != __instance.HOUSE_WORKSHOP && type != __instance.HOUSE_PARK)
 		{
-			Sprite? sprite = Main.GetSprite("house", Util.GetStyle(tribe, skinType), type);
+			Sprite? sprite = Registry.GetSprite("house", Util.GetStyle(tribe, skinType), type);
 			if (sprite != null)
 			{
 				polytopiaSpriteRenderer.Sprite = sprite;
@@ -332,7 +332,7 @@ public static class Visual
 					_ = int.TryParse(tokens[1], out level);
 				}
 
-				Sprite? sprite = Main.GetSprite("house", Util.GetStyle(tribe, skin), level);
+				Sprite? sprite = Registry.GetSprite("house", Util.GetStyle(tribe, skin), level);
 				if (sprite == null)
 				{
 					return;
@@ -353,11 +353,11 @@ public static class Visual
 		Sprite? sprite;
 		if (GameManager.LocalPlayer != null)
 		{
-			sprite = Main.GetSprite(id, Util.GetStyle(GameManager.LocalPlayer.tribe, GameManager.LocalPlayer.skinType));
+			sprite = Registry.GetSprite(id, Util.GetStyle(GameManager.LocalPlayer.tribe, GameManager.LocalPlayer.skinType));
 		}
 		else
 		{
-			sprite = Main.GetSprite(id);
+			sprite = Registry.GetSprite(id);
 		}
 		if (sprite != null)
 		{
@@ -387,7 +387,7 @@ public static class Visual
 			}
 		}
 
-		Sprite? sprite = Main.GetSprite("head", Util.GetStyle(type, skinType));
+		Sprite? sprite = Registry.GetSprite("head", Util.GetStyle(type, skinType));
 
 		if (sprite != null)
 		{
@@ -406,7 +406,7 @@ public static class Visual
 	{
 		if (face == SpriteData.SpecialFaceIcon.tribe)
 		{
-			Sprite? sprite = Main.GetSprite("head", Util.GetStyle(tribe, skin));
+			Sprite? sprite = Registry.GetSprite("head", Util.GetStyle(tribe, skin));
 			if (sprite != null)
 			{
 				__instance.HeadImage.sprite = sprite;
@@ -445,7 +445,7 @@ public static class Visual
 
 	private static void UpdateVisualPart(SkinVisualsReference.VisualPart visualPart, string name, string style)
 	{
-		Sprite? sprite = Main.GetSprite(name, style) ?? Main.GetSprite(visualPart.visualPart.name, style);
+		Sprite? sprite = Registry.GetSprite(name, style) ?? Registry.GetSprite(visualPart.visualPart.name, style);
 		if (sprite != null)
 		{
 			if (visualPart.renderer.spriteRenderer != null)
@@ -454,7 +454,7 @@ public static class Visual
 				visualPart.renderer.polytopiaSpriteRenderer.sprite = sprite;
 		}
 
-		Sprite? outlineSprite = Main.GetSprite($"{name}_outline", style) ?? Main.GetSprite($"{visualPart.visualPart.name}_outline", style);
+		Sprite? outlineSprite = Registry.GetSprite($"{name}_outline", style) ?? Registry.GetSprite($"{visualPart.visualPart.name}_outline", style);
 		if (outlineSprite != null)
 		{
 			if (visualPart.outlineRenderer.spriteRenderer != null)

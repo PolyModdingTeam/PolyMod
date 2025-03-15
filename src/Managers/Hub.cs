@@ -83,7 +83,7 @@ internal static class Hub
                 HEADER_PREFIX,
                 HEADER_POSTFIX
             }) + "\n\n";
-            foreach (var mod in Main.mods.Values)
+            foreach (var mod in Registry.mods.Values)
             {
                 popup.Description += Localization.Get("polymod.hub.mod", new Il2CppSystem.Object[] {
                     mod.name,
