@@ -1,9 +1,6 @@
 using BepInEx.Logging;
-using BepInEx.Unity.IL2CPP.Logging;
 using Cpp2IL.Core.Extensions;
-using HarmonyLib;
 using Il2CppSystem.Linq;
-using LibCpp2IL;
 using MonoMod.Utils;
 using Newtonsoft.Json.Linq;
 using PolyMod.Json;
@@ -14,9 +11,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -24,16 +19,19 @@ namespace PolyMod
 {
 	public static class Loader
 	{
-        private static Dictionary<string, Type> typeMappings = new Dictionary<string, Type>
-        {
-            { "tribeData", typeof(TribeData.Type) },
-            { "techData", typeof(TechData.Type) },
-            { "unitData", typeof(UnitData.Type) },
-            { "improvementData", typeof(ImprovementData.Type) },
-            { "terrainData", typeof(Polytopia.Data.TerrainData.Type) },
-            { "resourceData", typeof(ResourceData.Type) },
-            { "taskData", typeof(TaskData.Type) }
-        };
+		private static Dictionary<string, Type> typeMappings = new Dictionary<string, Type>
+		{
+			{ "tribeData", typeof(TribeData.Type) },
+			{ "techData", typeof(TechData.Type) },
+			{ "unitData", typeof(UnitData.Type) },
+			{ "improvementData", typeof(ImprovementData.Type) },
+			{ "terrainData", typeof(Polytopia.Data.TerrainData.Type) },
+			{ "resourceData", typeof(ResourceData.Type) },
+			{ "taskData", typeof(TaskData.Type) },
+			{ "tribeAbility", typeof(TribeAbility.Type) },
+			{ "unitAbility", typeof(TribeAbility.Type) },
+			{ "improvementAbility", typeof(TribeAbility.Type) }
+		};
 
 		public static void AddPatchDataType(string typeId, Type type)
 		{
@@ -270,9 +268,9 @@ namespace PolyMod
                 _ => new(0.5f, 0.5f),
             };
             float pixelsPerUnit = 2112f;
-            if (Main.spriteDatas.ContainsKey(name))
+            if (Main.spriteInfos.ContainsKey(name))
             {
-                Main.DataSprite spriteData = Main.spriteDatas[name];
+                Main.SpriteInfo spriteData = Main.spriteInfos[name];
                 pivot = spriteData.pivot ?? pivot;
                 pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
             }
@@ -282,12 +280,12 @@ namespace PolyMod
             Main.sprites.Add(name, sprite);
         }
 
-        public static void LoadSpriteDataFile(Mod mod, Mod.File file)
+        public static void LoadSpriteInfoFile(Mod mod, Mod.File file)
         {
             try
             {
-                Main.spriteDatas = Main.spriteDatas
-                    .Concat(JsonSerializer.Deserialize<Dictionary<string, Main.DataSprite>>(
+                Main.spriteInfos = Main.spriteInfos
+                    .Concat(JsonSerializer.Deserialize<Dictionary<string, Main.SpriteInfo>>(
                         file.bytes,
                         new JsonSerializerOptions()
                         {
@@ -393,7 +391,7 @@ namespace PolyMod
 
 					if (token["preview"] != null)
 					{
-						Main.PreviewTile[] preview = JsonSerializer.Deserialize<Main.PreviewTile[]>(token["preview"].ToString())!;
+						Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
 						Main.tribePreviews[Utility.GetJTokenName(token)] = preview;
 					}
 				}

@@ -1,56 +1,27 @@
-using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP.Logging;
-using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using Il2CppSystem.Linq;
 using LibCpp2IL;
-using MonoMod.Utils;
 using Newtonsoft.Json.Linq;
-using PolyMod.Json;
 using Polytopia.Data;
 using System.Data;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO.Compression;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace PolyMod.Managers
 {
 	public static class Main
 	{
-		public class PreviewTile
-		{
-			[JsonInclude]
-			public int? x = null;
-			[JsonInclude]
-			public int? y = null;
-			[JsonInclude]
-			[JsonConverter(typeof(EnumCacheJson<Polytopia.Data.TerrainData.Type>))]
-			public Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.Ocean;
-			[JsonInclude]
-			[JsonConverter(typeof(EnumCacheJson<ResourceData.Type>))]
-			public ResourceData.Type resourceType = ResourceData.Type.None;
-			[JsonInclude]
-			[JsonConverter(typeof(EnumCacheJson<UnitData.Type>))]
-			public UnitData.Type unitType = UnitData.Type.None;
-			[JsonInclude]
-			[JsonConverter(typeof(EnumCacheJson<ImprovementData.Type>))]
-			public ImprovementData.Type improvementType = ImprovementData.Type.None;
-		}
-
-		public record DataSprite(float? pixelsPerUnit, Vector2? pivot);
+		public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot);
 
 		public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
 		public static Dictionary<string, Sprite> sprites = new();
 		public static Dictionary<string, AudioSource> audioClips = new();
 		public static Dictionary<string, Mod> mods = new();
-		public static Dictionary<string, PreviewTile[]> tribePreviews = new();
-		public static Dictionary<string, DataSprite> spriteDatas = new();
+		public static Dictionary<string, Visual.PreviewTile[]> tribePreviews = new();
+		public static Dictionary<string, SpriteInfo> spriteInfos = new();
 		internal static readonly Stopwatch stopwatch = new();
 		internal static List<TribeData.Type> customTribes = new();
 		internal static List<Tuple<int, string, SkinData?>> skinInfo = new();
@@ -130,7 +101,7 @@ namespace PolyMod.Managers
 					}
 					if (Path.GetFileName(file.name) == "sprites.json")
 					{
-						Loader.LoadSpriteDataFile(mod, file);
+						Loader.LoadSpriteInfoFile(mod, file);
 					}
 				}
 				if (!mod.client && id != "polytopia")

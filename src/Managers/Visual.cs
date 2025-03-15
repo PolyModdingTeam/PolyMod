@@ -4,11 +4,33 @@ using Polytopia.Data;
 using UnityEngine;
 using UnityEngine.U2D;
 using UnityEngine.UI;
+using Il2CppSystem.Linq;
+using PolyMod.Json;
+using System.Text.Json.Serialization;
 
 namespace PolyMod.Managers
 {
 	public static class Visual
 	{
+		public class PreviewTile
+		{
+			[JsonInclude]
+			public int? x = null;
+			[JsonInclude]
+			public int? y = null;
+			[JsonInclude]
+			[JsonConverter(typeof(EnumCacheJson<Polytopia.Data.TerrainData.Type>))]
+			public Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.Ocean;
+			[JsonInclude]
+			[JsonConverter(typeof(EnumCacheJson<ResourceData.Type>))]
+			public ResourceData.Type resourceType = ResourceData.Type.None;
+			[JsonInclude]
+			[JsonConverter(typeof(EnumCacheJson<UnitData.Type>))]
+			public UnitData.Type unitType = UnitData.Type.None;
+			[JsonInclude]
+			[JsonConverter(typeof(EnumCacheJson<ImprovementData.Type>))]
+			public ImprovementData.Type improvementType = ImprovementData.Type.None;
+		}
 		public static Dictionary<int, int> basicPopupWidths = new();
 		private static bool firstTimeOpeningPreview = true;
 		private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
@@ -197,14 +219,14 @@ namespace PolyMod.Managers
 		[HarmonyPatch(typeof(UIWorldPreviewData), nameof(UIWorldPreviewData.TryGetData))]
 		private static void UIWorldPreviewData_TryGetData(ref bool __result, UIWorldPreviewData __instance, Vector2Int position, TribeData.Type tribeType, ref UITileData uiTile)
 		{
-			Main.PreviewTile[]? preview = null;
+			PreviewTile[]? preview = null;
 			if (Main.tribePreviews.ContainsKey(EnumCache<TribeData.Type>.GetName(tribeType).ToLower()))
 			{
 				preview = Main.tribePreviews[EnumCache<TribeData.Type>.GetName(tribeType).ToLower()];
 			}
 			if (preview != null)
 			{
-				Main.PreviewTile? previewTile = preview.FirstOrDefault(tileInPreview => tileInPreview.x == position.x && tileInPreview.y == position.y);
+				PreviewTile? previewTile = preview.FirstOrDefault(tileInPreview => tileInPreview.x == position.x && tileInPreview.y == position.y);
 				if (previewTile != null)
 				{
 					uiTile = new UITileData
