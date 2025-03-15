@@ -3,7 +3,6 @@ using System.Text.Json;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-using PolyMod.Loaders;
 using PolyMod.Managers;
 
 namespace PolyMod
@@ -41,16 +40,14 @@ namespace PolyMod
 			logger = Log;
 			ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
 
-			CompatibilityManager.Init();
+			Compatibility.Init();
 
-			AudioClipLoader.Init();
-			LocalizationLoader.Init();
-			SpritesLoader.Init();
-			VisualManager.Init();
-			//ValidationManager.Init();
-			//PolyConnectManager.Init();
+			Audio.Init();
+			Loc.Init();
+			Visual.Init();
+			Hub.Init();
 
-			ModManager.Init();
+			Main.Init();
 		}
 
 		internal static Stream GetResource(string id)

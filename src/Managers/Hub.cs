@@ -1,6 +1,5 @@
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
-using PolyMod.Loaders;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -8,12 +7,10 @@ using UnityEngine.UI;
 
 namespace PolyMod.Managers
 {
-    internal static class VisualManager
+    internal static class Hub
     {
         private const string HEADER_PREFIX = "<align=\"center\"><size=150%><b>";
         private const string HEADER_POSTFIX = "</b></size><align=\"left\">";
-
-        private static Dictionary<int, int> basicPopupWidths = new();
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(SplashController), nameof(SplashController.LoadAndPlayClip))]
@@ -26,22 +23,6 @@ namespace PolyMod.Managers
             __instance.videoPlayer.url = path;
             __instance.videoPlayer.Play();
             return false;
-        }
-
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.Update))]
-        private static void BasicPopup_Update(BasicPopup __instance)
-        {
-            int id = __instance.GetInstanceID();
-            if (basicPopupWidths.ContainsKey(id))
-                __instance.rectTransform.SetWidth(basicPopupWidths[id]);
-        }
-
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
-        private static void PopupBase_Hide(PopupBase __instance)
-        {
-            basicPopupWidths.Remove(__instance.GetInstanceID());
         }
 
         [HarmonyPostfix]
@@ -87,7 +68,7 @@ namespace PolyMod.Managers
             descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
 
             UIRoundButton buttonObject = button.GetComponent<UIRoundButton>();
-            buttonObject.bg.sprite = SpritesLoader.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
+            buttonObject.bg.sprite = Visual.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
             buttonObject.bg.transform.localScale = new Vector3(1.2f, 1.2f, 0);
             buttonObject.bg.color = Color.white;
 
@@ -103,12 +84,12 @@ namespace PolyMod.Managers
                     HEADER_PREFIX,
                     HEADER_POSTFIX
                 }) + "\n\n";
-                foreach (var mod in ModManager.mods.Values)
+                foreach (var mod in Main.mods.Values)
                 {
                     popup.Description += Localization.Get("polymod.hub.mod", new Il2CppSystem.Object[] {
                         mod.name,
                         Localization.Get("polymod.hub.mod.status."
-                            + Enum.GetName(typeof(ModManager.Mod.Status), mod.status)!.ToLower()),
+                            + Enum.GetName(typeof(Mod.Status), mod.status)!.ToLower()),
                         string.Join(", ", mod.authors),
                         mod.version.ToString()
                     });
@@ -149,7 +130,7 @@ namespace PolyMod.Managers
                 popup.ShowSetWidth(1000);
             }
 
-            if (ModManager.dependencyCycle)
+            if (Main.dependencyCycle)
             {
                 var popup = PopupManager.GetBasicPopup(new(
                     Localization.Get("polymod.cycle"),
@@ -169,15 +150,9 @@ namespace PolyMod.Managers
             }
         }
 
-        internal static void ShowSetWidth(this BasicPopup self, int width)
-        {
-            basicPopupWidths.Add(self.GetInstanceID(), width);
-            self.Show();
-        }
-
         internal static void Init()
         {
-            Harmony.CreateAndPatchAll(typeof(VisualManager));
+            Harmony.CreateAndPatchAll(typeof(Hub));
         }
     }
 }

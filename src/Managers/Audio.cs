@@ -3,15 +3,23 @@ using PolyMod.Managers;
 using Polytopia.Data;
 using UnityEngine;
 
-namespace PolyMod.Loaders
+namespace PolyMod.Managers
 {
-    public static class AudioClipLoader
+    public static class Audio
     {
+		[HarmonyPrefix]
+		[HarmonyPatch(typeof(AudioManager), nameof(AudioManager.SetAmbienceClimate))]
+		private static void AudioManager_SetAmbienceClimatePrefix(ref int climate) //TODO CHECK
+		{
+			if (climate > 16)
+				climate = 1;
+		}
+
         [HarmonyPrefix]
         [HarmonyPatch(typeof(MusicData), nameof(MusicData.GetNatureAudioClip))]
         private static bool MusicData_GetNatureAudioClip(ref AudioClip __result, TribeData.Type type, SkinType skinType)
         {
-            AudioClip? audioClip = ModManager.GetAudioClip("nature", Utility.GetStyle(type, skinType));
+            AudioClip? audioClip = Main.GetAudioClip("nature", Utility.GetStyle(type, skinType));
             if (audioClip != null)
             {
                 __result = audioClip;
@@ -24,7 +32,7 @@ namespace PolyMod.Loaders
         [HarmonyPatch(typeof(MusicData), nameof(MusicData.GetMusicAudioClip))]
         private static bool MusicData_GetMusicAudioClip(ref AudioClip __result, TribeData.Type type, SkinType skinType)
         {
-            AudioClip? audioClip = ModManager.GetAudioClip("music", Utility.GetStyle(type, skinType));
+            AudioClip? audioClip = Main.GetAudioClip("music", Utility.GetStyle(type, skinType));
             if (audioClip != null)
             {
                 __result = audioClip;
@@ -37,7 +45,7 @@ namespace PolyMod.Loaders
         [HarmonyPatch(typeof(AudioSFXData), nameof(AudioSFXData.GetClip))]
         private static bool AudioSFXData_GetClip(ref AudioClip __result, SFXTypes id, SkinType skinType)
         {
-            AudioClip? audioClip = ModManager.GetAudioClip(
+            AudioClip? audioClip = Main.GetAudioClip(
                 EnumCache<SFXTypes>.GetName(id),
                 EnumCache<SkinType>.GetName(skinType)
             );
@@ -62,7 +70,7 @@ namespace PolyMod.Loaders
 
         internal static void Init()
         {
-            Harmony.CreateAndPatchAll(typeof(AudioClipLoader));
+            Harmony.CreateAndPatchAll(typeof(Audio));
         }
     }
 }

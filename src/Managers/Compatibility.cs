@@ -1,15 +1,22 @@
 using HarmonyLib;
+using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace PolyMod.Managers
 {
-    internal static class CompatibilityManager
+    internal static class Compatibility
     {
         private static bool sawIncompatibilityWarning;
         internal static string signature = string.Empty;
         internal static string looseSignature = string.Empty;
         private static bool sawSignatureWarning;
+
+        public static void HashSignatures(StringBuilder looseSignatureString, StringBuilder signatureString)
+        {
+			looseSignature = Utility.Hash(looseSignatureString);
+			signature = Utility.Hash(signatureString);
+        }
 
         private static bool CheckSignatures(Action<int, BaseEventData> action, int id, BaseEventData eventData, Il2CppSystem.Guid gameId)
         {
@@ -131,7 +138,7 @@ namespace PolyMod.Managers
 
         internal static void Init()
         {
-            Harmony.CreateAndPatchAll(typeof(CompatibilityManager));
+            Harmony.CreateAndPatchAll(typeof(Compatibility));
         }
     }
 }

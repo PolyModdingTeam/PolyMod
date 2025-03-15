@@ -4,9 +4,9 @@ using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using LibCpp2IL;
 using Polytopia.Data;
 
-namespace PolyMod.Loaders
+namespace PolyMod.Managers
 {
-	public static class LocalizationLoader
+	public static class Loc
 	{
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(SelectTribePopup), nameof(SelectTribePopup.SetDescription))]
@@ -39,7 +39,7 @@ namespace PolyMod.Loaders
 
 		internal static void Init()
 		{
-			Harmony.CreateAndPatchAll(typeof(LocalizationLoader));
+			Harmony.CreateAndPatchAll(typeof(Loc));
 		}
 	}
 }
