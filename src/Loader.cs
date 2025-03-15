@@ -36,13 +36,13 @@ namespace PolyMod
 
 		public static void AddPatchDataType(string typeId, Type type)
 		{
-            if(!typeMappings.ContainsKey(typeId))
-                typeMappings.Add(typeId, type);
-        }
+			if (!typeMappings.ContainsKey(typeId))
+				typeMappings.Add(typeId, type);
+		}
 
-        internal static void LoadMods(Dictionary<string, Mod> mods)
-        {
-            Directory.CreateDirectory(Plugin.MODS_PATH);
+		internal static void LoadMods(Dictionary<string, Mod> mods)
+		{
+			Directory.CreateDirectory(Plugin.MODS_PATH);
 			string[] modContainers = Directory.GetDirectories(Plugin.MODS_PATH)
 				.Union(Directory.GetFiles(Plugin.MODS_PATH, "*.polymod"))
 				.Union(Directory.GetFiles(Plugin.MODS_PATH, "*.zip"))
@@ -150,7 +150,7 @@ namespace PolyMod
 					}
 				}
 			}
-        }
+		}
 
 		internal static bool SortMods(Dictionary<string, Mod> mods)
 		{
@@ -211,104 +211,104 @@ namespace PolyMod
 			return true;
 		}
 
-        public static void LoadAssemblyFile(Mod mod, Mod.File file)
-        {
-            try
-            {
-                Assembly assembly = Assembly.Load(file.bytes);
-                foreach (Type type in assembly.GetTypes())
-                {
-                    MethodInfo? loadWithLogger = type.GetMethod("Load", new Type[] { typeof(ManualLogSource) });
-                    if (loadWithLogger != null)
-                    {
-                        loadWithLogger.Invoke(null, new object[]
-                        {
-                            BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.name}")
-                        });
-                        Plugin.logger.LogInfo($"Invoked Load method with logger from {type.FullName} from {mod.name} mod");
-                    }
-                    MethodInfo? load = type.GetMethod("Load", Array.Empty<Type>());
-                    if (load != null)
-                    {
-                        load.Invoke(null, null);
-                        Plugin.logger.LogInfo($"Invoked Load method from {type.FullName} from {mod.name} mod");
-                    }
-                }
-            }
-            catch (TargetInvocationException exception)
-            {
-                if (exception.InnerException != null)
-                {
-                    Plugin.logger.LogError($"Error on loading assembly from {mod.name} mod: {exception.InnerException.Message}");
-                    mod.status = Mod.Status.Error;
-                }
-            }
-        }
+		public static void LoadAssemblyFile(Mod mod, Mod.File file)
+		{
+			try
+			{
+				Assembly assembly = Assembly.Load(file.bytes);
+				foreach (Type type in assembly.GetTypes())
+				{
+					MethodInfo? loadWithLogger = type.GetMethod("Load", new Type[] { typeof(ManualLogSource) });
+					if (loadWithLogger != null)
+					{
+						loadWithLogger.Invoke(null, new object[]
+						{
+							BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.name}")
+						});
+						Plugin.logger.LogInfo($"Invoked Load method with logger from {type.FullName} from {mod.name} mod");
+					}
+					MethodInfo? load = type.GetMethod("Load", Array.Empty<Type>());
+					if (load != null)
+					{
+						load.Invoke(null, null);
+						Plugin.logger.LogInfo($"Invoked Load method from {type.FullName} from {mod.name} mod");
+					}
+				}
+			}
+			catch (TargetInvocationException exception)
+			{
+				if (exception.InnerException != null)
+				{
+					Plugin.logger.LogError($"Error on loading assembly from {mod.name} mod: {exception.InnerException.Message}");
+					mod.status = Mod.Status.Error;
+				}
+			}
+		}
 
-        public static void LoadLocalizationFile(Mod mod, Mod.File file)
-        {
-            try
-            {
-                Loc.BuildAndLoadLocalization(JsonSerializer
-                    .Deserialize<Dictionary<string, Dictionary<string, string>>>(file.bytes)!);
-                Plugin.logger.LogInfo($"Registried localization from {mod.name} mod");
-            }
-            catch (Exception e)
-            {
-                Plugin.logger.LogError($"Error on loading locatization from {mod.name} mod: {e.Message}");
-            }
-        }
+		public static void LoadLocalizationFile(Mod mod, Mod.File file)
+		{
+			try
+			{
+				Loc.BuildAndLoadLocalization(JsonSerializer
+					.Deserialize<Dictionary<string, Dictionary<string, string>>>(file.bytes)!);
+				Plugin.logger.LogInfo($"Registried localization from {mod.name} mod");
+			}
+			catch (Exception e)
+			{
+				Plugin.logger.LogError($"Error on loading locatization from {mod.name} mod: {e.Message}");
+			}
+		}
 
-        public static void LoadSpriteFile(Mod mod, Mod.File file)
-        {
-            string name = Path.GetFileNameWithoutExtension(file.name);
-            Vector2 pivot = name.Split("_")[0] switch
-            {
-                "field" => new(0.5f, 0.0f),
-                "mountain" => new(0.5f, -0.375f),
-                _ => new(0.5f, 0.5f),
-            };
-            float pixelsPerUnit = 2112f;
-            if (Main.spriteInfos.ContainsKey(name))
-            {
-                Main.SpriteInfo spriteData = Main.spriteInfos[name];
-                pivot = spriteData.pivot ?? pivot;
-                pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
-            }
-            Sprite sprite = Visual.BuildSprite(file.bytes, pivot, pixelsPerUnit);
-            GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
-            GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
-            Main.sprites.Add(name, sprite);
-        }
+		public static void LoadSpriteFile(Mod mod, Mod.File file)
+		{
+			string name = Path.GetFileNameWithoutExtension(file.name);
+			Vector2 pivot = name.Split("_")[0] switch
+			{
+				"field" => new(0.5f, 0.0f),
+				"mountain" => new(0.5f, -0.375f),
+				_ => new(0.5f, 0.5f),
+			};
+			float pixelsPerUnit = 2112f;
+			if (Main.spriteInfos.ContainsKey(name))
+			{
+				Main.SpriteInfo spriteData = Main.spriteInfos[name];
+				pivot = spriteData.pivot ?? pivot;
+				pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
+			}
+			Sprite sprite = Visual.BuildSprite(file.bytes, pivot, pixelsPerUnit);
+			GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
+			GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
+			Main.sprites.Add(name, sprite);
+		}
 
-        public static void LoadSpriteInfoFile(Mod mod, Mod.File file)
-        {
-            try
-            {
-                Main.spriteInfos = Main.spriteInfos
-                    .Concat(JsonSerializer.Deserialize<Dictionary<string, Main.SpriteInfo>>(
-                        file.bytes,
-                        new JsonSerializerOptions()
-                        {
-                            Converters = { new Vector2Json() },
-                        }
-                    )!)
-                    .ToDictionary(e => e.Key, e => e.Value);
-                Plugin.logger.LogInfo($"Registried sprite data from {mod.name} mod");
-            }
-            catch (Exception e)
-            {
-                Plugin.logger.LogError($"Error on loading sprite data from {mod.name} mod: {e.Message}");
-            }
-        }
+		public static void LoadSpriteInfoFile(Mod mod, Mod.File file)
+		{
+			try
+			{
+				Main.spriteInfos = Main.spriteInfos
+					.Concat(JsonSerializer.Deserialize<Dictionary<string, Main.SpriteInfo>>(
+						file.bytes,
+						new JsonSerializerOptions()
+						{
+							Converters = { new Vector2Json() },
+						}
+					)!)
+					.ToDictionary(e => e.Key, e => e.Value);
+				Plugin.logger.LogInfo($"Registried sprite data from {mod.name} mod");
+			}
+			catch (Exception e)
+			{
+				Plugin.logger.LogError($"Error on loading sprite data from {mod.name} mod: {e.Message}");
+			}
+		}
 
-        public static void LoadAudioFile(Mod mod, Mod.File file)
-        {
-            AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
-            GameObject.DontDestroyOnLoad(audioSource);
-            audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
-            Main.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
-        }
+		public static void LoadAudioFile(Mod mod, Mod.File file)
+		{
+			AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
+			GameObject.DontDestroyOnLoad(audioSource);
+			audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
+			Main.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
+		}
 
 		public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
 		{
@@ -328,18 +328,18 @@ namespace PolyMod
 							if (typeMappings.TryGetValue(dataType, out Type? targetType))
 							{
 								MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
-								if(methodInfo != null)
+								if (methodInfo != null)
 								{
 									methodInfo.Invoke(null, new object[] { id, Main.autoidx });
 									methodInfo.Invoke(null, new object[] { id, Main.autoidx });
-									if(targetType == typeof(TribeData.Type))
+									if (targetType == typeof(TribeData.Type))
 									{
-											Main.customTribes.Add((TribeData.Type)Main.autoidx);
-											token["style"] = Main.climateAutoidx;
-											token["climate"] = Main.climateAutoidx;
-											Main.climateAutoidx++;
+										Main.customTribes.Add((TribeData.Type)Main.autoidx);
+										token["style"] = Main.climateAutoidx;
+										token["climate"] = Main.climateAutoidx;
+										Main.climateAutoidx++;
 									}
-									else if(targetType == typeof(UnitData.Type))
+									else if (targetType == typeof(UnitData.Type))
 									{
 										UnitData.Type unitPrefabType = UnitData.Type.Scout;
 										if (token["prefab"] != null)
@@ -353,7 +353,7 @@ namespace PolyMod
 										}
 										PrefabManager.units.TryAdd((int)(UnitData.Type)Main.autoidx, PrefabManager.units[(int)unitPrefabType]);
 									}
-									else if(targetType == typeof(ImprovementData.Type))
+									else if (targetType == typeof(ImprovementData.Type))
 									{
 										ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
 										if (token["prefab"] != null)
@@ -367,7 +367,7 @@ namespace PolyMod
 										}
 										PrefabManager.improvements.TryAdd((ImprovementData.Type)Main.autoidx, PrefabManager.improvements[improvementPrefabType]);
 									}
-									else if(targetType == typeof(ResourceData.Type))
+									else if (targetType == typeof(ResourceData.Type))
 									{
 										ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
 										if (token["prefab"] != null)
@@ -446,7 +446,7 @@ namespace PolyMod
 					if (originalSkins != null)
 					{
 						skins.Merge(originalSkins);
-						foreach(var skin in skinsToRemove)
+						foreach (var skin in skinsToRemove)
 						{
 							skins._values.Remove(skin);
 							skins._values.Remove("-" + skin);
@@ -475,5 +475,5 @@ namespace PolyMod
 			}
 			patch.Remove("skinData");
 		}
-    }
+	}
 }

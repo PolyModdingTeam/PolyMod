@@ -6,13 +6,13 @@ namespace PolyMod.Managers
 {
     public static class Audio
     {
-		[HarmonyPrefix]
-		[HarmonyPatch(typeof(AudioManager), nameof(AudioManager.SetAmbienceClimate))]
-		private static void AudioManager_SetAmbienceClimatePrefix(ref int climate) //TODO CHECK
-		{
-			if (climate > 16)
-				climate = 1;
-		}
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(AudioManager), nameof(AudioManager.SetAmbienceClimate))]
+        private static void AudioManager_SetAmbienceClimatePrefix(ref int climate) //TODO CHECK
+        {
+            if (climate > 16)
+                climate = 1;
+        }
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(MusicData), nameof(MusicData.GetNatureAudioClip))]

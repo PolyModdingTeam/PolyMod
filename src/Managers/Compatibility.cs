@@ -14,8 +14,8 @@ namespace PolyMod.Managers
 
         public static void HashSignatures(StringBuilder looseSignatureString, StringBuilder signatureString)
         {
-			looseSignature = Utility.Hash(looseSignatureString);
-			signature = Utility.Hash(signatureString);
+            looseSignature = Utility.Hash(looseSignatureString);
+            signature = Utility.Hash(signatureString);
         }
 
         private static bool CheckSignatures(Action<int, BaseEventData> action, int id, BaseEventData eventData, Il2CppSystem.Guid gameId)
@@ -77,9 +77,9 @@ namespace PolyMod.Managers
                     new(new PopupBase.PopupButtonData[] {
                         new("buttons.stay", customColorStates: ColorConstants.redButtonColorStates),
                         new(
-                            "buttons.exitgame", 
-                            PopupBase.PopupButtonData.States.None, 
-                            (Il2CppSystem.Action)Application.Quit, 
+                            "buttons.exitgame",
+                            PopupBase.PopupButtonData.States.None,
+                            (Il2CppSystem.Action)Application.Quit,
                             closesPopup: false
                         )
                     }))

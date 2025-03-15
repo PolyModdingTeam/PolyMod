@@ -22,9 +22,9 @@ namespace PolyMod
         }
 
         internal static string GetJTokenName(JToken token, int n = 1)
-		{
-			return token.Path.Split('.')[^n];
-		}
+        {
+            return token.Path.Split('.')[^n];
+        }
 
         internal static bool EqualNoRevision(this Il2CppSystem.Version self, Il2CppSystem.Version version)
         {
@@ -32,9 +32,9 @@ namespace PolyMod
         }
 
         internal static string GetStyle(TribeData.Type tribe, SkinType skin)
-		{
-			return skin != SkinType.Default ? EnumCache<SkinType>.GetName(skin) : EnumCache<TribeData.Type>.GetName(tribe);
-		}
+        {
+            return skin != SkinType.Default ? EnumCache<SkinType>.GetName(skin) : EnumCache<TribeData.Type>.GetName(tribe);
+        }
 
         internal static string ReverseSpriteData(string baseName) // I cant believe i had to do this shit #MIDJIWANFIXYOURSHITCODE
         {

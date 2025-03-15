@@ -74,7 +74,7 @@ namespace PolyMod.Managers
 			baseName = Utility.ReverseSpriteData(baseName);
 
 			Sprite? sprite = Main.GetSprite(baseName, Utility.GetStyle(tribe, skin), level);
-			if(sprite != null)
+			if (sprite != null)
 				__result.sprite = sprite;
 		}
 
@@ -165,7 +165,7 @@ namespace PolyMod.Managers
 			SkinType skinType = tile.data.Skin;
 
 			string flood = "";
-			if(tile.data.effects.Contains(TileData.EffectType.Flooded))
+			if (tile.data.effects.Contains(TileData.EffectType.Flooded))
 			{
 				flood = "_flooded";
 			}
@@ -180,7 +180,7 @@ namespace PolyMod.Managers
 				if (rendererProperty != null)
 				{
 					PolytopiaSpriteRenderer? renderer = (PolytopiaSpriteRenderer?)rendererProperty.GetValue(tile);
-					if(renderer != null)
+					if (renderer != null)
 					{
 						Sprite? additionalSprite = Main.GetSprite(propertyName + flood, Utility.GetStyle(tribe, skinType));
 						if (additionalSprite != null)
@@ -420,47 +420,47 @@ namespace PolyMod.Managers
 		#endregion
 		#region Popups
 
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.Update))]
-        private static void BasicPopup_Update(BasicPopup __instance)
-        {
-            int id = __instance.GetInstanceID();
-            if (Visual.basicPopupWidths.ContainsKey(id))
-                __instance.rectTransform.SetWidth(basicPopupWidths[id]);
-        }
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.Update))]
+		private static void BasicPopup_Update(BasicPopup __instance)
+		{
+			int id = __instance.GetInstanceID();
+			if (Visual.basicPopupWidths.ContainsKey(id))
+				__instance.rectTransform.SetWidth(basicPopupWidths[id]);
+		}
 
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
-        private static void PopupBase_Hide(PopupBase __instance)
-        {
-            basicPopupWidths.Remove(__instance.GetInstanceID());
-        }
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
+		private static void PopupBase_Hide(PopupBase __instance)
+		{
+			basicPopupWidths.Remove(__instance.GetInstanceID());
+		}
 
-        public static void ShowSetWidth(this BasicPopup self, int width)
-        {
-            basicPopupWidths.Add(self.GetInstanceID(), width);
-            self.Show();
-        }
+		public static void ShowSetWidth(this BasicPopup self, int width)
+		{
+			basicPopupWidths.Add(self.GetInstanceID(), width);
+			self.Show();
+		}
 
 		#endregion
-		
+
 		private static void UpdateVisualPart(SkinVisualsReference.VisualPart visualPart, string name, string style)
 		{
 			Sprite? sprite = Main.GetSprite(name, style) ?? Main.GetSprite(visualPart.visualPart.name, style);
 			if (sprite != null)
 			{
-				if (visualPart.renderer.spriteRenderer != null) 
+				if (visualPart.renderer.spriteRenderer != null)
 					visualPart.renderer.spriteRenderer.sprite = sprite;
-				else if (visualPart.renderer.polytopiaSpriteRenderer != null) 
+				else if (visualPart.renderer.polytopiaSpriteRenderer != null)
 					visualPart.renderer.polytopiaSpriteRenderer.sprite = sprite;
 			}
 
 			Sprite? outlineSprite = Main.GetSprite($"{name}_outline", style) ?? Main.GetSprite($"{visualPart.visualPart.name}_outline", style);
 			if (outlineSprite != null)
 			{
-				if (visualPart.outlineRenderer.spriteRenderer != null) 
+				if (visualPart.outlineRenderer.spriteRenderer != null)
 					visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
-				else if (visualPart.outlineRenderer.polytopiaSpriteRenderer != null) 
+				else if (visualPart.outlineRenderer.polytopiaSpriteRenderer != null)
 					visualPart.outlineRenderer.polytopiaSpriteRenderer.sprite = outlineSprite;
 			}
 		}
