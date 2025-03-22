@@ -25,6 +25,7 @@ public static class Loc
 		foreach (var (key, data) in localization)
 		{
 			string name = key.Replace("_", ".");
+			name = name.Replace("..", "_");
 			if (name.StartsWith("tribeskins")) name = "TribeSkins/" + name;
 			TermData term = LocalizationManager.Sources[0].AddTerm(name);
 			List<string> strings = new();
