@@ -65,7 +65,7 @@ public static class Main
 	{
 		foreach (string stringToIgnore in Plugin.LOG_MESSAGES_IGNORE)
 		{
-			if(logLine.Contains(stringToIgnore))
+			if (logLine.Contains(stringToIgnore))
 				return false;
 		}
 		return true;

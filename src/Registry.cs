@@ -7,17 +7,17 @@ namespace PolyMod;
 public static class Registry
 {
 
-    public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
-    public static Dictionary<string, Sprite> sprites = new();
+	public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
+	public static Dictionary<string, Sprite> sprites = new();
 	public static Dictionary<string, AudioSource> audioClips = new();
 	internal static Dictionary<string, Mod> mods = new();
 	public static Dictionary<string, Visual.PreviewTile[]> tribePreviews = new();
 	public static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
-    public static List<TribeData.Type> customTribes = new();
+	public static List<TribeData.Type> customTribes = new();
 	public static List<Visual.SkinInfo> skinInfo = new();
 	public static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 
-    public static Sprite? GetSprite(string name, string style = "", int level = 0)
+	public static Sprite? GetSprite(string name, string style = "", int level = 0)
 	{
 		Sprite? sprite = null;
 		name = name.ToLower();
