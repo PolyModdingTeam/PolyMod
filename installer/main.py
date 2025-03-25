@@ -1,6 +1,7 @@
 import os
 import io
 import sys
+import shutil
 import zipfile
 import requests
 import threading
@@ -35,7 +36,7 @@ def browse():
     path_entry.insert(0, customtkinter.filedialog.askdirectory())
 
 
-def install():
+def prepare(target):
     global progress_bar
     path = path_entry.get()
     try:
@@ -53,13 +54,14 @@ def install():
     path_entry.configure(state=customtkinter.DISABLED)
     browse_button.configure(state=customtkinter.DISABLED)
     install_button.destroy()
+    uninstall_button.destroy()
     progress_bar = customtkinter.CTkProgressBar(app, determinate_speed=50 / 2)
     progress_bar.grid(column=0, row=1, columnspan=2, padx=5, pady=5)
     progress_bar.set(0)
-    threading.Thread(target=_install, daemon=True, args=(path, )).start()
+    threading.Thread(target=target, daemon=True, args=(path, )).start()
 
 
-def _install(path):
+def install(path):
     to_zip(
         requests.get(
             f"https://builds.bepinex.dev/projects/bepinex_be/{BEPINEX}.zip"
@@ -77,8 +79,40 @@ def _install(path):
     )
 
 
+def uninstall(path):
+    dirs = [
+        "BepInEx",
+        "dotnet",
+    ]
+    files = [
+        ".doorstop_version",
+        "changelog.txt",
+        "doorstop_config.ini",
+        "winhttp.dll",  # windows
+        "libdoorstop.so",  # linux
+        "libdoorstop.dylib",  # mac
+        "run_bepinex.sh",  # linux + mac
+    ]
+    for dir in dirs:
+        shutil.rmtree(path + "/" + dir, True)
+    progress_bar.step()
+    for file in files:
+        try:
+            os.remove(path + "/" + file)
+        except FileNotFoundError:
+            ...
+    progress_bar.step()
+    customtkinter.CTkButton(app, text="Quit", command=quit).grid(
+        column=0, row=2, columnspan=2, padx=5, pady=5
+    )
+
+
 def launch():
     os.startfile("steam://rungameid/874390")
+    quit()
+
+
+def quit():
     app.destroy()
     sys.exit()
 
@@ -93,10 +127,14 @@ path_entry = customtkinter.CTkEntry(
     app, placeholder_text="Game path", width=228)
 browse_button = customtkinter.CTkButton(
     app, text="Browse", command=browse, width=1)
-install_button = customtkinter.CTkButton(app, text="Install", command=install)
+install_button = customtkinter.CTkButton(
+    app, text="Install", command=lambda: prepare(install))
+uninstall_button = customtkinter.CTkButton(
+    app, text="Uninstall", command=lambda: prepare(uninstall))
 
 path_entry.grid(column=0, row=0, padx=5, pady=5)
 browse_button.grid(column=1, row=0, padx=(0, 5), pady=5)
 install_button.grid(column=0, row=1, columnspan=2, padx=5, pady=5)
+uninstall_button.grid(column=0, row=2, columnspan=2, padx=5, pady=5)
 
 app.mainloop()
