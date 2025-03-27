@@ -1,8 +1,10 @@
 using HarmonyLib;
 using I2.Loc;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
+using System.Reflection;
 using LibCpp2IL;
 using Polytopia.Data;
+using Cpp2IL.Core.Il2CppApiFunctions;
 
 namespace PolyMod.Managers;
 public static class Loc
@@ -20,6 +22,53 @@ public static class Loc
 			});
 		}
 	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(Localization), nameof(Localization.Get), typeof(string), typeof(Il2CppReferenceArray<Il2CppSystem.Object>))]
+	private static void Localization_Get(Localization __instance, string __result, string key, Il2CppReferenceArray<Il2CppSystem.Object> args)
+	{
+		Console.Write("/////////////////////////////");
+		Console.Write(key);
+		List<string> keys = key.Split('.').ToList();
+		int? idx = null;
+		string name = null;
+		foreach (string item in keys)
+		{
+			Console.Write(item);
+			if(int.TryParse(item, out int parsedIdx))
+			{
+				idx = parsedIdx;
+				Console.Write(idx);
+				Console.Write("Parsed correctly");
+			}
+		}
+		if(idx != null)
+		{
+			foreach (var targetType in Loader.typeMappings.Values)
+			{
+				Console.Write(targetType);
+				MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("TryGetName");
+				if (methodInfo != null)
+				{
+					object methodInvokeResult = methodInfo.Invoke(null, new object[] { idx, name});
+					if((bool)methodInvokeResult)
+					{
+						Console.Write("INVOKED AND GOT THE NAME");
+					}
+				}
+			}
+			if(name != null)
+			{
+				int index = keys.IndexOf(idx.ToString());
+				keys[index] = name;
+				string newKey = string.Join(".", keys);
+				Console.Write("Returned new result");
+				__result = Localization.Get(newKey, args);
+			}
+		}
+		Console.Write("/////////////////////////////");
+	}
+
 	public static void BuildAndLoadLocalization(Dictionary<string, Dictionary<string, string>> localization)
 	{
 		foreach (var (key, data) in localization)

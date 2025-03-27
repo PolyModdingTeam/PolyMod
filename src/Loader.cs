@@ -18,7 +18,7 @@ using UnityEngine;
 namespace PolyMod;
 public static class Loader
 {
-	private static Dictionary<string, Type> typeMappings = new Dictionary<string, Type>
+	internal static Dictionary<string, Type> typeMappings = new Dictionary<string, Type>
 	{
 		{ "tribeData", typeof(TribeData.Type) },
 		{ "techData", typeof(TechData.Type) },

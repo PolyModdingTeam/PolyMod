@@ -55,17 +55,24 @@ public static class Visual
 	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.GetSpriteFromAtlas), typeof(SpriteAtlas), typeof(string))]
 	private static void SpriteAtlasManager_GetSpriteFromAtlas(ref Sprite __result, SpriteAtlas spriteAtlas, string sprite)
 	{
-		try
+		List<string> names = sprite.Split('_').ToList();
+		List<string> filteredNames = new List<string>(names);
+		string style = "";
+		foreach (string item in names)
 		{
-			string[] names = sprite.Split('_');
-			Sprite? newSprite = Registry.GetSprite(names[0], names[1]);
-			if (newSprite != null)
+			if(EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin))
 			{
-				__result = newSprite;
+				filteredNames.Remove(item);
+				style = item;
+				continue;
 			}
-			return;
 		}
-		catch { }
+		string name = string.Join("_", filteredNames);
+		Sprite? newSprite = Registry.GetSprite(name, style);
+		if (newSprite != null)
+		{
+			__result = newSprite;
+		}
 	}
 
 	[HarmonyPostfix]
