@@ -11,7 +11,7 @@ jobs:
       with:
         dotnet-version: '8.0.x'
     - name: Build
-      run: dotnet build
+      run: dotnet build -warnaserror
     - name: Build nuget
       if: github.event_name == 'workflow_dispatch'
       run: dotnet pack PolyMod.csproj -o nuget
