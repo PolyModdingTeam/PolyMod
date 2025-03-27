@@ -25,9 +25,14 @@ internal static class Util
         return token.Path.Split('.')[^n];
     }
 
-    internal static bool EqualNoRevision(this Il2CppSystem.Version self, Il2CppSystem.Version version)
+    internal static Version Cast(this Il2CppSystem.Version self)
     {
-        return self.Major == version.Major && self.Minor == version.Minor && self.Build == version.Build;
+        return new(self.ToString());
+    }
+
+    internal static Version CutRevision(this Version self)
+    {
+        return new(self.Major, self.Minor, self.Build);
     }
 
     internal static string GetStyle(TribeData.Type tribe, SkinType skin)

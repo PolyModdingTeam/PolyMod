@@ -18,8 +18,8 @@ using UnityEngine;
 namespace PolyMod;
 public static class Loader
 {
-	internal static Dictionary<string, Type> typeMappings = new Dictionary<string, Type>
-	{
+	internal static Dictionary<string, Type> typeMappings = new()
+    {
 		{ "tribeData", typeof(TribeData.Type) },
 		{ "techData", typeof(TechData.Type) },
 		{ "unitData", typeof(UnitData.Type) },
@@ -460,7 +460,7 @@ public static class Loader
 			int index = Registry.skinInfo.FindIndex(t => t.id == id);
 			if (Registry.skinInfo.ElementAtOrDefault(index) != null)
 			{
-				SkinData skinData = new SkinData();
+				SkinData skinData = new();
 				if (token["color"] != null)
 				{
 					skinData.color = (int)token["color"];

@@ -6,7 +6,6 @@ using UnityEngine.EventSystems;
 namespace PolyMod.Managers;
 internal static class Compatibility
 {
-    private static bool sawIncompatibilityWarning;
     internal static string signature = string.Empty;
     internal static string looseSignature = string.Empty;
     private static bool sawSignatureWarning;
@@ -68,8 +67,18 @@ internal static class Compatibility
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
     private static void StartScreen_Start()
     {
-        if (!sawIncompatibilityWarning && !VersionManager.SemanticVersion.EqualNoRevision(Plugin.POLYTOPIA_VERSION))
+        Version incompatibilityWarningLastVersion = Plugin.POLYTOPIA_VERSION.CutRevision();
+        try
         {
+            incompatibilityWarningLastVersion = new(File.ReadAllText(Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_PATH));
+        }
+        catch (FileNotFoundException) { }
+        if (VersionManager.SemanticVersion.Cast().CutRevision() > incompatibilityWarningLastVersion)
+        {
+            File.WriteAllText(
+                Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_PATH,
+                VersionManager.SemanticVersion.Cast().CutRevision().ToString()
+            );
             PopupManager.GetBasicPopup(new(
                 Localization.Get("polymod.version.mismatch"),
                 Localization.Get("polymod.version.mismatch.description"),
@@ -83,7 +92,6 @@ internal static class Compatibility
                     )
                 }))
             ).Show();
-            sawIncompatibilityWarning = true;
         }
     }
 

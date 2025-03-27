@@ -18,8 +18,10 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
 	public static readonly string DUMPED_DATA_PATH = Path.Combine(BASE_PATH, "DumpedData");
 	internal static readonly string CONFIG_PATH = Path.Combine(BASE_PATH, "PolyMod.json");
+	internal static readonly string INCOMPATIBILITY_WARNING_LAST_VERSION_PATH
+		= Path.Combine(BASE_PATH, "IncompatibilityWarningLastVersion");
 	internal static readonly string DISCORD_LINK = "https://discord.gg/eWPdhWtfVy";
-	internal static readonly List<string> LOG_MESSAGES_IGNORE = new List<string>
+	internal static readonly List<string> LOG_MESSAGES_IGNORE = new()
 	{
 		"Failed to find atlas",
 		"Could not find sprite",

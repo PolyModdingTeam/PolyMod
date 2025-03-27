@@ -11,7 +11,7 @@
         </RestoreAdditionalProjectSources>
         <Configurations>IL2CPP</Configurations>
         <Version>1.1.2</Version>
-        <PolytopiaVersion>2.12.0.13909</PolytopiaVersion>
+        <PolytopiaVersion>2.12.1.13909</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
         <NoWarn>IDE0130</NoWarn>
@@ -31,7 +31,7 @@ namespace PolyMod
     public partial class Plugin
     {
         internal const string VERSION = "$(Version)"%3B
-        internal static readonly Il2CppSystem.Version POLYTOPIA_VERSION = new("$(PolytopiaVersion)")%3B
+        internal static readonly Version POLYTOPIA_VERSION = new("$(PolytopiaVersion)")%3B
     }
 }
       ]]></GeneratedText>
