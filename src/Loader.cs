@@ -19,7 +19,7 @@ namespace PolyMod;
 public static class Loader
 {
 	internal static Dictionary<string, Type> typeMappings = new()
-    {
+	{
 		{ "tribeData", typeof(TribeData.Type) },
 		{ "techData", typeof(TechData.Type) },
 		{ "unitData", typeof(UnitData.Type) },
