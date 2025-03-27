@@ -60,18 +60,25 @@ public static class Visual
 		string style = "";
 		foreach (string item in names)
 		{
-			if(EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin))
+			string upperitem = char.ToUpper(item[0]) + item.Substring(1);
+			if(EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin) 
+			   || EnumCache<TribeData.Type>.TryGetType(upperitem, out TribeData.Type tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
 			{
 				filteredNames.Remove(item);
 				style = item;
 				continue;
 			}
 		}
-		string name = string.Join("_", filteredNames);
-		Sprite? newSprite = Registry.GetSprite(name, style);
+		Sprite? newSprite = Registry.GetSprite(sprite, skipStyle: true);
 		if (newSprite != null)
 		{
 			__result = newSprite;
+		}
+		string name = string.Join("_", filteredNames);
+		Sprite? newSpriteWithStyle = Registry.GetSprite(name, style);
+		if (newSpriteWithStyle != null)
+		{
+			__result = newSpriteWithStyle;
 		}
 	}
 

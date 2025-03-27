@@ -4,7 +4,6 @@ using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using System.Reflection;
 using LibCpp2IL;
 using Polytopia.Data;
-using Cpp2IL.Core.Il2CppApiFunctions;
 
 namespace PolyMod.Managers;
 public static class Loc
@@ -29,7 +28,7 @@ public static class Loc
 	{
 		List<string> keys = key.Split('.').ToList();
 		int? idx = null;
-		string name = null;
+		string? name = null;
 		foreach (string item in keys)
 		{
 			if(int.TryParse(item, out int parsedIdx))
@@ -44,17 +43,20 @@ public static class Loc
 				MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("TryGetName");
 				if (methodInfo != null)
 				{
-					object[] parameters = { idx, null};
-					object methodInvokeResult = methodInfo.Invoke(null, parameters);
-					if((bool)methodInvokeResult)
+					object?[] parameters = { idx, null};
+					object? methodInvokeResult = methodInfo.Invoke(null, parameters);
+					if(methodInvokeResult != null)
 					{
-						name = (string)parameters[1];
+						if((bool)methodInvokeResult)
+						{
+							name = (string?)parameters[1];
+						}
 					}
 				}
 			}
-			if(name != null)
+			if(name != null && idx != null)
 			{
-				int index = keys.IndexOf(idx.ToString());
+				int index = keys.IndexOf(idx.ToString()!);
 				keys[index] = name;
 				key = string.Join(".", keys);
 			}
