@@ -5,12 +5,17 @@ using UnityEngine;
 namespace PolyMod.Managers;
 public static class Audio
 {
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(AudioManager), nameof(AudioManager.SetAmbienceClimate))]
-    private static void AudioManager_SetAmbienceClimatePrefix(ref int climate)
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(AudioManager), nameof(AudioManager.SetupData))]
+    private static void AudioManager_SetupData()
     {
-        if (climate > 16)
-            climate = 1;
+        foreach (var item in Registry.customTribes)
+        {
+            if (GameManager.GameState.GameLogicData.TryGetData(item, out TribeData data))
+            {
+                AudioManager.instance.climateTribeMap.Add(data.climate, item);
+            }
+        }
     }
 
     [HarmonyPrefix]
