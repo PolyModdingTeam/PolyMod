@@ -480,25 +480,10 @@ public static class Visual
 		}
 	}
 
+	[Obsolete(message: "Use Loader.BuildSprite")]
 	public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
 	{
-		Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
-		texture.LoadImage(data);
-		Color[] pixels = texture.GetPixels();
-		for (int i = 0; i < pixels.Length; i++)
-		{
-			pixels[i] = new Color(pixels[i].r, pixels[i].g, pixels[i].b, pixels[i].a);
-		}
-		texture.SetPixels(pixels);
-		texture.anisoLevel = 0;
-		texture.filterMode = FilterMode.Trilinear;
-		texture.Apply();
-		return Sprite.Create(
-			texture,
-			new(0, 0, texture.width, texture.height),
-			pivot ?? new(0.5f, 0.5f),
-			pixelsPerUnit
-		);
+		return Loader.BuildSprite(data, pivot, pixelsPerUnit);
 	}
 
 	internal static void Init()

@@ -274,10 +274,31 @@ public static class Loader
 			pivot = spriteData.pivot ?? pivot;
 			pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
 		}
-		Sprite sprite = Visual.BuildSprite(file.bytes, pivot, pixelsPerUnit);
+		Sprite sprite = BuildSprite(file.bytes, pivot, pixelsPerUnit);
 		GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
 		GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
 		Registry.sprites.Add(name, sprite);
+	}
+
+	public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
+	{
+		Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
+		texture.LoadImage(data);
+		Color[] pixels = texture.GetPixels();
+		for (int i = 0; i < pixels.Length; i++)
+		{
+			pixels[i] = new Color(pixels[i].r, pixels[i].g, pixels[i].b, pixels[i].a);
+		}
+		texture.SetPixels(pixels);
+		texture.anisoLevel = 0;
+		texture.filterMode = FilterMode.Trilinear;
+		texture.Apply();
+		return Sprite.Create(
+			texture,
+			new(0, 0, texture.width, texture.height),
+			pivot ?? new(0.5f, 0.5f),
+			pixelsPerUnit
+		);
 	}
 
 	public static void LoadSpriteInfoFile(Mod mod, Mod.File file)
@@ -304,10 +325,21 @@ public static class Loader
 	public static void LoadAudioFile(Mod mod, Mod.File file)
 	{
 		AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
-		GameObject.DontDestroyOnLoad(audioSource);
-		audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
+        UnityEngine.Object.DontDestroyOnLoad(audioSource);
+		audioSource.clip = BuildAudioClip(file.bytes);
 		Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
 	}
+
+	public static AudioClip BuildAudioClip(byte[] data)
+    {
+        string path = Path.Combine(Application.persistentDataPath, "temp.wav");
+        File.WriteAllBytes(path, data);
+        WWW www = new("file://" + path);
+        while (!www.isDone) { }
+        AudioClip audioClip = www.GetAudioClip(false);
+        File.Delete(path);
+        return audioClip;
+    }
 
 	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
 	{

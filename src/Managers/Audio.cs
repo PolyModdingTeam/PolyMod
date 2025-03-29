@@ -60,15 +60,10 @@ public static class Audio
         return true;
     }
 
+    [Obsolete(message: "Use Loader.BuildAudioClip")]
     public static AudioClip BuildAudioClip(byte[] data)
     {
-        string path = Path.Combine(Application.persistentDataPath, "temp.wav");
-        File.WriteAllBytes(path, data);
-        WWW www = new("file://" + path);
-        while (!www.isDone) { }
-        AudioClip audioClip = www.GetAudioClip(false);
-        File.Delete(path);
-        return audioClip;
+        return Loader.BuildAudioClip(data);
     }
 
     internal static void Init()
