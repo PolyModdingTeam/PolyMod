@@ -67,7 +67,7 @@ internal static class Hub
         descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
 
         UIRoundButton buttonObject = button.GetComponent<UIRoundButton>();
-        buttonObject.bg.sprite = Loader.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
+        buttonObject.bg.sprite = Visual.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
         buttonObject.bg.transform.localScale = new Vector3(1.2f, 1.2f, 0);
         buttonObject.bg.color = Color.white;
 
