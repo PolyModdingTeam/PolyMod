@@ -10,7 +10,6 @@ using UnityEngine;
 namespace PolyMod.Managers;
 public static class Main
 {
-
 	internal static readonly Stopwatch stopwatch = new();
 	internal static bool fullyInitialized;
 	internal static bool dependencyCycle;

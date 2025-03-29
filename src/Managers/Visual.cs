@@ -61,7 +61,7 @@ public static class Visual
 		foreach (string item in names)
 		{
 			string upperitem = char.ToUpper(item[0]) + item.Substring(1);
-			if(EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin) 
+			if (EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
 			   || EnumCache<TribeData.Type>.TryGetType(upperitem, out TribeData.Type tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
 			{
 				filteredNames.Remove(item);

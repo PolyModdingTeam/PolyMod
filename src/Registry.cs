@@ -6,7 +6,6 @@ using UnityEngine;
 namespace PolyMod;
 public static class Registry
 {
-
 	public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
 	public static Dictionary<string, Sprite> sprites = new();
 	public static Dictionary<string, AudioSource> audioClips = new();
@@ -22,7 +21,7 @@ public static class Registry
 		Sprite? sprite = null;
 		name = name.ToLower();
 		style = style.ToLower();
-		if(skipStyle)
+		if (skipStyle)
 		{
 			sprite = sprites.GetOrDefault($"{name}__", sprite);
 			sprite = sprites.GetOrDefault($"{name}_", sprite);

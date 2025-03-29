@@ -31,30 +31,30 @@ public static class Loc
 		string? name = null;
 		foreach (string item in keys)
 		{
-			if(int.TryParse(item, out int parsedIdx))
+			if (int.TryParse(item, out int parsedIdx))
 			{
 				idx = parsedIdx;
 			}
 		}
-		if(idx != null)
+		if (idx != null)
 		{
 			foreach (var targetType in Loader.typeMappings.Values)
 			{
 				MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("TryGetName");
 				if (methodInfo != null)
 				{
-					object?[] parameters = { idx, null};
+					object?[] parameters = { idx, null };
 					object? methodInvokeResult = methodInfo.Invoke(null, parameters);
-					if(methodInvokeResult != null)
+					if (methodInvokeResult != null)
 					{
-						if((bool)methodInvokeResult)
+						if ((bool)methodInvokeResult)
 						{
 							name = (string?)parameters[1];
 						}
 					}
 				}
 			}
-			if(name != null && idx != null)
+			if (name != null && idx != null)
 			{
 				int index = keys.IndexOf(idx.ToString()!);
 				keys[index] = name;

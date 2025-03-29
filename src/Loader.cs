@@ -421,7 +421,7 @@ public static class Loader
 				foreach (var skin in skinValues)
 				{
 					string skinValue = skin.ToString();
-					if (skinValue.StartsWith("-") && Enum.TryParse<SkinType>(skinValue.Substring(1), out _))
+					if (skinValue.StartsWith('-') && Enum.TryParse<SkinType>(skinValue.Substring(1), out _))
 					{
 						skinsToRemove.Add(skinValue.Substring(1));
 					}
