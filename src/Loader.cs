@@ -325,21 +325,21 @@ public static class Loader
 	public static void LoadAudioFile(Mod mod, Mod.File file)
 	{
 		AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
-        UnityEngine.Object.DontDestroyOnLoad(audioSource);
+		UnityEngine.Object.DontDestroyOnLoad(audioSource);
 		audioSource.clip = BuildAudioClip(file.bytes);
 		Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
 	}
 
 	public static AudioClip BuildAudioClip(byte[] data)
-    {
-        string path = Path.Combine(Application.persistentDataPath, "temp.wav");
-        File.WriteAllBytes(path, data);
-        WWW www = new("file://" + path);
-        while (!www.isDone) { }
-        AudioClip audioClip = www.GetAudioClip(false);
-        File.Delete(path);
-        return audioClip;
-    }
+	{
+		string path = Path.Combine(Application.persistentDataPath, "temp.wav");
+		File.WriteAllBytes(path, data);
+		WWW www = new("file://" + path);
+		while (!www.isDone) { }
+		AudioClip audioClip = www.GetAudioClip(false);
+		File.Delete(path);
+		return audioClip;
+	}
 
 	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
 	{
