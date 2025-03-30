@@ -11,7 +11,7 @@ public static class Audio
     {
         foreach (var item in Registry.customTribes)
         {
-            if (GameManager.GameState.GameLogicData.TryGetData(item, out TribeData data))
+            if (PolytopiaDataManager.GetLatestGameLogicData().TryGetData(item, out TribeData data))
             {
                 AudioManager.instance.climateTribeMap.Add(data.climate, item);
             }
