@@ -69,16 +69,11 @@ public static class Visual
 				continue;
 			}
 		}
-		Sprite? newSprite = Registry.GetSprite(sprite, skipStyle: true);
+		string name = string.Join("_", filteredNames);
+		Sprite? newSprite = Registry.GetSprite(name, style);
 		if (newSprite != null)
 		{
 			__result = newSprite;
-		}
-		string name = string.Join("_", filteredNames);
-		Sprite? newSpriteWithStyle = Registry.GetSprite(name, style);
-		if (newSpriteWithStyle != null)
-		{
-			__result = newSpriteWithStyle;
 		}
 	}
 
@@ -490,7 +485,6 @@ public static class Visual
 			pixels[i] = new Color(pixels[i].r, pixels[i].g, pixels[i].b, pixels[i].a);
 		}
 		texture.SetPixels(pixels);
-		texture.anisoLevel = 0;
 		texture.filterMode = FilterMode.Trilinear;
 		texture.Apply();
 		return Sprite.Create(

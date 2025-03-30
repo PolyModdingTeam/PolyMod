@@ -427,7 +427,8 @@ public static class Loader
 					}
 					else if (!Enum.TryParse<SkinType>(skinValue, out _))
 					{
-						EnumCache<SkinType>.AddMapping(skinValue, (SkinType)Registry.autoidx);
+						EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
+						EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
 						Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
 						Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
 						Registry.autoidx++;

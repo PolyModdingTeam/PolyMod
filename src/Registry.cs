@@ -16,25 +16,15 @@ public static class Registry
 	public static List<Visual.SkinInfo> skinInfo = new();
 	public static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 
-	public static Sprite? GetSprite(string name, string style = "", int level = 0, bool skipStyle = false)
+	public static Sprite? GetSprite(string name, string style = "", int level = 0)
 	{
 		Sprite? sprite = null;
 		name = name.ToLower();
 		style = style.ToLower();
-		if (skipStyle)
-		{
-			sprite = sprites.GetOrDefault($"{name}__", sprite);
-			sprite = sprites.GetOrDefault($"{name}_", sprite);
-			sprite = sprites.GetOrDefault($"{name}__{level}", sprite);
-			sprite = sprites.GetOrDefault($"{name}_{level}", sprite);
-		}
-		else
-		{
-			sprite = sprites.GetOrDefault($"{name}__", sprite);
-			sprite = sprites.GetOrDefault($"{name}_{style}_", sprite);
-			sprite = sprites.GetOrDefault($"{name}__{level}", sprite);
-			sprite = sprites.GetOrDefault($"{name}_{style}_{level}", sprite);
-		}
+		sprite = sprites.GetOrDefault($"{name}__", sprite);
+		sprite = sprites.GetOrDefault($"{name}_{style}_", sprite);
+		sprite = sprites.GetOrDefault($"{name}__{level}", sprite);
+		sprite = sprites.GetOrDefault($"{name}_{style}_{level}", sprite);
 		return sprite;
 	}
 
