@@ -26,7 +26,8 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		"Failed to find atlas",
 		"Could not find sprite",
 		"Couldn't find prefab for type",
-		"MARKET: id:"
+		"MARKET: id:",
+		"Missing name for value",
 	};
 
 
