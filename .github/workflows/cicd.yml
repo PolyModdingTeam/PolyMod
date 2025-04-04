@@ -10,8 +10,15 @@ jobs:
     - uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
+    - name: Cache NuGet packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.nuget/packages
+        key: nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          nuget-
     - name: Build
-      run: dotnet build -warnaserror
+      run: dotnet build -warnaserror --configuration Release
     - name: Build nuget
       if: github.event_name == 'workflow_dispatch'
       run: dotnet pack PolyMod.csproj -o nuget
