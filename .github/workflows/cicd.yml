@@ -16,7 +16,7 @@ jobs:
         path: ~/.nuget/packages
         key: nuget-${{ hashFiles('**/*.csproj') }}
     - name: Build
-      run: dotnet build -warnaserror --configuration Release
+      run: dotnet build -warnaserror
     - name: Build nuget
       if: github.event_name == 'workflow_dispatch'
       run: dotnet pack PolyMod.csproj -o nuget
