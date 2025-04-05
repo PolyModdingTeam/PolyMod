@@ -305,7 +305,7 @@ public static class Loader
 	{
 		AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
 		GameObject.DontDestroyOnLoad(audioSource);
-		audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
+		audioSource.clip = Audio.BuildAudioClip(file.bytes);
 		Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
 	}
 
@@ -405,6 +405,14 @@ public static class Loader
 			Plugin.logger.LogError($"Error on loading patch from {mod.name} mod: {e.Message}");
 			mod.status = Mod.Status.Error;
 		}
+	}
+
+	public static void LoadAssetBundle(Mod mod, Mod.File file)
+	{
+		Registry.assetBundles.Add(
+			Path.GetFileNameWithoutExtension(file.name), 
+			AssetBundle.LoadFromMemory(file.bytes)
+		);
 	}
 
 	public static void HandleSkins(JObject gld, JObject patch)

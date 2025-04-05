@@ -131,21 +131,31 @@ public static class Main
 			if (mod.status != Mod.Status.Success) continue;
 			foreach (var file in mod.files)
 			{
-				if (Path.GetFileName(file.name) == "patch.json")
+				switch (Path.GetFileName(file.name))
 				{
-					Loader.LoadGameLogicDataPatch(mod, gameLogicdata, JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd()));
+					case "patch.json":
+						Loader.LoadGameLogicDataPatch(
+							mod, 
+							gameLogicdata, 
+							JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd())
+						);
+						break;
+					case "localization.json":
+						Loader.LoadLocalizationFile(mod, file);
+						break;
 				}
-				if (Path.GetFileName(file.name) == "localization.json")
+
+				switch (Path.GetExtension(file.name))
 				{
-					Loader.LoadLocalizationFile(mod, file);
-				}
-				if (Path.GetExtension(file.name) == ".png")
-				{
-					Loader.LoadSpriteFile(mod, file);
-				}
-				if (Path.GetExtension(file.name) == ".wav")
-				{
-					Loader.LoadAudioFile(mod, file);
+					case ".png":
+						Loader.LoadSpriteFile(mod, file);
+						break;
+					case ".wav":
+						Loader.LoadAudioFile(mod, file);
+						break;
+					case ".bundle":
+						Loader.LoadAssetBundle(mod, file);
+						break;
 				}
 			}
 		}
