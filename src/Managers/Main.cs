@@ -71,61 +71,56 @@ public static class Main
 		return true;
 	}
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(GameModeScreen), nameof(GameModeScreen.Init))]
-    private static void GameModeScreen_Init(GameModeScreen __instance) // TODO: refactor
-    {
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(GameModeScreen), nameof(GameModeScreen.Init))]
+	private static void GameModeScreen_Init(GameModeScreen __instance)
+	{
 		List<GamemodeButton> list = __instance.buttons.ToList();
 		for (int i = 0; i < Loader.gamemodes.Count; i++)
 		{
-			Loader.GameModeButtonsInformation item = Loader.gamemodes[i];
-			GamemodeButton prefab = __instance.buttons[2];
-			GamemodeButton button = UnityEngine.GameObject.Instantiate(prefab);
-			int buttonIndex = __instance.buttons.Length;
+			var item = Loader.gamemodes[i];
+			var button = GameObject.Instantiate(__instance.buttons[2]);
 			list.Add(button);
-			Loader.gamemodes[i] = new Loader.GameModeButtonsInformation(item.gameModeIndex, item.action, buttonIndex, item.sprite);
-		};
-		Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<GamemodeButton> newArray = list.ToArray();
+			Loader.gamemodes[i] = new Loader.GameModeButtonsInformation(item.gameModeIndex, item.action, __instance.buttons.Length, item.sprite);
+		}
+
+		var newArray = list.ToArray();
 		for (int i = 0; i < __instance.buttons.Length; i++)
 		{
-			if(newArray[i] != null)
-			{
-				newArray[i].OnClicked = __instance.buttons[i].OnClicked;
-			}
+			if (newArray[i] != null) newArray[i].OnClicked = __instance.buttons[i].OnClicked;
 		}
 
 		for (int i = 0; i < Loader.gamemodes.Count; i++)
 		{
-			Loader.GameModeButtonsInformation item = Loader.gamemodes[i];
-			if(item.buttonIndex != null)
-			{
-				newArray[item.buttonIndex.Value].OnClicked = item.action;
-			}
+			if (Loader.gamemodes[i].buttonIndex != null)
+				newArray[Loader.gamemodes[i].buttonIndex!.Value].OnClicked = Loader.gamemodes[i].action;
 		}
+
 		__instance.buttons = newArray;
 
-		for (int i = 0; i < __instance.buttons.Length; i++)
+		foreach (var button in __instance.buttons)
 		{
-			GamemodeButton item = __instance.buttons[i];
-			List<GamemodeButton.GamemodeButtonData> newData = item.gamemodeData.ToList();
-			for (int j = 0; j < Loader.gamemodes.Count; j++)
+			var newData = button.gamemodeData.ToList();
+			foreach (var info in Loader.gamemodes)
 			{
-				Loader.GameModeButtonsInformation info = Loader.gamemodes[j];
 				string id = EnumCache<GameMode>.GetName((GameMode)info.gameModeIndex).ToLower();
-				newData.Add(new GamemodeButton.GamemodeButtonData() { gameMode = (GameMode)info.gameModeIndex, id = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(id), descriptionKey = "gamemode." + id + ".description.button", headerKey = "gamemode." + id + ".caps", icon = info.sprite});
-			}
-			item.gamemodeData = newData.ToArray();
-			for (int j = 0; j < Loader.gamemodes.Count; j++)
-			{
-				Loader.GameModeButtonsInformation info = Loader.gamemodes[j];
-
-				if(info.buttonIndex == i)
+				newData.Add(new GamemodeButton.GamemodeButtonData() 
 				{
-					item.SetGamemode(info.buttonIndex.Value);
-				}
+					gameMode = (GameMode)info.gameModeIndex, 
+					id = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(id), 
+					descriptionKey = "gamemode." + id + ".description.button", 
+					headerKey = "gamemode." + id + ".caps", icon = info.sprite 
+				});
+			}
+			button.gamemodeData = newData.ToArray();
+
+			foreach (var info in Loader.gamemodes)
+			{
+				if (info.buttonIndex == Array.IndexOf(__instance.buttons, button))
+					button.SetGamemode(info.buttonIndex.Value);
 			}
 		}
-    }
+	}
 
 	internal static void Init()
 	{
@@ -192,8 +187,8 @@ public static class Main
 				{
 					case "patch.json":
 						Loader.LoadGameLogicDataPatch(
-							mod, 
-							gameLogicdata, 
+							mod,
+							gameLogicdata,
 							JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd())
 						);
 						break;

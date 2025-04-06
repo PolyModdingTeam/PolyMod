@@ -417,7 +417,7 @@ public static class Loader
 	public static void LoadAssetBundle(Mod mod, Mod.File file)
 	{
 		Registry.assetBundles.Add(
-			Path.GetFileNameWithoutExtension(file.name), 
+			Path.GetFileNameWithoutExtension(file.name),
 			AssetBundle.LoadFromMemory(file.bytes)
 		);
 	}
