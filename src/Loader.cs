@@ -32,6 +32,13 @@ public static class Loader
 		{ "improvementAbility", typeof(ImprovementAbility.Type) },
 		{ "playerAbility", typeof(PlayerAbility.Type) }
 	};
+	internal static List<GameModeButtonsInformation> gamemodes = new();
+	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
+
+	public static void AddGameModeButton(int index, UIButtonBase.ButtonAction action, Sprite? sprite)
+	{
+		gamemodes.Add(new GameModeButtonsInformation(index, action, null, sprite));
+	}
 
 	public static void AddPatchDataType(string typeId, Type type)
 	{

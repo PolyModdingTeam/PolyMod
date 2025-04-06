@@ -2,6 +2,7 @@ using BepInEx.Unity.IL2CPP.Logging;
 using HarmonyLib;
 using Newtonsoft.Json.Linq;
 using Polytopia.Data;
+using PolytopiaBackendBase.Game;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -69,6 +70,62 @@ public static class Main
 		}
 		return true;
 	}
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GameModeScreen), nameof(GameModeScreen.Init))]
+    private static void GameModeScreen_Init(GameModeScreen __instance) // TODO: refactor
+    {
+		List<GamemodeButton> list = __instance.buttons.ToList();
+		for (int i = 0; i < Loader.gamemodes.Count; i++)
+		{
+			Loader.GameModeButtonsInformation item = Loader.gamemodes[i];
+			GamemodeButton prefab = __instance.buttons[2];
+			GamemodeButton button = UnityEngine.GameObject.Instantiate(prefab);
+			int buttonIndex = __instance.buttons.Length;
+			list.Add(button);
+			Loader.gamemodes[i] = new Loader.GameModeButtonsInformation(item.gameModeIndex, item.action, buttonIndex, item.sprite);
+		};
+		Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<GamemodeButton> newArray = list.ToArray();
+		for (int i = 0; i < __instance.buttons.Length; i++)
+		{
+			if(newArray[i] != null)
+			{
+				newArray[i].OnClicked = __instance.buttons[i].OnClicked;
+			}
+		}
+
+		for (int i = 0; i < Loader.gamemodes.Count; i++)
+		{
+			Loader.GameModeButtonsInformation item = Loader.gamemodes[i];
+			if(item.buttonIndex != null)
+			{
+				newArray[item.buttonIndex.Value].OnClicked = item.action;
+			}
+		}
+		__instance.buttons = newArray;
+
+		for (int i = 0; i < __instance.buttons.Length; i++)
+		{
+			GamemodeButton item = __instance.buttons[i];
+			List<GamemodeButton.GamemodeButtonData> newData = item.gamemodeData.ToList();
+			for (int j = 0; j < Loader.gamemodes.Count; j++)
+			{
+				Loader.GameModeButtonsInformation info = Loader.gamemodes[j];
+				string id = EnumCache<GameMode>.GetName((GameMode)info.gameModeIndex).ToLower();
+				newData.Add(new GamemodeButton.GamemodeButtonData() { gameMode = (GameMode)info.gameModeIndex, id = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(id), descriptionKey = "gamemode." + id + ".description.button", headerKey = "gamemode." + id + ".caps", icon = info.sprite});
+			}
+			item.gamemodeData = newData.ToArray();
+			for (int j = 0; j < Loader.gamemodes.Count; j++)
+			{
+				Loader.GameModeButtonsInformation info = Loader.gamemodes[j];
+
+				if(info.buttonIndex == i)
+				{
+					item.SetGamemode(info.buttonIndex.Value);
+				}
+			}
+		}
+    }
 
 	internal static void Init()
 	{
