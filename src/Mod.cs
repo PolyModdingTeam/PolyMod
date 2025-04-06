@@ -11,6 +11,7 @@ public class Mod
         DependenciesUnsatisfied,
     }
 
+    public string id;
     public string? name;
     public Version version;
     public string[] authors;
@@ -21,6 +22,7 @@ public class Mod
 
     public Mod(Manifest manifest, Status status, List<File> files)
     {
+        id = manifest.id;
         name = manifest.name ?? manifest.id;
         version = manifest.version;
         authors = manifest.authors;

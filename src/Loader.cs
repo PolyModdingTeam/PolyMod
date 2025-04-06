@@ -222,15 +222,15 @@ public static class Loader
 				{
 					loadWithLogger.Invoke(null, new object[]
 					{
-						BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.name}")
+						BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.id}")
 					});
-					Plugin.logger.LogInfo($"Invoked Load method with logger from {type.FullName} from {mod.name} mod");
+					Plugin.logger.LogInfo($"Invoked Load method with logger from {type.FullName} from {mod.id} mod");
 				}
 				MethodInfo? load = type.GetMethod("Load", Array.Empty<Type>());
 				if (load != null)
 				{
 					load.Invoke(null, null);
-					Plugin.logger.LogInfo($"Invoked Load method from {type.FullName} from {mod.name} mod");
+					Plugin.logger.LogInfo($"Invoked Load method from {type.FullName} from {mod.id} mod");
 				}
 			}
 		}
@@ -238,7 +238,7 @@ public static class Loader
 		{
 			if (exception.InnerException != null)
 			{
-				Plugin.logger.LogError($"Error on loading assembly from {mod.name} mod: {exception.InnerException.Message}");
+				Plugin.logger.LogError($"Error on loading assembly from {mod.id} mod: {exception.InnerException.Message}");
 				mod.status = Mod.Status.Error;
 			}
 		}
@@ -250,11 +250,11 @@ public static class Loader
 		{
 			Loc.BuildAndLoadLocalization(JsonSerializer
 				.Deserialize<Dictionary<string, Dictionary<string, string>>>(file.bytes)!);
-			Plugin.logger.LogInfo($"Registried localization from {mod.name} mod");
+			Plugin.logger.LogInfo($"Registried localization from {mod.id} mod");
 		}
 		catch (Exception e)
 		{
-			Plugin.logger.LogError($"Error on loading locatization from {mod.name} mod: {e.Message}");
+			Plugin.logger.LogError($"Error on loading locatization from {mod.id} mod: {e.Message}");
 		}
 	}
 
@@ -293,11 +293,11 @@ public static class Loader
 					}
 				)!)
 				.ToDictionary(e => e.Key, e => e.Value);
-			Plugin.logger.LogInfo($"Registried sprite data from {mod.name} mod");
+			Plugin.logger.LogInfo($"Registried sprite data from {mod.id} mod");
 		}
 		catch (Exception e)
 		{
-			Plugin.logger.LogError($"Error on loading sprite data from {mod.name} mod: {e.Message}");
+			Plugin.logger.LogError($"Error on loading sprite data from {mod.id} mod: {e.Message}");
 		}
 	}
 
@@ -398,11 +398,11 @@ public static class Loader
 				}
 			}
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
-			Plugin.logger.LogInfo($"Registried patch from {mod.name} mod");
+			Plugin.logger.LogInfo($"Registried patch from {mod.id} mod");
 		}
 		catch (Exception e)
 		{
-			Plugin.logger.LogError($"Error on loading patch from {mod.name} mod: {e.Message}");
+			Plugin.logger.LogError($"Error on loading patch from {mod.id} mod: {e.Message}");
 			mod.status = Mod.Status.Error;
 		}
 	}
