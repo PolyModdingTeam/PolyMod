@@ -52,6 +52,22 @@ public static class Visual
 	}
 
 	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), typeof(string), typeof(string), typeof(SpriteCallback))] // temporary fix
+	private static void SpriteAtlasManager_LoadSprite_Postfix(SpriteAtlasManager __instance, string atlas, string sprite, SpriteCallback completion)
+	{
+		__instance.LoadSpriteAtlas(atlas, (Il2CppSystem.Action<UnityEngine.U2D.SpriteAtlas>)GetAtlas);
+		void GetAtlas(SpriteAtlas spriteAtlas)
+		{
+			if (spriteAtlas != null)
+			{
+				completion?.Invoke(atlas, sprite, __instance.GetSpriteFromAtlas(spriteAtlas, sprite));
+				return;
+			}
+			completion?.Invoke(atlas, sprite, null);
+		}
+	}
+
+	[HarmonyPostfix]
 	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.GetSpriteFromAtlas), typeof(SpriteAtlas), typeof(string))]
 	private static void SpriteAtlasManager_GetSpriteFromAtlas(ref Sprite __result, SpriteAtlas spriteAtlas, string sprite)
 	{
