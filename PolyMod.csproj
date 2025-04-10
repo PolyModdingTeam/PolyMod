@@ -11,7 +11,7 @@
         </RestoreAdditionalProjectSources>
         <Configurations>IL2CPP</Configurations>
         <Version>1.1.5</Version>
-        <PolytopiaVersion>2.12.1.13970</PolytopiaVersion>
+        <PolytopiaVersion>2.12.2.13970</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
         <NoWarn>IDE0130</NoWarn>
