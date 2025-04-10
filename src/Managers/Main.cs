@@ -10,10 +10,10 @@ using UnityEngine;
 namespace PolyMod.Managers;
 public static class Main
 {
+	internal const int maxTechTier = 100;
 	internal static readonly Stopwatch stopwatch = new();
 	internal static bool fullyInitialized;
 	internal static bool dependencyCycle;
-
 
 
 	[HarmonyPrefix]
@@ -149,7 +149,11 @@ public static class Main
 				}
 			}
 		}
-
+		TechItem.techTierFirebaseId.Clear();
+		for (int i = 0; i <= maxTechTier; i++)
+		{
+			TechItem.techTierFirebaseId.Add($"tech_research_{i}");
+		}
 		stopwatch.Stop();
 		Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
 	}
