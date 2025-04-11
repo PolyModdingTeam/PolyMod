@@ -32,6 +32,13 @@ public static class Loader
 		{ "improvementAbility", typeof(ImprovementAbility.Type) },
 		{ "playerAbility", typeof(PlayerAbility.Type) }
 	};
+	internal static List<GameModeButtonsInformation> gamemodes = new();
+	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
+
+	public static void AddGameModeButton(int index, UIButtonBase.ButtonAction action, Sprite? sprite)
+	{
+		gamemodes.Add(new GameModeButtonsInformation(index, action, null, sprite));
+	}
 
 	public static void AddPatchDataType(string typeId, Type type)
 	{
@@ -305,7 +312,7 @@ public static class Loader
 	{
 		AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
 		GameObject.DontDestroyOnLoad(audioSource);
-		audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
+		audioSource.clip = Audio.BuildAudioClip(file.bytes);
 		Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
 	}
 
@@ -405,6 +412,14 @@ public static class Loader
 			Plugin.logger.LogError($"Error on loading patch from {mod.id} mod: {e.Message}");
 			mod.status = Mod.Status.Error;
 		}
+	}
+
+	public static void LoadAssetBundle(Mod mod, Mod.File file)
+	{
+		Registry.assetBundles.Add(
+			Path.GetFileNameWithoutExtension(file.name),
+			AssetBundle.LoadFromMemory(file.bytes)
+		);
 	}
 
 	public static void HandleSkins(JObject gld, JObject patch)

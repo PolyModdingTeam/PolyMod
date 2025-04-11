@@ -2,6 +2,7 @@ using BepInEx.Unity.IL2CPP.Logging;
 using HarmonyLib;
 using Newtonsoft.Json.Linq;
 using Polytopia.Data;
+using PolytopiaBackendBase.Game;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -70,6 +71,58 @@ public static class Main
 		return true;
 	}
 
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(GameModeScreen), nameof(GameModeScreen.Init))]
+	private static void GameModeScreen_Init(GameModeScreen __instance)
+	{
+		List<GamemodeButton> list = __instance.buttons.ToList();
+		for (int i = 0; i < Loader.gamemodes.Count; i++)
+		{
+			var item = Loader.gamemodes[i];
+			var button = GameObject.Instantiate(__instance.buttons[2]);
+			list.Add(button);
+			Loader.gamemodes[i] = new Loader.GameModeButtonsInformation(item.gameModeIndex, item.action, __instance.buttons.Length, item.sprite);
+		}
+
+		var newArray = list.ToArray();
+		for (int i = 0; i < __instance.buttons.Length; i++)
+		{
+			if (newArray[i] != null) newArray[i].OnClicked = __instance.buttons[i].OnClicked;
+		}
+
+		for (int i = 0; i < Loader.gamemodes.Count; i++)
+		{
+			if (Loader.gamemodes[i].buttonIndex != null)
+				newArray[Loader.gamemodes[i].buttonIndex!.Value].OnClicked = Loader.gamemodes[i].action;
+		}
+
+		__instance.buttons = newArray;
+
+		foreach (var button in __instance.buttons)
+		{
+			var newData = button.gamemodeData.ToList();
+			foreach (var info in Loader.gamemodes)
+			{
+				string id = EnumCache<GameMode>.GetName((GameMode)info.gameModeIndex).ToLower();
+				newData.Add(new GamemodeButton.GamemodeButtonData()
+				{
+					gameMode = (GameMode)info.gameModeIndex,
+					id = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(id),
+					descriptionKey = "gamemode." + id + ".description.button",
+					headerKey = "gamemode." + id + ".caps",
+					icon = info.sprite
+				});
+			}
+			button.gamemodeData = newData.ToArray();
+
+			foreach (var info in Loader.gamemodes)
+			{
+				if (info.buttonIndex == Array.IndexOf(__instance.buttons, button))
+					button.SetGamemode(info.buttonIndex.Value);
+			}
+		}
+	}
+
 	internal static void Init()
 	{
 		stopwatch.Start();
@@ -77,6 +130,7 @@ public static class Main
 		Mod.Manifest polytopia = new(
 			"polytopia",
 			"The Battle of Polytopia",
+			null,
 			new(Application.version.ToString()),
 			new string[] { "Midjiwan AB" },
 			Array.Empty<Mod.Dependency>()
@@ -131,21 +185,31 @@ public static class Main
 			if (mod.status != Mod.Status.Success) continue;
 			foreach (var file in mod.files)
 			{
-				if (Path.GetFileName(file.name) == "patch.json")
+				switch (Path.GetFileName(file.name))
 				{
-					Loader.LoadGameLogicDataPatch(mod, gameLogicdata, JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd()));
+					case "patch.json":
+						Loader.LoadGameLogicDataPatch(
+							mod,
+							gameLogicdata,
+							JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd())
+						);
+						break;
+					case "localization.json":
+						Loader.LoadLocalizationFile(mod, file);
+						break;
 				}
-				if (Path.GetFileName(file.name) == "localization.json")
+
+				switch (Path.GetExtension(file.name))
 				{
-					Loader.LoadLocalizationFile(mod, file);
-				}
-				if (Path.GetExtension(file.name) == ".png")
-				{
-					Loader.LoadSpriteFile(mod, file);
-				}
-				if (Path.GetExtension(file.name) == ".wav")
-				{
-					Loader.LoadAudioFile(mod, file);
+					case ".png":
+						Loader.LoadSpriteFile(mod, file);
+						break;
+					case ".wav":
+						Loader.LoadAudioFile(mod, file);
+						break;
+					case ".bundle":
+						Loader.LoadAssetBundle(mod, file);
+						break;
 				}
 			}
 		}
