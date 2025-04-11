@@ -51,19 +51,26 @@ public static class Visual
 		firstTimeOpeningPreview = true;
 	}
 
-	[HarmonyPostfix]
+	[HarmonyPrefix]
 	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), typeof(string), typeof(string), typeof(SpriteCallback))] // temporary fix
-	private static void SpriteAtlasManager_LoadSprite_Postfix(SpriteAtlasManager __instance, string atlas, string sprite, SpriteCallback completion)
+	private static bool SpriteAtlasManager_LoadSprite_Postfix(SpriteAtlasManager __instance, string atlas, string sprite, SpriteCallback completion)
 	{
+		bool found = false;
 		__instance.LoadSpriteAtlas(atlas, (Il2CppSystem.Action<UnityEngine.U2D.SpriteAtlas>)GetAtlas);
+
+		return !found;
+
 		void GetAtlas(SpriteAtlas spriteAtlas)
 		{
 			if (spriteAtlas != null)
 			{
-				completion?.Invoke(atlas, sprite, __instance.GetSpriteFromAtlas(spriteAtlas, sprite));
-				return;
+				Sprite foundSprite = __instance.GetSpriteFromAtlas(spriteAtlas, sprite);
+				if(foundSprite != null)
+				{
+					completion?.Invoke(atlas, sprite, __instance.GetSpriteFromAtlas(spriteAtlas, sprite));
+					found = true;
+				}
 			}
-			completion?.Invoke(atlas, sprite, null);
 		}
 	}
 
