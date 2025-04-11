@@ -10,7 +10,7 @@ using UnityEngine;
 namespace PolyMod.Managers;
 public static class Main
 {
-	internal const int maxTechTier = 100;
+	internal const int MAX_TECH_TIER = 100;
 	internal static readonly Stopwatch stopwatch = new();
 	internal static bool fullyInitialized;
 	internal static bool dependencyCycle;
@@ -150,7 +150,7 @@ public static class Main
 			}
 		}
 		TechItem.techTierFirebaseId.Clear();
-		for (int i = 0; i <= maxTechTier; i++)
+		for (int i = 0; i <= MAX_TECH_TIER; i++)
 		{
 			TechItem.techTierFirebaseId.Add($"tech_research_{i}");
 		}
