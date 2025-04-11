@@ -33,7 +33,10 @@ public static class Loc
 		{
 			if (int.TryParse(item, out int parsedIdx))
 			{
-				idx = parsedIdx;
+				if(parsedIdx >= Plugin.AUTOIDX_STARTS_FROM)
+				{
+					idx = parsedIdx;
+				}
 			}
 		}
 		if (idx != null)
