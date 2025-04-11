@@ -1,5 +1,6 @@
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
+using I2.Loc;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -111,17 +112,22 @@ internal static class Hub
             if (Plugin.config.debug)
                 popupButtons.Add(new(
                     "polymod.hub.dump",
-                    callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
+                    callback: (UIButtonBase.ButtonAction)((_, _) =>
                     {
                         Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, $"gameLogicData.json"),
+                            Path.Combine(Plugin.DUMPED_DATA_PATH, "gameLogicData.json"),
                             PolytopiaDataManager.provider.LoadGameLogicData(VersionManager.GameLogicDataVersion)
                         );
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, $"avatarData.json"),
+                            Path.Combine(Plugin.DUMPED_DATA_PATH, "avatarData.json"),
                             PolytopiaDataManager.provider.LoadAvatarData(1337)
                         );
+                        foreach (var category in LocalizationManager.Sources[0].GetCategories())
+                            File.WriteAllTextAsync(
+                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"localization_{category}.csv"),
+                                LocalizationManager.Sources[0].Export_CSV(category)
+                            );
                         NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
                     }),
                     closesPopup: false
