@@ -104,12 +104,13 @@ public static class Main
 			foreach (var info in Loader.gamemodes)
 			{
 				string id = EnumCache<GameMode>.GetName((GameMode)info.gameModeIndex).ToLower();
-				newData.Add(new GamemodeButton.GamemodeButtonData() 
+				newData.Add(new GamemodeButton.GamemodeButtonData()
 				{
-					gameMode = (GameMode)info.gameModeIndex, 
-					id = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(id), 
-					descriptionKey = "gamemode." + id + ".description.button", 
-					headerKey = "gamemode." + id + ".caps", icon = info.sprite 
+					gameMode = (GameMode)info.gameModeIndex,
+					id = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(id),
+					descriptionKey = "gamemode." + id + ".description.button",
+					headerKey = "gamemode." + id + ".caps",
+					icon = info.sprite
 				});
 			}
 			button.gamemodeData = newData.ToArray();
