@@ -129,6 +129,7 @@ public static class Main
 		Mod.Manifest polytopia = new(
 			"polytopia",
 			"The Battle of Polytopia",
+			null,
 			new(Application.version.ToString()),
 			new string[] { "Midjiwan AB" },
 			Array.Empty<Mod.Dependency>()

@@ -90,7 +90,8 @@ internal static class Hub
                     Localization.Get("polymod.hub.mod.status."
                         + Enum.GetName(typeof(Mod.Status), mod.status)!.ToLower()),
                     string.Join(", ", mod.authors),
-                    mod.version.ToString()
+                    mod.version.ToString(),
+                    mod.description ?? ""
                 });
                 popup.Description += "\n\n";
             }
@@ -103,7 +104,7 @@ internal static class Hub
                 new("buttons.back"),
                 new(
                     "polymod.hub.discord",
-                    callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
+                    callback: (UIButtonBase.ButtonAction)((_, _) =>
                         NativeHelpers.OpenURL(Plugin.DISCORD_LINK, false))
                 )
             };
