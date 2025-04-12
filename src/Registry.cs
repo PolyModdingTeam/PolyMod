@@ -1,6 +1,7 @@
 using LibCpp2IL;
 using PolyMod.Managers;
 using Polytopia.Data;
+using PolytopiaBackendBase.Game;
 using UnityEngine;
 
 namespace PolyMod;
@@ -16,6 +17,7 @@ public static class Registry
 	public static List<TribeData.Type> customTribes = new();
 	public static List<Visual.SkinInfo> skinInfo = new();
 	public static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
+	public static int gameModesAutoidx = Enum.GetValues(typeof(GameMode)).Length;
 
 	public static Sprite? GetSprite(string name, string style = "", int level = 0)
 	{

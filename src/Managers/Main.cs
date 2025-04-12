@@ -98,8 +98,9 @@ public static class Main
 
 		__instance.buttons = newArray;
 
-		foreach (var button in __instance.buttons)
+		for (int i = 0; i < __instance.buttons.Length; i++)
 		{
+			GamemodeButton button = __instance.buttons[i];
 			var newData = button.gamemodeData.ToList();
 			foreach (var info in Loader.gamemodes)
 			{
@@ -115,10 +116,14 @@ public static class Main
 			}
 			button.gamemodeData = newData.ToArray();
 
-			foreach (var info in Loader.gamemodes)
+			for (int j = 0; j < Loader.gamemodes.Count; j++)
 			{
-				if (info.buttonIndex == Array.IndexOf(__instance.buttons, button))
+				Loader.GameModeButtonsInformation info = Loader.gamemodes[j];
+
+				if(info.buttonIndex == i)
+				{
 					button.SetGamemode(info.buttonIndex.Value);
+				}
 			}
 		}
 	}

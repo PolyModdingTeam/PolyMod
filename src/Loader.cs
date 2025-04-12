@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using PolyMod.Json;
 using PolyMod.Managers;
 using Polytopia.Data;
+using PolytopiaBackendBase.Game;
 using System.Data;
 using System.Diagnostics;
 using System.Globalization;
@@ -35,9 +36,12 @@ public static class Loader
 	internal static List<GameModeButtonsInformation> gamemodes = new();
 	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
 
-	public static void AddGameModeButton(int index, UIButtonBase.ButtonAction action, Sprite? sprite)
+	public static void AddGameModeButton(string id, UIButtonBase.ButtonAction action, Sprite? sprite)
 	{
-		gamemodes.Add(new GameModeButtonsInformation(index, action, null, sprite));
+		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
+		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
+		gamemodes.Add(new GameModeButtonsInformation(Registry.gameModesAutoidx, action, null, sprite));
+		Registry.gameModesAutoidx++;
 	}
 
 	public static void AddPatchDataType(string typeId, Type type)
