@@ -303,10 +303,11 @@ public static class Loader
 
 	public static void LoadAudioFile(Mod mod, Mod.File file)
 	{
-		//AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
-		//GameObject.DontDestroyOnLoad(audioSource);
-		//audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
-		//Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
+		// AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
+		// GameObject.DontDestroyOnLoad(audioSource);
+		// audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
+		// Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
+		// TODO: issue #71
 	}
 
 	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
