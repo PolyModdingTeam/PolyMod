@@ -65,7 +65,7 @@ public static class Visual
 			if (spriteAtlas != null)
 			{
 				Sprite foundSprite = __instance.GetSpriteFromAtlas(spriteAtlas, sprite);
-				if(foundSprite != null)
+				if (foundSprite != null)
 				{
 					completion?.Invoke(atlas, sprite, __instance.GetSpriteFromAtlas(spriteAtlas, sprite));
 					found = true;
