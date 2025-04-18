@@ -99,30 +99,42 @@ public static class Loader
 				}
 			}
 
-			if (manifest != null
-				&& manifest.id != null
-				&& Regex.IsMatch(manifest.id, @"^(?!polytopia$)[a-z_]+$")
-				&& manifest.version != null
-				&& manifest.authors != null
-				&& manifest.authors.Length != 0
-			)
+			if (manifest == null)
 			{
-				if (mods.ContainsKey(manifest.id))
-				{
-					Plugin.logger.LogError($"Mod {manifest.id} already exists");
-					continue;
-				}
-				mods.Add(manifest.id, new(
-					manifest,
-					Mod.Status.Success,
-					files
-				));
-				Plugin.logger.LogInfo($"Registered mod {manifest.id}");
+				Plugin.logger.LogError($"Mod manifest not found in {modContainer}");
+				continue;
 			}
-			else
+			if (manifest.id == null)
 			{
-				Plugin.logger.LogError("An invalid mod manifest was found or not found at all");
+				Plugin.logger.LogError($"Mod id not found in {modContainer}");
+				continue;
 			}
+			if (!Regex.IsMatch(manifest.id, @"^(?!polytopia$)[a-z_]+$"))
+			{
+				Plugin.logger.LogError($"Mod id {manifest.id} is invalid in {modContainer}");
+				continue;
+			}
+			if (manifest.version == null)
+			{
+				Plugin.logger.LogError($"Mod version not found in {modContainer}");
+				continue;
+			}
+			if (manifest.authors == null || manifest.authors.Length == 0)
+			{
+				Plugin.logger.LogError($"Mod authors not found in {modContainer}");
+				continue;
+			}
+			if (mods.ContainsKey(manifest.id))
+			{
+				Plugin.logger.LogError($"Mod {manifest.id} already exists");
+				continue;
+			}
+			mods.Add(manifest.id, new(
+				manifest,
+				Mod.Status.Success,
+				files
+			));
+			Plugin.logger.LogInfo($"Registered mod {manifest.id}");
 		}
 
 		foreach (var (id, mod) in mods)
