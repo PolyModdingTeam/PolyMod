@@ -14,7 +14,7 @@ OS = {
     "win32": "win",
     "darwin": "macos",
 }[sys.platform]
-BEPINEX = f"725/BepInEx-Unity.IL2CPP-{OS}-x64-6.0.0-be.725%2Be1974e2"
+BEPINEX = f"733/BepInEx-Unity.IL2CPP-{OS}-x64-6.0.0-be.733%2B995f049"
 POLYMOD = "https://github.com/PolyModdingTeam/PolyMod/releases/latest/download/PolyMod.dll"
 
 
