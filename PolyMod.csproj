@@ -11,7 +11,7 @@
         </RestoreAdditionalProjectSources>
         <Configurations>IL2CPP</Configurations>
         <Version>1.2.0-pre</Version>
-        <PolytopiaVersion>2.12.2.13970</PolytopiaVersion>
+        <PolytopiaVersion>2.12.3.14031</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
         <NoWarn>IDE0130</NoWarn>
@@ -19,7 +19,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.725" />
+        <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.733" />
         <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)" />
         <EmbeddedResource Include="resources\*.*" />
     </ItemGroup>

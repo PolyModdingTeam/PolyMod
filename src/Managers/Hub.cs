@@ -1,6 +1,7 @@
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using I2.Loc;
+using Il2CppInterop.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -44,37 +45,67 @@ internal static class Hub
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
     private static void StartScreen_Start()
     {
-        GameObject originalText = GameObject.Find("SettingsButton/DescriptionText");
-        GameObject text = GameObject.Instantiate(originalText, originalText.transform.parent.parent.parent);
-        text.name = "PolyModVersion";
-        RectTransform rect = text.GetComponent<RectTransform>();
-        rect.anchoredPosition = new(265, 40);
-        rect.sizeDelta = new(500, rect.sizeDelta.y);
-        rect.anchorMax = new(0, 0);
-        rect.anchorMin = new(0, 0);
-        text.GetComponent<TextMeshProUGUI>().fontSize = 18;
-        text.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.BottomLeft;
-        text.GetComponent<TMPLocalizer>().Text = $"PolyMod {Plugin.VERSION}";
-        text.AddComponent<LayoutElement>().ignoreLayout = true;
+        Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<UnityEngine.Object> allLocalizers = GameObject.FindObjectsOfTypeAll(Il2CppType.From(typeof(TMPLocalizer)));
 
-        GameObject originalButton = GameObject.Find("StartScreen/NewsButton");
-        GameObject button = GameObject.Instantiate(originalButton, originalButton.transform.parent);
-        button.gameObject.name = "PolyModHubButton";
-        button.transform.position = originalButton.transform.position - new Vector3(90, 0, 0);
-        button.active = true;
+        foreach (UnityEngine.Object item in allLocalizers)
+        {
+            TMPLocalizer? localizer = item.TryCast<TMPLocalizer>();
+            if (localizer == null)
+            {
+                continue;
+            }
 
-        Transform descriptionText = button.transform.Find("DescriptionText");
-        descriptionText.gameObject.SetActive(true);
-        descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
+            Transform? parent = localizer?.gameObject?.transform?.parent;
+            if (parent == null)
+            {
+                continue;
+            }
 
-        UIRoundButton buttonObject = button.GetComponent<UIRoundButton>();
-        buttonObject.bg.sprite = Visual.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
-        buttonObject.bg.transform.localScale = new Vector3(1.2f, 1.2f, 0);
-        buttonObject.bg.color = Color.white;
+            string parentName = parent.name;
 
-        buttonObject.outline.gameObject.SetActive(false);
-        buttonObject.iconContainer.gameObject.SetActive(false);
-        buttonObject.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
+            if (parentName == "SettingsButton")
+            {
+                Transform? textTransform = parent.FindChild("DescriptionText");
+                if (textTransform == null)
+                {
+                    return;
+                }
+
+                GameObject originalText = textTransform.gameObject;
+                GameObject text = GameObject.Instantiate(originalText, originalText.transform.parent.parent.parent);
+                text.name = "PolyModVersion";
+
+                RectTransform rect = text.GetComponent<RectTransform>();
+                rect.anchoredPosition = new Vector2(265, 40);
+                rect.sizeDelta = new Vector2(500, rect.sizeDelta.y);
+                rect.anchorMax = Vector2.zero;
+                rect.anchorMin = Vector2.zero;
+
+                TextMeshProUGUI textComponent = text.GetComponent<TextMeshProUGUI>();
+                textComponent.fontSize = 18;
+                textComponent.alignment = TextAlignmentOptions.BottomLeft;
+
+                text.GetComponent<TMPLocalizer>().Text = $"PolyMod {Plugin.VERSION}";
+                text.AddComponent<LayoutElement>().ignoreLayout = true;
+            }
+            else if (parentName == "NewsButton")
+            {
+                GameObject originalButton = parent.gameObject;
+                GameObject button = GameObject.Instantiate(originalButton, originalButton.transform.parent);
+                button.name = "PolyModHubButton";
+                button.transform.position = originalButton.transform.position - new Vector3(90, 0, 0);
+
+                UIRoundButton buttonComponent = button.GetComponent<UIRoundButton>();
+                buttonComponent.bg.sprite = Visual.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
+                buttonComponent.bg.transform.localScale = new Vector3(1.2f, 1.2f, 0);
+                buttonComponent.bg.color = Color.white;
+
+                GameObject.Destroy(buttonComponent.icon.gameObject);
+                GameObject.Destroy(buttonComponent.outline.gameObject);
+
+                buttonComponent.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
+            }
+        }
 
         static void PolyModHubButtonClicked(int buttonId, BaseEventData eventData)
         {
