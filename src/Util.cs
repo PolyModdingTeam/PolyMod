@@ -30,6 +30,11 @@ internal static class Util
         return new(self.ToString());
     }
 
+    internal static T UnwrapAsync<T>(this Task<T> self)
+    {
+        return self.GetAwaiter().GetResult();
+    }
+
     internal static Version CutRevision(this Version self)
     {
         return new(self.Major, self.Minor, self.Build);

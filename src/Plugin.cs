@@ -54,6 +54,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		Compatibility.Init();
 
 		Audio.Init();
+		AutoUpdate.Init();
 		Loc.Init();
 		Visual.Init();
 		Hub.Init();
