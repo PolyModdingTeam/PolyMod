@@ -14,7 +14,7 @@ OS = {
     "win32": "win",
     "darwin": "macos",
 }[sys.platform]
-BEPINEX = f"733/BepInEx-Unity.IL2CPP-{OS}-x64-6.0.0-be.733%2B995f049"
+BEPINEX = "https://polymod.dev/data/bepinex.txt"
 POLYMOD = "https://api.github.com/repos/PolyModdingTeam/PolyMod/releases"
 
 
@@ -65,7 +65,7 @@ def prepare(target):
 def install(path):
     to_zip(
         requests.get(
-            f"https://builds.bepinex.dev/projects/bepinex_be/{BEPINEX}.zip"
+            requests.get(BEPINEX).text.strip().replace("{os}", OS)
         )
     ).extractall(path)
     progress_bar.step()
