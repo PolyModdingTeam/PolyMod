@@ -5,6 +5,7 @@ import shutil
 import zipfile
 import requests
 import threading
+import subprocess
 import customtkinter
 import CTkMessagebox as messagebox
 
@@ -74,7 +75,7 @@ def install(path):
     )
     progress_bar.step()
 
-    customtkinter.CTkButton(app, text="Launch", command=launch).grid(
+    customtkinter.CTkButton(app, text="Launch", command=lambda: launch(path)).grid(
         column=0, row=2, columnspan=2, padx=5, pady=5
     )
 
@@ -107,8 +108,13 @@ def uninstall(path):
     )
 
 
-def launch():
-    os.startfile("steam://rungameid/874390")
+def launch(path):
+    if sys.platform != "win32":
+        subprocess.check_call(f"chmod +x {path}/run_bepinex.sh", shell=True)
+        subprocess.check_call(f"{path}/run_bepinex.sh {path}/Polytopia.*", shell=True)
+        subprocess.check_call(f"xdg-open https://docs.bepinex.dev/articles/advanced/steam_interop.html", shell=True)
+    else:
+        subprocess.check_call(f"start steam://rungameid/874390", shell=True)
     quit()
 
 
