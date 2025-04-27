@@ -40,7 +40,7 @@ internal static class Util
         return skin != SkinType.Default ? EnumCache<SkinType>.GetName(skin) : EnumCache<TribeData.Type>.GetName(tribe);
     }
 
-    internal static string ReverseSpriteData(string baseName) // I cant believe i had to do this shit #MIDJIWANFIXYOURSHITCODE
+    internal static string FormatSpriteName(string baseName) // I cant believe i had to do this shit #MIDJIWANFIXYOURSHITCODE
     {
         baseName = baseName.Replace(SpriteData.IMPROVEMENT_AQUA_FARM, EnumCache<ImprovementData.Type>.GetName(ImprovementData.Type.Aquafarm));
         baseName = baseName.Replace(SpriteData.IMPROVEMENT_ATOLL, EnumCache<ImprovementData.Type>.GetName(ImprovementData.Type.Atoll));
@@ -85,6 +85,8 @@ internal static class Util
         baseName = baseName.Replace(SpriteData.TILE_UNKNOWN, EnumCache<TerrainData.Type>.GetName(TerrainData.Type.Field));
         baseName = baseName.Replace(SpriteData.TILE_WATER, EnumCache<TerrainData.Type>.GetName(TerrainData.Type.Water));
         baseName = baseName.Replace(SpriteData.TILE_WETLAND, EnumCache<TerrainData.Type>.GetName(TerrainData.Type.Field) + "_flooded");
+
+        baseName = baseName.Replace("UI_", "");
         return baseName;
     }
 }
