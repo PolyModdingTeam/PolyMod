@@ -52,8 +52,8 @@ public static class Visual
 	}
 
 	[HarmonyPrefix]
-	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), typeof(string), typeof(string), typeof(SpriteCallback))] // temporary fix
-	private static bool SpriteAtlasManager_LoadSprite_Postfix(SpriteAtlasManager __instance, string atlas, string sprite, SpriteCallback completion)
+	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), typeof(string), typeof(string), typeof(SpriteCallback))]
+	private static bool SpriteAtlasManager_LoadSprite(SpriteAtlasManager __instance, string atlas, string sprite, SpriteCallback completion)
 	{
 		bool found = false;
 		__instance.LoadSpriteAtlas(atlas, (Il2CppSystem.Action<UnityEngine.U2D.SpriteAtlas>)GetAtlas);
@@ -64,10 +64,25 @@ public static class Visual
 		{
 			if (spriteAtlas != null)
 			{
-				Sprite foundSprite = __instance.GetSpriteFromAtlas(spriteAtlas, sprite);
-				if(foundSprite != null)
+				List<string> names = sprite.Split('_').ToList();
+				List<string> filteredNames = new List<string>(names);
+				string style = "";
+				foreach (string item in names)
 				{
-					completion?.Invoke(atlas, sprite, __instance.GetSpriteFromAtlas(spriteAtlas, sprite));
+					string upperitem = char.ToUpper(item[0]) + item.Substring(1);
+					if (EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
+					|| EnumCache<TribeData.Type>.TryGetType(upperitem, out TribeData.Type tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
+					{
+						filteredNames.Remove(item);
+						style = item;
+						continue;
+					}
+				}
+				string name = string.Join("_", filteredNames);
+				Sprite? newSprite = Registry.GetSprite(name, style);
+				if (newSprite != null)
+				{
+					completion?.Invoke(atlas, sprite, newSprite);
 					found = true;
 				}
 			}
@@ -75,36 +90,10 @@ public static class Visual
 	}
 
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.GetSpriteFromAtlas), typeof(SpriteAtlas), typeof(string))]
-	private static void SpriteAtlasManager_GetSpriteFromAtlas(ref Sprite __result, SpriteAtlas spriteAtlas, string sprite)
-	{
-		List<string> names = sprite.Split('_').ToList();
-		List<string> filteredNames = new List<string>(names);
-		string style = "";
-		foreach (string item in names)
-		{
-			string upperitem = char.ToUpper(item[0]) + item.Substring(1);
-			if (EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
-			   || EnumCache<TribeData.Type>.TryGetType(upperitem, out TribeData.Type tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
-			{
-				filteredNames.Remove(item);
-				style = item;
-				continue;
-			}
-		}
-		string name = string.Join("_", filteredNames);
-		Sprite? newSprite = Registry.GetSprite(name, style);
-		if (newSprite != null)
-		{
-			__result = newSprite;
-		}
-	}
-
-	[HarmonyPostfix]
 	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
 	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeData.Type tribe, SkinType skin, bool checkForOutline, int level)
 	{
-		baseName = Util.ReverseSpriteData(baseName);
+		baseName = Util.FormatSpriteName(baseName);
 
 		Sprite? sprite = Registry.GetSprite(baseName, Util.GetStyle(tribe, skin), level);
 		if (sprite != null)
