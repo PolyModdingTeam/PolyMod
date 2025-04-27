@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using PolyMod.Json;
 using PolyMod.Managers;
 using Polytopia.Data;
+using PolytopiaBackendBase.Game;
 using System.Data;
 using System.Diagnostics;
 using System.Globalization;
@@ -32,6 +33,16 @@ public static class Loader
 		{ "improvementAbility", typeof(ImprovementAbility.Type) },
 		{ "playerAbility", typeof(PlayerAbility.Type) }
 	};
+	internal static List<GameModeButtonsInformation> gamemodes = new();
+	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
+
+	public static void AddGameModeButton(string id, UIButtonBase.ButtonAction action, Sprite? sprite)
+	{
+		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
+		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
+		gamemodes.Add(new GameModeButtonsInformation(Registry.gameModesAutoidx, action, null, sprite));
+		Registry.gameModesAutoidx++;
+	}
 
 	public static void AddPatchDataType(string typeId, Type type)
 	{
@@ -88,30 +99,42 @@ public static class Loader
 				}
 			}
 
-			if (manifest != null
-				&& manifest.id != null
-				&& Regex.IsMatch(manifest.id, @"^(?!polytopia$)[a-z_]+$")
-				&& manifest.version != null
-				&& manifest.authors != null
-				&& manifest.authors.Length != 0
-			)
+			if (manifest == null)
 			{
-				if (mods.ContainsKey(manifest.id))
-				{
-					Plugin.logger.LogError($"Mod {manifest.id} already exists");
-					continue;
-				}
-				mods.Add(manifest.id, new(
-					manifest,
-					Mod.Status.Success,
-					files
-				));
-				Plugin.logger.LogInfo($"Registered mod {manifest.id}");
+				Plugin.logger.LogError($"Mod manifest not found in {modContainer}");
+				continue;
 			}
-			else
+			if (manifest.id == null)
 			{
-				Plugin.logger.LogError("An invalid mod manifest was found or not found at all");
+				Plugin.logger.LogError($"Mod id not found in {modContainer}");
+				continue;
 			}
+			if (!Regex.IsMatch(manifest.id, @"^(?!polytopia$)[a-z_]+$"))
+			{
+				Plugin.logger.LogError($"Mod id {manifest.id} is invalid in {modContainer}");
+				continue;
+			}
+			if (manifest.version == null)
+			{
+				Plugin.logger.LogError($"Mod version not found in {modContainer}");
+				continue;
+			}
+			if (manifest.authors == null || manifest.authors.Length == 0)
+			{
+				Plugin.logger.LogError($"Mod authors not found in {modContainer}");
+				continue;
+			}
+			if (mods.ContainsKey(manifest.id))
+			{
+				Plugin.logger.LogError($"Mod {manifest.id} already exists");
+				continue;
+			}
+			mods.Add(manifest.id, new(
+				manifest,
+				Mod.Status.Success,
+				files
+			));
+			Plugin.logger.LogInfo($"Registered mod {manifest.id}");
 		}
 
 		foreach (var (id, mod) in mods)
@@ -406,6 +429,14 @@ public static class Loader
 			Plugin.logger.LogError($"Error on loading patch from {mod.id} mod: {e.Message}");
 			mod.status = Mod.Status.Error;
 		}
+	}
+
+	public static void LoadAssetBundle(Mod mod, Mod.File file)
+	{
+		Registry.assetBundles.Add(
+			Path.GetFileNameWithoutExtension(file.name),
+			AssetBundle.LoadFromMemory(file.bytes)
+		);
 	}
 
 	public static void HandleSkins(JObject gld, JObject patch)

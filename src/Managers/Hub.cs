@@ -1,5 +1,6 @@
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
+using I2.Loc;
 using Il2CppInterop.Runtime;
 using TMPro;
 using UnityEngine;
@@ -121,7 +122,8 @@ internal static class Hub
                     Localization.Get("polymod.hub.mod.status."
                         + Enum.GetName(typeof(Mod.Status), mod.status)!.ToLower()),
                     string.Join(", ", mod.authors),
-                    mod.version.ToString()
+                    mod.version.ToString(),
+                    mod.description ?? ""
                 });
                 popup.Description += "\n\n";
             }
@@ -134,24 +136,29 @@ internal static class Hub
                 new("buttons.back"),
                 new(
                     "polymod.hub.discord",
-                    callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
+                    callback: (UIButtonBase.ButtonAction)((_, _) =>
                         NativeHelpers.OpenURL(Plugin.DISCORD_LINK, false))
                 )
             };
             if (Plugin.config.debug)
                 popupButtons.Add(new(
                     "polymod.hub.dump",
-                    callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
+                    callback: (UIButtonBase.ButtonAction)((_, _) =>
                     {
                         Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, $"gameLogicData.json"),
+                            Path.Combine(Plugin.DUMPED_DATA_PATH, "gameLogicData.json"),
                             PolytopiaDataManager.provider.LoadGameLogicData(VersionManager.GameLogicDataVersion)
                         );
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, $"avatarData.json"),
+                            Path.Combine(Plugin.DUMPED_DATA_PATH, "avatarData.json"),
                             PolytopiaDataManager.provider.LoadAvatarData(1337)
                         );
+                        foreach (var category in LocalizationManager.Sources[0].GetCategories())
+                            File.WriteAllTextAsync(
+                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"localization_{category}.csv"),
+                                LocalizationManager.Sources[0].Export_CSV(category)
+                            );
                         NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
                     }),
                     closesPopup: false

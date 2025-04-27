@@ -44,8 +44,8 @@
 		"German (Germany)": "{0} Willkommen! {1}\nDiese Mods sind gerade eben geladen:"
 	},
 	"polymod_hub_mod": {
-		"English": "Name: {0}\nStatus: {1}\nAuthors: {2}\nVersion: {3}",
-		"Russian": "Имя: {0}\nСтатус: {1}\nАвторы: {2}\nВерсия: {3}",
+		"English": "Name: {0}\nStatus: {1}\nAuthors: {2}\nVersion: {3}\nDescription: {4}",
+		"Russian": "Имя: {0}\nСтатус: {1}\nАвторы: {2}\nВерсия: {3}\nОписание: {4}",
 		"Turkish": "İsim: {0}\nDurum: {1}\nYaratıcılar: {2}\nSürüm: {3}",
 		"Spanish (Mexico)": "Titulo: {0}\nEstado: {1}\nPublicador: {2}\nVersion: {3}",
 		"French (France)": "Titre: {0}\nEtat: {1}\nAuteurs: {2}\nVersion: {3}",
