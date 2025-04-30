@@ -6,6 +6,7 @@ using PolytopiaBackendBase.Game;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace PolyMod.Managers;
@@ -120,7 +121,7 @@ public static class Main
 			{
 				Loader.GameModeButtonsInformation info = Loader.gamemodes[j];
 
-				if(info.buttonIndex == i)
+				if (info.buttonIndex == i)
 				{
 					button.SetGamemode(info.buttonIndex.Value);
 				}
@@ -190,18 +191,19 @@ public static class Main
 			if (mod.status != Mod.Status.Success) continue;
 			foreach (var file in mod.files)
 			{
-				switch (Path.GetFileName(file.name))
+				if (Path.GetFileName(file.name) == "localization.json")
 				{
-					case "patch.json":
-						Loader.LoadGameLogicDataPatch(
-							mod,
-							gameLogicdata,
-							JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd())
-						);
-						break;
-					case "localization.json":
-						Loader.LoadLocalizationFile(mod, file);
-						break;
+					Loader.LoadLocalizationFile(mod, file);
+					continue;
+				}
+				if (Regex.IsMatch(Path.GetFileName(file.name), @"^patch(_.*)?\.json$"))
+				{
+					Loader.LoadGameLogicDataPatch(
+						mod,
+						gameLogicdata,
+						JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd())
+					);
+					continue;
 				}
 
 				switch (Path.GetExtension(file.name))
