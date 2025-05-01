@@ -160,5 +160,17 @@
 		"Portuguese (Brazil)": "Essa versão do PolyMod não foi desenvolvida para a versão atual do aplicativo e pode não funcionar corretamente!",
 		"Elyrion": "πȱ∫ỹmȱδ ƒƒƒƒƒƒƒ ŋȱŧ ȱrrȱ #₺rr∑ŋŧ ƒƒƒƒƒƒƒ ỹ maỹ ŋȱŧ ~ȱr§ #ȱrr∑#ŧ∫ỹ!",
 		"German (Germany)": "Diese Version von PolyMod ist nicht für die aktuelle Version der Anwendung ausgelegt und könnte nicht funktionieren!"
+	},
+	"polymod_autoupdate": {
+		"English": "Auto-update",
+		"Russian": "Автообновление"
+	},
+	"polymod_autoupdate_description": {
+		"English": "New update available!",
+		"Russian": "Доступно новое обновление!"
+	},
+	"polymod_autoupdate_update": {
+		"English": "Update",
+		"Russian": "Обновить"
 	}
 }
