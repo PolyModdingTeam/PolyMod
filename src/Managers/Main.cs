@@ -131,12 +131,12 @@ public static class Main
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(TechView), nameof(TechView.CreateNode))]
-	public static bool TechView_CreateNode(TechData data, TechItem parentItem, float angle, TechView __instance) {
-		float num = 360 / GameManager.GameState.GameLogicData.GetTechData(TechData.Type.Basic).techUnlocks.Count;
-		float num2 = 0f;
+	public static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle) {
+		float baseAngle = 360 / GameManager.GameState.GameLogicData.GetTechData(TechData.Type.Basic).techUnlocks.Count;
+		float childAngle = 0f;
 		if (parentItem != null)
 		{
-			num2 = angle + num * (data.techUnlocks.Count - 1) / 2f;
+			childAngle = angle + baseAngle * (data.techUnlocks.Count - 1) / 2f;
 		}
 		GameLogicData gameLogicData = GameManager.GameState.GameLogicData;
 		TribeData tribeData = gameLogicData.GetTribeData(GameManager.LocalPlayer.tribe);
@@ -145,13 +145,13 @@ public static class Main
 			if (gameLogicData.TryGetData(techData.type, out TechData techData2))
 			{
 				TechData @override = GameManager.GameState.GameLogicData.GetOverride(techData, tribeData);
-				TechItem techItem = __instance.CreateTechItem(@override, parentItem, num2);
+				TechItem techItem = __instance.CreateTechItem(@override, parentItem, childAngle);
 				__instance.currTechIdx++;
 				if (@override.techUnlocks != null && @override.techUnlocks.Count > 0)
 				{
-					__instance.CreateNode(@override, techItem, num2);
+					__instance.CreateNode(@override, techItem, childAngle);
 				}
-				num2 -= num;
+				childAngle -= baseAngle;
 			}
 		}
 		Il2CppSystem.Action<TechView> onItemsRefreshed = __instance.OnItemsRefreshed;
