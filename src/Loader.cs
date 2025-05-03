@@ -303,24 +303,44 @@ public static class Loader
 		Registry.sprites.Add(name, sprite);
 	}
 
-	public static void LoadSpriteInfoFile(Mod mod, Mod.File file)
+	public static void UpdateSprite(string name)
+	{
+		if (Registry.spriteInfos.ContainsKey(name) && Registry.sprites.ContainsKey(name))
+		{
+			Visual.SpriteInfo spriteData = Registry.spriteInfos[name];
+			Sprite sprite = Visual.BuildSpriteWithTexture(Registry.sprites[name].texture, spriteData.pivot, (float)spriteData.pixelsPerUnit);
+			GameManager.GetSpriteAtlasManager().cachedSprites["Heads"][name] = sprite;
+			Registry.sprites[name] = sprite;
+		}
+	}
+
+	public static Dictionary<string, Visual.SpriteInfo>? LoadSpriteInfoFile(Mod mod, Mod.File file)
 	{
 		try
 		{
-			Registry.spriteInfos = Registry.spriteInfos
-				.Concat(JsonSerializer.Deserialize<Dictionary<string, Visual.SpriteInfo>>(
-					file.bytes,
-					new JsonSerializerOptions()
-					{
-						Converters = { new Vector2Json() },
-					}
-				)!)
-				.ToDictionary(e => e.Key, e => e.Value);
-			Plugin.logger.LogInfo($"Registried sprite data from {mod.id} mod");
+			var deserialized = JsonSerializer.Deserialize<Dictionary<string, Visual.SpriteInfo>>(
+				file.bytes,
+				new JsonSerializerOptions()
+				{
+					Converters = { new Vector2Json() },
+				}
+			);
+
+			if (deserialized != null)
+			{
+				foreach (var kvp in deserialized)
+				{
+					Registry.spriteInfos[kvp.Key] = kvp.Value;
+				}
+			}
+
+			Plugin.logger.LogInfo($"Registered sprite data from {mod.id} mod");
+			return deserialized;
 		}
 		catch (Exception e)
 		{
 			Plugin.logger.LogError($"Error on loading sprite data from {mod.id} mod: {e.Message}");
+			return null;
 		}
 	}
 

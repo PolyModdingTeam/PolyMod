@@ -6,12 +6,14 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using static PopupBase;
 
 namespace PolyMod.Managers;
 internal static class Hub
 {
     private const string HEADER_PREFIX = "<align=\"center\"><size=150%><b>";
     private const string HEADER_POSTFIX = "</b></size><align=\"left\">";
+    public static bool isLevelPopupActive = false;
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SplashController), nameof(SplashController.LoadAndPlayClip))]
@@ -141,6 +143,7 @@ internal static class Hub
                 )
             };
             if (Plugin.config.debug)
+            {
                 popupButtons.Add(new(
                     "polymod.hub.dump",
                     callback: (UIButtonBase.ButtonAction)((_, _) =>
@@ -159,10 +162,29 @@ internal static class Hub
                                 Path.Combine(Plugin.DUMPED_DATA_PATH, $"localization_{category}.csv"),
                                 LocalizationManager.Sources[0].Export_CSV(category)
                             );
+                        foreach (KeyValuePair<string, Mod> entry in Registry.mods)
+                        {
+                            foreach (Mod.File file in entry.Value.files)
+                            {
+                                if (Path.GetFileName(file.name) == "sprites.json")
+                                {
+                                    File.WriteAllBytes(Path.Combine(Plugin.DUMPED_DATA_PATH, $"sprites_{entry.Key}.json"), file.bytes);
+                                }
+                            }
+                        }
                         NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
                     }),
                     closesPopup: false
                 ));
+                popupButtons.Add(new(
+                    "polymod.hub.updatespriteinfos",
+                    callback: (UIButtonBase.ButtonAction)((_, _) =>
+                    {
+                        UpdateSpriteInfos();
+                    }),
+                    closesPopup: false
+                ));
+            }
             popup.buttonData = popupButtons.ToArray();
             popup.ShowSetWidth(1000);
         }
@@ -184,6 +206,84 @@ internal static class Hub
             ));
             popup.IsUnskippable = true;
             popup.Show();
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
+    private static void GameManager_Update()
+    {
+        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.Tab) && !isLevelPopupActive)
+        {
+            ShowLevelPopup();
+        }
+    }
+
+    internal static void UpdateSpriteInfos()
+    {
+        string message = string.Empty;
+        Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
+
+        foreach (var file in Directory.GetFiles(Plugin.DUMPED_DATA_PATH))
+        {
+            string? name = Path.GetFileNameWithoutExtension(file);
+            List<string> subnames = new();
+            if (name.Contains("sprites_"))
+            {
+                subnames = name.Split('_').ToList();
+                Mod.File spriteInfo = new(Path.GetFileNameWithoutExtension(file), File.ReadAllBytes(file));
+                Dictionary<string, Visual.SpriteInfo>? deserialized = Loader.LoadSpriteInfoFile(Registry.mods[subnames[1]], spriteInfo);
+                if (deserialized != null)
+                {
+                    foreach (var kvp in deserialized)
+                    {
+                        Loader.UpdateSprite(kvp.Key);
+                    }
+                    message += Localization.Get("polymod.spriteinfo.updated", new Il2CppSystem.Object[] {subnames[1]});
+                }
+            }
+        }
+        if (message == string.Empty)
+        {
+            message = Localization.Get("polymod.spriteinfo.notupdated");
+        }
+        NotificationManager.Notify(message);
+    }
+
+    internal static void ShowLevelPopup()
+    {
+        BasicPopup polymodPopup = PopupManager.GetBasicPopup();
+
+        polymodPopup.Header = "POLYMOD";
+        polymodPopup.Description = "";
+
+        polymodPopup.buttonData = CreatePopupButtonData();
+        polymodPopup.Show();
+    }
+
+    internal static PopupButtonData[] CreatePopupButtonData()
+    {
+        List<PopupButtonData> popupButtons = new()
+        {
+            new(Localization.Get("buttons.back"), PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnBackButtonClicked, -1, true, null)
+        };
+
+        if (GameManager.Instance.isLevelLoaded)
+        {
+            popupButtons.Add(new PopupButtonData("UPDATE SPRITES", PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnUpdateSprites, -1, true, null));
+        }
+
+        return popupButtons.ToArray();
+
+        void OnUpdateSprites(int buttonId, BaseEventData eventData)
+        {
+            UpdateSpriteInfos();
+            isLevelPopupActive = false;
+        }
+
+        void OnBackButtonClicked(int buttonId, BaseEventData eventData)
+        {
+            isLevelPopupActive = false;
         }
     }
 

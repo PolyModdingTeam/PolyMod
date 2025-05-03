@@ -538,6 +538,11 @@ public static class Visual
 		texture.SetPixels(pixels);
 		texture.filterMode = FilterMode.Trilinear;
 		texture.Apply();
+		return BuildSpriteWithTexture(texture, pivot, pixelsPerUnit);
+	}
+
+	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float pixelsPerUnit = 2112f)
+	{
 		return Sprite.Create(
 			texture,
 			new(0, 0, texture.width, texture.height),
