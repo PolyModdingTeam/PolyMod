@@ -303,10 +303,18 @@ public static class Loader
 
 	public static void LoadAudioFile(Mod mod, Mod.File file)
 	{
-		AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
-		GameObject.DontDestroyOnLoad(audioSource);
-		audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
-		Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
+		try
+		{
+			AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
+			GameObject.DontDestroyOnLoad(audioSource);
+			audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
+			Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
+			Plugin.logger.LogInfo($"Registried audio clip from {mod.id} mod");
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading audio clip from {mod.id} mod: {e.Message}");
+		}
 	}
 
 	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
