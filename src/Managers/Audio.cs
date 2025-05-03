@@ -1,7 +1,6 @@
 using HarmonyLib;
 using Polytopia.Data;
 using UnityEngine;
-using UnityEngine.Networking;
 
 namespace PolyMod.Managers;
 public static class Audio
@@ -63,7 +62,13 @@ public static class Audio
 
     public static AudioClip BuildAudioClip(byte[] data)
     {
-        return new AudioClip(new());
+        string path = Path.Combine(Application.persistentDataPath, "temp.wav");
+        File.WriteAllBytes(path, data);
+        WWW www = new(path);
+        if (!www.isDone) { }
+        AudioClip audioClip = DarkMagic.InternalCreateAudioClipUsingDH(www._uwr)!;
+        File.Delete(path);
+        return audioClip;
     }
 
     internal static void Init()
