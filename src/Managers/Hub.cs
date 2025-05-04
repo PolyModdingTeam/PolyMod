@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using I2.Loc;
@@ -140,6 +141,13 @@ internal static class Hub
                     "polymod.hub.discord",
                     callback: (UIButtonBase.ButtonAction)((_, _) =>
                         NativeHelpers.OpenURL(Plugin.DISCORD_LINK, false))
+                ),
+                new(
+                    "polymod.hub.config",
+                    callback: (UIButtonBase.ButtonAction)((_, _) =>
+                    {
+                        ShowLevelPopup();
+                    })
                 )
             };
             if (Plugin.config.debug)
@@ -270,12 +278,41 @@ internal static class Hub
 
         if (GameManager.Instance.isLevelLoaded)
         {
-            popupButtons.Add(new PopupButtonData("UPDATE SPRITES", PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnUpdateSprites, -1, true, null));
+            popupButtons.Add(new PopupButtonData(Localization.Get("polymod.hub.spriteinfo"), PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnUpdateSpritesButtonClicked, -1, true, null));
         }
-
+        else
+        {
+            string debugButtonName = Localization.Get("polymod.hub.enabledebug");
+            if (Plugin.config.debug)
+            {
+                debugButtonName = Localization.Get("polymod.hub.disabledebug");
+            }
+            popupButtons.Add(new PopupButtonData(debugButtonName, PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnDebugButtonClicked, -1, true, null));
+            //popupButtons.Add(new PopupButtonData("", PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnAutoUpdateButtonClicked, -1, true, null));
+            //popupButtons.Add(new PopupButtonData("", PopupButtonData.States.Disabled, (UIButtonBase.ButtonAction)OnIncludeAlphasButtonClicked, -1, true, null));
+        }
         return popupButtons.ToArray();
 
-        void OnUpdateSprites(int buttonId, BaseEventData eventData)
+        void OnDebugButtonClicked(int buttonId, BaseEventData eventData)
+        {
+            Plugin.PolyConfig config = new(debug: !Plugin.config.debug);
+            File.WriteAllText(Plugin.CONFIG_PATH, JsonSerializer.Serialize(config));
+            Plugin.config = config;
+            NotificationManager.Notify($"Debug set to {config.debug}.");
+            isLevelPopupActive = false;
+        }
+
+        void OnAutoUpdateButtonClicked(int buttonId, BaseEventData eventData)
+        {
+            isLevelPopupActive = false;
+        }
+
+        void OnIncludeAlphasButtonClicked(int buttonId, BaseEventData eventData)
+        {
+            isLevelPopupActive = false;
+        }
+
+        void OnUpdateSpritesButtonClicked(int buttonId, BaseEventData eventData)
         {
             UpdateSpriteInfos();
             isLevelPopupActive = false;
