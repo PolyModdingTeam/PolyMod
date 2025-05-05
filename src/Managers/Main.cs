@@ -199,7 +199,7 @@ public static class Main
 			if (!mod.client && id != "polytopia")
 			{
 				checksumString.Append(id);
-				checksumString.Append(mod.version.Major);
+				checksumString.Append(mod.version.ToString());
 			}
 		}
 		Compatibility.HashSignatures(checksumString);

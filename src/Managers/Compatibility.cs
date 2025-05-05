@@ -23,15 +23,15 @@ internal static class Compatibility
             return true;
         }
 
-        string[] signatures = { string.Empty };
+        string signature = string.Empty;
         try
         {
-            signatures = File.ReadAllLines(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+            signature = File.ReadAllText(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
         }
         catch { }
-        if (signatures[0] == string.Empty) return true;
+        if (signature == string.Empty) return true;
         if (Plugin.config.debug) return true;
-        if (checksum != signatures[0])
+        if (checksum != signature)
         {
             PopupManager.GetBasicPopup(new(
                 Localization.Get("polymod.signature.mismatch"),

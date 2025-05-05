@@ -14,6 +14,7 @@ internal static class Hub
 {
     private const string HEADER_PREFIX = "<align=\"center\"><size=150%><b>";
     private const string HEADER_POSTFIX = "</b></size><align=\"left\">";
+    private const int POPUP_WIDTH = 1400;
     public static bool isLevelPopupActive = false;
 
     [HarmonyPrefix]
@@ -194,7 +195,7 @@ internal static class Hub
                 ));
             }
             popup.buttonData = popupButtons.ToArray();
-            popup.ShowSetWidth(1000);
+            popup.ShowSetWidth(POPUP_WIDTH);
         }
 
         if (Main.dependencyCycle)
@@ -262,8 +263,7 @@ internal static class Hub
     {
         BasicPopup polymodPopup = PopupManager.GetBasicPopup();
 
-        polymodPopup.Header = "POLYMOD";
-        polymodPopup.Description = "";
+        polymodPopup.Header = Localization.Get("polymod.popup.header");
 
         polymodPopup.buttonData = CreatePopupButtonData();
         polymodPopup.Show();
@@ -282,10 +282,10 @@ internal static class Hub
         }
         else
         {
-            string debugButtonName = Localization.Get("polymod.hub.enabledebug");
+            string debugButtonName = Localization.Get("polymod.hub.debugenable");
             if (Plugin.config.debug)
             {
-                debugButtonName = Localization.Get("polymod.hub.disabledebug");
+                debugButtonName = Localization.Get("polymod.hub.debugdisable");
             }
             popupButtons.Add(new PopupButtonData(debugButtonName, PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnDebugButtonClicked, -1, true, null));
             //popupButtons.Add(new PopupButtonData("", PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnAutoUpdateButtonClicked, -1, true, null));
@@ -295,10 +295,17 @@ internal static class Hub
 
         void OnDebugButtonClicked(int buttonId, BaseEventData eventData)
         {
-            Plugin.PolyConfig config = new(debug: !Plugin.config.debug);
-            File.WriteAllText(Plugin.CONFIG_PATH, JsonSerializer.Serialize(config));
-            Plugin.config = config;
-            NotificationManager.Notify($"Debug set to {config.debug}.");
+            Plugin.config = new(debug: !Plugin.config.debug);
+            File.WriteAllText(Plugin.CONFIG_PATH, JsonSerializer.Serialize(Plugin.config));
+            NotificationManager.Notify(Localization.Get("polymod.hub.debugswitch", new Il2CppSystem.Object[] { Plugin.config.debug }));
+            if (Plugin.config.debug)
+            {
+                BepInEx.ConsoleManager.CreateConsole();
+            }
+            else
+            {
+                BepInEx.ConsoleManager.DetachConsole();
+            }
             isLevelPopupActive = false;
         }
 

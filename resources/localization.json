@@ -164,11 +164,14 @@
 	"polymod_hub_config": {
 		"English": "SETTINGS"
 	},
-	"polymod.hub.enabledebug": {
+	"polymod_hub_debugenable": {
 		"English": "ENABLE DEBUG"
 	},
-	"polymod.hub.disabledebug": {
+	"polymod_hub_debugdisable": {
 		"English": "DISABLE DEBUG"
+	},
+	"polymod_hub_debugswitch": {
+		"English": "Debug set to {0}."
 	},
 	"polymod_hub_updatespriteinfos": {
 		"English": "UPDATE SPRITES"
@@ -178,5 +181,8 @@
 	},
 	"polymod_spriteinfo_notupdated": {
 		"English": "No sprite infos were found."
+	},
+	"polymod_popup_header": {
+		"English": "POLYMOD"
 	}
 }
