@@ -161,13 +161,28 @@
 		"Elyrion": "πȱ∫ỹmȱδ ƒƒƒƒƒƒƒ ŋȱŧ ȱrrȱ #₺rr∑ŋŧ ƒƒƒƒƒƒƒ ỹ maỹ ŋȱŧ ~ȱr§ #ȱrr∑#ŧ∫ỹ!",
 		"German (Germany)": "Diese Version von PolyMod ist nicht für die aktuelle Version der Anwendung ausgelegt und könnte nicht funktionieren!"
 	},
+	"polymod_hub_config": {
+		"English": "SETTINGS"
+	},
+	"polymod_hub_debugenable": {
+		"English": "ENABLE DEBUG"
+	},
+	"polymod_hub_debugdisable": {
+		"English": "DISABLE DEBUG"
+	},
+	"polymod_hub_debugswitch": {
+		"English": "Debug set to {0}."
+	},
 	"polymod_hub_updatespriteinfos": {
 		"English": "UPDATE SPRITES"
 	},
-	"polymod.spriteinfo.updated": {
+	"polymod_spriteinfo_updated": {
 		"English": "Sprite info for mod {0} updated."
 	},
-	"polymod.spriteinfo.notupdated": {
+	"polymod_spriteinfo_notupdated": {
 		"English": "No sprite infos were found."
+	},
+	"polymod_popup_header": {
+		"English": "POLYMOD"
 	}
 }
