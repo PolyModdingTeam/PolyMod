@@ -131,7 +131,8 @@ public static class Main
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(TechView), nameof(TechView.CreateNode))]
-	public static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle) {
+	public static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle) 
+  {
 		GameLogicData gameLogicData = GameManager.GameState.GameLogicData;
 		TribeData tribeData = gameLogicData.GetTribeData(GameManager.LocalPlayer.tribe);
 		float baseAngle = 360 / gameLogicData.GetOverride(gameLogicData.GetTechData(TechData.Type.Basic), tribeData).techUnlocks.Count;
@@ -176,13 +177,13 @@ public static class Main
 		dependencyCycle = !Loader.SortMods(Registry.mods);
 		if (dependencyCycle) return;
 
-		StringBuilder looseSignatureString = new();
-		StringBuilder signatureString = new();
+		StringBuilder checksumString = new();
 		foreach (var (id, mod) in Registry.mods)
 		{
 			if (mod.status != Mod.Status.Success) continue;
 			foreach (var file in mod.files)
 			{
+				checksumString.Append(JsonSerializer.Serialize(file));
 				if (Path.GetExtension(file.name) == ".dll")
 				{
 					Loader.LoadAssemblyFile(mod, file);
@@ -194,14 +195,11 @@ public static class Main
 			}
 			if (!mod.client && id != "polytopia")
 			{
-				looseSignatureString.Append(id);
-				looseSignatureString.Append(mod.version.Major);
-
-				signatureString.Append(id);
-				signatureString.Append(mod.version.ToString());
+				checksumString.Append(id);
+				checksumString.Append(mod.version.ToString());
 			}
 		}
-		Compatibility.HashSignatures(looseSignatureString, signatureString);
+		Compatibility.HashSignatures(checksumString);
 
 		stopwatch.Stop();
 	}

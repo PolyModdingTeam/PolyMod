@@ -4,6 +4,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using PolyMod.Managers;
+using UnityEngine;
 
 namespace PolyMod;
 [BepInPlugin("com.polymod", "PolyMod", VERSION)]
@@ -20,6 +21,8 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	internal static readonly string CONFIG_PATH = Path.Combine(BASE_PATH, "PolyMod.json");
 	internal static readonly string INCOMPATIBILITY_WARNING_LAST_VERSION_PATH
 		= Path.Combine(BASE_PATH, "IncompatibilityWarningLastVersion");
+	internal static readonly string CHECKSUM_PATH
+		= Path.Combine(BASE_PATH, "CHECKSUM");
 	internal static readonly string DISCORD_LINK = "https://discord.gg/eWPdhWtfVy";
 	internal static readonly List<string> LOG_MESSAGES_IGNORE = new()
 	{
