@@ -138,7 +138,7 @@ public static class Main
 		float childAngle = 0f;
 		if (parentItem != null)
 			childAngle = angle + baseAngle * (data.techUnlocks.Count - 1) / 2f;
-		foreach (TechData techData in data.techUnlocks)
+		foreach (var techData in data.techUnlocks)
 		{
 			if (gameLogicData.TryGetData(techData.type, out TechData techData2))
 			{
