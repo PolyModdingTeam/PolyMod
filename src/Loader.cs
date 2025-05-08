@@ -310,7 +310,7 @@ public static class Loader
 		// TODO: issue #71
 	}
 
-	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
+	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch, Dictionary<UnitData.Type, UnitData.Type> embarkUnitTypes)
 	{
 		try
 		{
@@ -399,6 +399,20 @@ public static class Loader
 				}
 			}
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
+			foreach (JToken jtoken in gld.SelectTokens("$.unitData.*").ToArray())
+			{
+				JObject token = jtoken.Cast<JObject>();
+				if (token["embark"] != null)
+				{
+					string unitId = Util.GetJTokenName(token);
+					UnitData.Type unitType = (UnitData.Type)Enum.Parse(typeof(UnitData.Type), unitId, true);
+					string embarkUnitName = token["embark"].ToString();
+					if (Enum.TryParse(embarkUnitName, out UnitData.Type embarkUnitType))
+					{
+						embarkUnitTypes[unitType] = embarkUnitType;
+					}
+				}
+			}
 			Plugin.logger.LogInfo($"Registried patch from {mod.id} mod");
 		}
 		catch (Exception e)

@@ -14,6 +14,12 @@ public static class Main
 	internal static readonly Stopwatch stopwatch = new();
 	internal static bool fullyInitialized;
 	internal static bool dependencyCycle;
+	internal static Dictionary<UnitData.Type, UnitData.Type> embarkUnitTypes = new()
+	{
+		{ UnitData.Type.Cloak, UnitData.Type.Cloak_Boat },
+		{ UnitData.Type.Dagger, UnitData.Type.Pirate },
+		{ UnitData.Type.Giant, UnitData.Type.Juggernaut },
+	};
 
 
 	[HarmonyPrefix]
@@ -68,6 +74,42 @@ public static class Main
 				return false;
 		}
 		return true;
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(EmbarkAction), nameof(EmbarkAction.ExecuteDefault))]
+	private static bool EmbarkAction_ExecuteDefault(EmbarkAction __instance, GameState gameState)
+	{
+		PlayerState playerState;
+		if (gameState.TryGetPlayer(__instance.PlayerId, out playerState))
+		{
+			TileData tile = gameState.Map.GetTile(__instance.Coordinates);
+			UnitState unit = tile.unit;
+			UnitData.Type type = UnitData.Type.Transportship;
+			if (embarkUnitTypes.TryGetValue(unit.type, out UnitData.Type newType))
+			{
+				type = newType;
+			}
+			UnitData unitData;
+			gameState.GameLogicData.TryGetData(type, out unitData);
+			UnitState unitState = ActionUtils.TrainUnit(gameState, playerState, tile, unitData);
+			if (!unitState.HasAbility(UnitAbility.Type.Protect, gameState))
+			{
+				unitState.health = unit.health;
+			}
+			unitState.home = unit.home;
+			unitState.direction = unit.direction;
+			unitState.flipped = unit.flipped;
+			unitState.passengerUnit = unit;
+			unitState.effects = unit.effects;
+			unitState.attacked = true;
+			unitState.moved = true;
+			// if (unitState.HasAbility(UnitAbility.Type.Stomp, gameState))
+			// {
+			// 	ActionUtils.StompAttack(gameState, unitState, __instance.Coordinates);
+			// }
+		}
+		return false;
 	}
 
 	internal static void Init()
@@ -133,7 +175,7 @@ public static class Main
 			{
 				if (Path.GetFileName(file.name) == "patch.json")
 				{
-					Loader.LoadGameLogicDataPatch(mod, gameLogicdata, JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd()));
+					Loader.LoadGameLogicDataPatch(mod, gameLogicdata, JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd()), embarkUnitTypes);
 				}
 				if (Path.GetFileName(file.name) == "localization.json")
 				{
