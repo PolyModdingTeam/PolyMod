@@ -407,9 +407,22 @@ public static class Loader
 					string unitId = Util.GetJTokenName(token);
 					UnitData.Type unitType = (UnitData.Type)Enum.Parse(typeof(UnitData.Type), unitId, true);
 					string embarkUnitName = token["embark"].ToString();
-					if (Enum.TryParse(embarkUnitName, out UnitData.Type embarkUnitType))
+					JToken embarkUnitToken = gld.SelectToken($"$.unitData.{embarkUnitName}.idx", false);
+					if (embarkUnitToken == null)
+					{
+						Plugin.logger.LogError($"Embark unit type for {unitId} is not valid: {embarkUnitName}");
+						continue;
+					}
+					int embarkUnitIdx = (int)embarkUnitToken;
+					UnitData.Type embarkUnitType = (UnitData.Type)embarkUnitIdx;
+					if (Enum.IsDefined(typeof(UnitData.Type), embarkUnitType))
 					{
 						embarkUnitTypes[unitType] = embarkUnitType;
+						Plugin.logger.LogInfo($"Embark unit type for {unitId} is now {embarkUnitName}");
+					}
+					else
+					{
+						Plugin.logger.LogError($"Embark unit type for {unitId} is not valid: {embarkUnitName}");
 					}
 				}
 			}

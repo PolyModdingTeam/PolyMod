@@ -77,8 +77,8 @@ public static class Main
 	}
 
 	[HarmonyPrefix]
-	[HarmonyPatch(typeof(EmbarkAction), nameof(EmbarkAction.ExecuteDefault))]
-	private static bool EmbarkAction_ExecuteDefault(EmbarkAction __instance, GameState gameState)
+	[HarmonyPatch(typeof(EmbarkAction), nameof(EmbarkAction.Execute))]
+	private static bool EmbarkAction_Execute(EmbarkAction __instance, GameState gameState)
 	{
 		PlayerState playerState;
 		if (gameState.TryGetPlayer(__instance.PlayerId, out playerState))
