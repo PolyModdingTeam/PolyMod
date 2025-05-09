@@ -441,6 +441,16 @@ public static class Loader
 					Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
 				}
 			}
+			foreach (JToken jtoken in patch.SelectTokens("$.unitData.*").ToArray())
+			{
+				JObject token = jtoken.Cast<JObject>();
+				if (token["embarksTo"] != null)
+				{
+					string unitId = Util.GetJTokenName(token);
+					string embarkUnitId = token["embarksTo"].ToString();
+					Main.embarkNames[unitId] = embarkUnitId;
+				}
+			}
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
 			Plugin.logger.LogInfo($"Registried patch from {mod.id} mod");
 		}

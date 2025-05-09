@@ -16,6 +16,9 @@ public static class Main
 	internal static readonly Stopwatch stopwatch = new();
 	internal static bool fullyInitialized;
 	internal static bool dependencyCycle;
+	internal static Dictionary<string, string> embarkNames = new();
+	internal static Dictionary<UnitData.Type, UnitData.Type> embarkOverrides = new();
+	internal static bool currentlyEmbarking = false;
 
 
 	[HarmonyPrefix]
@@ -29,6 +32,20 @@ public static class Main
 			{
 				if (skin.skinData != null)
 					__instance.skinData[(SkinType)skin.idx] = skin.skinData;
+			}
+			foreach (KeyValuePair<string, string> entry in embarkNames)
+			{
+				try
+				{
+					UnitData.Type unit = EnumCache<UnitData.Type>.GetType(entry.Key);
+					UnitData.Type newUnit = EnumCache<UnitData.Type>.GetType(entry.Value);
+					embarkOverrides[unit] = newUnit;
+					Plugin.logger.LogInfo($"Embark unit type for {entry.Key} is now {entry.Value}");
+				}
+				catch
+				{
+					Plugin.logger.LogError($"Embark unit type for {entry.Key} is not valid: {entry.Value}");
+				}
 			}
 			fullyInitialized = true;
 		}
@@ -131,7 +148,7 @@ public static class Main
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(TechView), nameof(TechView.CreateNode))]
-	public static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle) {
+	private static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle) {
 		float baseAngle = 360 / GameManager.GameState.GameLogicData.GetTechData(TechData.Type.Basic).techUnlocks.Count;
 		float childAngle = 0f;
 		if (parentItem != null)
@@ -161,6 +178,37 @@ public static class Main
 		}
 		onItemsRefreshed.Invoke(__instance);
 		return false;
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(EmbarkAction), nameof(EmbarkAction.Execute))]
+	private static bool EmbarkAction_Execute_Prefix(EmbarkAction __instance, GameState gameState)
+	{
+		currentlyEmbarking = true;
+		return true;
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(ActionUtils), nameof(ActionUtils.TrainUnit))]
+	private static bool ActionUtils_TrainUnit(ref UnitState __result, GameState gameState, PlayerState playerState, TileData tile, ref UnitData unitData)
+	{
+		if (tile == null)
+		{
+			return true;
+		}
+		if (tile.unit == null)
+		{
+			return true;
+		}
+		if (currentlyEmbarking)
+		{
+			if (embarkOverrides.TryGetValue(tile.unit.type, out UnitData.Type newType))
+			{
+				gameState.GameLogicData.TryGetData(newType, out unitData);
+			}
+			currentlyEmbarking = false;
+		}
+		return true;
 	}
 
 	internal static void Init()
