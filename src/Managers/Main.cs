@@ -19,7 +19,10 @@ public static class Main
 	internal static Dictionary<string, string> embarkNames = new();
 	internal static Dictionary<UnitData.Type, UnitData.Type> embarkOverrides = new();
 	internal static bool currentlyEmbarking = false;
-
+	internal static Dictionary<string, string> attractsResourceNames = new();
+	internal static Dictionary<string, string> attractsTerrainNames = new();
+	internal static Dictionary<ImprovementData.Type, ResourceData.Type> attractsResourceOverrides = new();
+	internal static Dictionary<ImprovementData.Type, Polytopia.Data.TerrainData.Type> attractsTerrainOverrides = new();
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(GameLogicData), nameof(GameLogicData.AddGameLogicPlaceholders))]
@@ -45,6 +48,34 @@ public static class Main
 				catch
 				{
 					Plugin.logger.LogError($"Embark unit type for {entry.Key} is not valid: {entry.Value}");
+				}
+			}
+			foreach (KeyValuePair<string, string> entry in attractsResourceNames)
+			{
+				try
+				{
+					ImprovementData.Type improvement = EnumCache<ImprovementData.Type>.GetType(entry.Key);
+					ResourceData.Type resource = EnumCache<ResourceData.Type>.GetType(entry.Value);
+					attractsResourceOverrides[improvement] = resource;
+					Plugin.logger.LogInfo($"Improvement {entry.Key} now attracts {entry.Value}");
+				}
+				catch
+				{
+					Plugin.logger.LogError($"Improvement {entry.Key} resource type is not valid: {entry.Value}");
+				}
+			}
+			foreach (KeyValuePair<string, string> entry in attractsTerrainNames)
+			{
+				try
+				{
+					ImprovementData.Type improvement = EnumCache<ImprovementData.Type>.GetType(entry.Key);
+					Polytopia.Data.TerrainData.Type terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetType(entry.Value);
+					attractsTerrainOverrides[improvement] = terrain;
+					Plugin.logger.LogInfo($"Improvement {entry.Key} now attracts on {entry.Value}");
+				}
+				catch
+				{
+					Plugin.logger.LogError($"Improvement {entry.Key} terrain type is not valid: {entry.Value}");
 				}
 			}
 			fullyInitialized = true;
@@ -209,6 +240,52 @@ public static class Main
 			currentlyEmbarking = false;
 		}
 		return true;
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(StartTurnAction), nameof(StartTurnAction.Execute))]
+	private static void StartTurnAction_Execute_Postfix(StartTurnAction __instance, GameState state)
+	{
+		for (int i = state.ActionStack.Count - 1; i >= 0; i--)
+		{
+			if (state.ActionStack[i].GetActionType() == ActionType.CreateResource)
+			{
+				state.ActionStack.RemoveAt(i);
+			}
+		}
+		for (int i = 0; i < state.Map.Tiles.Length; i++)
+		{
+			TileData tileData = state.Map.Tiles[i];
+			if (tileData.owner == __instance.PlayerId && tileData.improvement != null && state.CurrentTurn > 0U)
+			{
+				ImprovementData improvementData;
+				state.GameLogicData.TryGetData(tileData.improvement.type, out improvementData);
+				if (improvementData != null)
+				{
+					if (improvementData.HasAbility(ImprovementAbility.Type.Attract) && tileData.improvement.GetAge(state) % improvementData.growthRate == 0)
+					{
+						ResourceData.Type resourceType = ResourceData.Type.Game;
+						if (attractsResourceOverrides.TryGetValue(tileData.improvement.type, out ResourceData.Type newType))
+						{
+							resourceType = newType;
+						}
+						Polytopia.Data.TerrainData.Type targetTerrain = Polytopia.Data.TerrainData.Type.Forest;
+						if (attractsTerrainOverrides.TryGetValue(tileData.improvement.type, out Polytopia.Data.TerrainData.Type newTerrain))
+						{
+							targetTerrain = newTerrain;
+						}
+						foreach (TileData tileData2 in state.Map.GetArea(tileData.coordinates, 1, true, false))
+						{
+							if (tileData2.owner == __instance.PlayerId && tileData2.improvement == null && tileData2.resource == null && tileData2.terrain == targetTerrain)
+							{
+								state.ActionStack.Add(new CreateResourceAction(__instance.PlayerId, resourceType, tileData2.coordinates, CreateResourceAction.CreateReason.Attract));
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	internal static void Init()
