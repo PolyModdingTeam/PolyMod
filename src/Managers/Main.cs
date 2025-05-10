@@ -244,7 +244,7 @@ public static class Main
 
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(StartTurnAction), nameof(StartTurnAction.Execute))]
-	private static void StartTurnAction_Execute_Postfix(StartTurnAction __instance, GameState state)
+	private static void StartTurnAction_Execute(StartTurnAction __instance, GameState state)
 	{
 		for (int i = state.ActionStack.Count - 1; i >= 0; i--)
 		{
