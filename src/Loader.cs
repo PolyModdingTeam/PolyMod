@@ -273,7 +273,7 @@ public static class Loader
 		{
 			Loc.BuildAndLoadLocalization(JsonSerializer
 				.Deserialize<Dictionary<string, Dictionary<string, string>>>(file.bytes)!);
-			Plugin.logger.LogInfo($"Registried localization from {mod.id} mod");
+			Plugin.logger.LogInfo($"Registered localization from {mod.id} mod");
 		}
 		catch (Exception e)
 		{
@@ -441,8 +441,34 @@ public static class Loader
 					Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
 				}
 			}
+			foreach (JToken jtoken in patch.SelectTokens("$.unitData.*").ToArray())
+			{
+				JObject token = jtoken.Cast<JObject>();
+				if (token["embarksTo"] != null)
+				{
+					string unitId = Util.GetJTokenName(token);
+					string embarkUnitId = token["embarksTo"].ToString();
+					Main.embarkNames[unitId] = embarkUnitId;
+				}
+			}
+			foreach (JToken jtoken in patch.SelectTokens("$.improvementData.*").ToArray())
+			{
+				JObject token = jtoken.Cast<JObject>();
+				if (token["attractsResource"] != null)
+				{
+					string improvementId = Util.GetJTokenName(token);
+					string attractsId = token["attractsResource"].ToString();
+					Main.attractsResourceNames[improvementId] = attractsId;
+				}
+				if (token["attractsToTerrain"] != null)
+				{
+					string improvementId = Util.GetJTokenName(token);
+					string attractsId = token["attractsToTerrain"].ToString();
+					Main.attractsTerrainNames[improvementId] = attractsId;
+				}
+			}
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
-			Plugin.logger.LogInfo($"Registried patch from {mod.id} mod");
+			Plugin.logger.LogInfo($"Registered patch from {mod.id} mod");
 		}
 		catch (Exception e)
 		{
