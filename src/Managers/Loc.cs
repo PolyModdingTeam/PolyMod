@@ -14,7 +14,15 @@ public static class Loc
 	{
 		if ((int)__instance.SkinType >= Plugin.AUTOIDX_STARTS_FROM)
 		{
-			__instance.Description = Localization.Get(__instance.SkinType.GetLocalizationDescriptionKey()) + "\n\n" + Localization.GetSkinned(__instance.SkinType, __instance.tribeData.description2, new Il2CppSystem.Object[]
+			string description = Localization.Get(__instance.SkinType.GetLocalizationDescriptionKey());
+			if (description == __instance.SkinType.GetLocalizationDescriptionKey())
+			{
+				description = Localization.Get(__instance.tribeData.description, new Il2CppSystem.Object[]
+				{
+					Localization.Get(__instance.tribeData.displayName),
+				});
+			}
+			__instance.Description = description + "\n\n" + Localization.GetSkinned(__instance.SkinType, __instance.tribeData.description2, new Il2CppSystem.Object[]
 			{
 				__instance.tribeName,
 				Localization.Get(__instance.startTechSid, Array.Empty<Il2CppSystem.Object>())
