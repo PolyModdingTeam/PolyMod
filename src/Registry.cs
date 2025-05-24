@@ -13,6 +13,7 @@ public static class Registry
 	internal static Dictionary<string, Mod> mods = new();
 	public static Dictionary<string, Visual.PreviewTile[]> tribePreviews = new();
 	public static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
+	public static Dictionary<string, Visual.PrefabInfo> prefabInfos = new();
 	public static Dictionary<string, AssetBundle> assetBundles = new();
 	public static List<TribeData.Type> customTribes = new();
 	public static List<Visual.SkinInfo> skinInfo = new();

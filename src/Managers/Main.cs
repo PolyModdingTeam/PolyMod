@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace PolyMod.Managers;
+
 public static class Main
 {
 	internal const int MAX_TECH_TIER = 100;
@@ -179,8 +180,8 @@ public static class Main
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(TechView), nameof(TechView.CreateNode))]
-	public static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle) 
-  {
+	public static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle)
+	{
 		GameLogicData gameLogicData = GameManager.GameState.GameLogicData;
 		TribeData tribeData = gameLogicData.GetTribeData(GameManager.LocalPlayer.tribe);
 		float baseAngle = 360 / gameLogicData.GetOverride(gameLogicData.GetTechData(TechData.Type.Basic), tribeData).techUnlocks.Count;
@@ -358,6 +359,14 @@ public static class Main
 					);
 					continue;
 				}
+				if (Regex.IsMatch(Path.GetFileName(file.name), @"^prefab(_.*)?\.json$"))
+				{
+					Loader.LoadPrefabInfoFile(
+						mod,
+						file
+					);
+					continue;
+				}
 
 				switch (Path.GetExtension(file.name))
 				{
@@ -380,5 +389,104 @@ public static class Main
 		}
 		stopwatch.Stop();
 		Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
+		Unit baseUnit = PrefabManager.units[GetSkinnedHashKey(2, SkinType.Default)];
+		if (baseUnit != null)
+		{
+			foreach (System.Collections.Generic.KeyValuePair<string, PolyMod.Managers.Visual.PrefabInfo> valuePair in Registry.prefabInfos)
+			{
+				Console.Write(valuePair.Key);
+				PolyMod.Managers.Visual.PrefabInfo info = valuePair.Value;
+				SkinVisualsReference? skinComp = baseUnit.GetComponent<SkinVisualsReference>();
+				if (skinComp != null)
+				{
+					Transform head = KeepOnlyChildByName(baseUnit.transform, "Head");
+					skinComp.visualParts = new Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<SkinVisualsReference.VisualPart>(1);
+					SkinVisualsReference.VisualPart visualPart = new SkinVisualsReference.VisualPart();
+					visualPart.DefaultSpriteName = "head";
+					visualPart.visualPart = head.gameObject;
+					skinComp.visualParts[0] = visualPart;
+					PrefabManager.units[GetSkinnedHashKey(53, SkinType.Default)] = baseUnit;
+				}
+			}
+		}
+		else
+		{
+			Console.Write("NULLLLLLLL");
+		}
+	}
+
+	public static Transform KeepOnlyChildByName(Transform parent, string nameToKeep)
+	{
+		Console.Write("0");
+		var spriteContainer = parent.GetChild(0);
+		Console.Write("1");
+		int childCount = spriteContainer.childCount;
+		Transform? toReturn = null;
+		for (int i = 0; i < childCount; i++)
+		{
+			var child = spriteContainer.GetChild(i);
+			Console.Write(child.gameObject.name);
+			if (child.gameObject.name != nameToKeep)
+			{
+				GameObject.Destroy(child.gameObject);
+			}
+			else
+			{
+				toReturn = child.transform;
+			}
+		}
+		return toReturn;
+	}
+
+	private static void GetTypeAndSkin(int hash, out int type, out SkinType skin)
+	{
+		skin = (SkinType)(hash / 1000);
+		type = hash % 1000;
+	}
+
+	private static int GetSkinnedHashKey(int type, SkinType skin)
+	{
+		return type + ((int)skin * 1000);
+	}
+
+	public static void GetPrefabTree(Transform transform, int depth)
+	{
+		if (transform == null) return;
+
+		GameObject obj = transform.gameObject;
+		string indent = new string(' ', depth * 2);
+		Console.WriteLine($"{indent}GameObject: {obj.name}");
+
+		var components = obj.GetComponents<Component>();
+		foreach (var comp in components)
+		{
+			if (comp == null) continue;
+
+			var typeName = comp.GetIl2CppType().Name;
+
+			if (typeName == "SkinVisualsReference")
+			{
+				SkinVisualsReference? skinComp = comp.TryCast<SkinVisualsReference>();
+				if (skinComp != null)
+				{
+					Console.WriteLine($"{indent}- Component: {typeName}");
+					foreach (SkinVisualsReference.VisualPart part in skinComp.visualParts)
+					{
+						if (part.visualPart == null) continue;
+						Console.WriteLine($"{indent}- VS: {part.visualPart.GetIl2CppType().Name}");
+						Console.WriteLine($"{indent}- VS: {part.DefaultSpriteName}");
+						Console.WriteLine($"{indent}- VS: {part.visualPart.transform.position}");
+						part.visualPart.transform.position = new Vector3(0, 0, 0);
+					}
+				}
+			}
+		}
+
+		int childCount = transform.childCount;
+		for (int i = 0; i < childCount; i++)
+		{
+			var child = transform.GetChild(i);
+			GetPrefabTree(child, depth + 1);
+		}
 	}
 }

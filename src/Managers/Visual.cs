@@ -32,6 +32,8 @@ public static class Visual
 	}
 	public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot);
 	public record SkinInfo(int idx, string id, SkinData? skinData);
+	public record PrefabInfo(string type, string name, List<VisualPartInfo> visualParts);
+	public record VisualPartInfo(string baseName, Vector3 coordinates);
 	public static Dictionary<int, int> basicPopupWidths = new();
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
@@ -94,7 +96,6 @@ public static class Visual
 	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeData.Type tribe, SkinType skin, bool checkForOutline, int level)
 	{
 		baseName = Util.FormatSpriteName(baseName);
-
 		Sprite? sprite = Registry.GetSprite(baseName, Util.GetStyle(tribe, skin), level);
 		if (sprite != null)
 			__result.sprite = sprite;

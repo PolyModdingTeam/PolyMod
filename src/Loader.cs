@@ -334,12 +334,12 @@ public static class Loader
 				}
 			}
 
-			Plugin.logger.LogInfo($"Registered sprite data from {mod.id} mod");
+			Plugin.logger.LogInfo($"Registered sprite info from {mod.id} mod");
 			return deserialized;
 		}
 		catch (Exception e)
 		{
-			Plugin.logger.LogError($"Error on loading sprite data from {mod.id} mod: {e.Message}");
+			Plugin.logger.LogError($"Error on loading sprite info from {mod.id} mod: {e.Message}");
 			return null;
 		}
 	}
@@ -351,6 +351,31 @@ public static class Loader
 		// audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
 		// Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
 		// TODO: issue #71
+	}
+
+	public static void LoadPrefabInfoFile(Mod mod, Mod.File file)
+	{
+		try
+		{
+			string name = Path.GetFileNameWithoutExtension(file.name);
+			var options = new JsonSerializerOptions
+			{
+				PropertyNameCaseInsensitive = true
+			};
+
+			Visual.PrefabInfo? prefab = JsonSerializer.Deserialize<Visual.PrefabInfo>(file.bytes, options);
+
+			if (prefab != null)
+			{
+				Console.WriteLine(prefab);
+				Registry.prefabInfos.Add(name, prefab);
+				Plugin.logger.LogInfo($"Registered prefab info from {mod.id} mod");
+			}
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading prefab info from {mod.id} mod: {e.Message}");
+		}
 	}
 
 	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
