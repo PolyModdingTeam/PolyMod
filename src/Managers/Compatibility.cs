@@ -67,32 +67,32 @@ internal static class Compatibility
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
     private static void StartScreen_Start()
     {
-        Version incompatibilityWarningLastVersion = Plugin.POLYTOPIA_VERSION.CutRevision();
-        try
-        {
-            incompatibilityWarningLastVersion = new(File.ReadAllText(Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_PATH));
-        }
-        catch (FileNotFoundException) { }
-        if (VersionManager.SemanticVersion.Cast().CutRevision() > incompatibilityWarningLastVersion)
-        {
-            File.WriteAllText(
-                Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_PATH,
-                VersionManager.SemanticVersion.Cast().CutRevision().ToString()
-            );
-            PopupManager.GetBasicPopup(new(
-                Localization.Get("polymod.version.mismatch"),
-                Localization.Get("polymod.version.mismatch.description"),
-                new(new PopupBase.PopupButtonData[] {
-                    new("buttons.stay", customColorStates: ColorConstants.redButtonColorStates),
-                    new(
-                        "buttons.exitgame",
-                        PopupBase.PopupButtonData.States.None,
-                        (Il2CppSystem.Action)Application.Quit,
-                        closesPopup: false
-                    )
-                }))
-            ).Show();
-        }
+        // Version incompatibilityWarningLastVersion = Plugin.POLYTOPIA_VERSION.CutRevision();
+        // try
+        // {
+        //     incompatibilityWarningLastVersion = new(File.ReadAllText(Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_PATH));
+        // }
+        // catch (FileNotFoundException) { }
+        // if (VersionManager.SemanticVersion.Cast().CutRevision() > incompatibilityWarningLastVersion)
+        // {
+        //     File.WriteAllText(
+        //         Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_PATH,
+        //         VersionManager.SemanticVersion.Cast().CutRevision().ToString()
+        //     );
+        //     PopupManager.GetBasicPopup(new(
+        //         Localization.Get("polymod.version.mismatch"),
+        //         Localization.Get("polymod.version.mismatch.description"),
+        //         new(new PopupBase.PopupButtonData[] {
+        //             new("buttons.stay", customColorStates: ColorConstants.redButtonColorStates),
+        //             new(
+        //                 "buttons.exitgame",
+        //                 PopupBase.PopupButtonData.States.None,
+        //                 (UIButtonBase.ButtonAction)Application.Quit,
+        //                 closesPopup: false
+        //             )
+        //         }))
+        //     ).Show();
+        // }
     }
 
     [HarmonyPrefix]
@@ -102,12 +102,12 @@ internal static class Compatibility
         return CheckSignatures(__instance.OnMainButtonClicked, id, eventData, __instance.gameId);
     }
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnResumeButtonClick))]
-    private static bool StartScreen_OnResumeButtonClick(StartScreen __instance, int id, BaseEventData eventData)
-    {
-        return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, ClientBase.GetSinglePlayerSessions()[0]);
-    }
+    //[HarmonyPrefix]
+    //[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnResumeButtonClick))]
+    // private static bool StartScreen_OnResumeButtonClick(StartScreen __instance, int id, BaseEventData eventData)
+    // {
+        //return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, ClientBase.GetSinglePlayerSessions()[0]);
+    // }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.DeletePaPGame))]
@@ -120,10 +120,10 @@ internal static class Compatibility
     [HarmonyPatch(typeof(ClientBase), nameof(ClientBase.DeleteSinglePlayerGames))]
     private static void ClientBase_DeleteSinglePlayerGames()
     {
-        foreach (var gameId in ClientBase.GetSinglePlayerSessions())
-        {
-            File.Delete(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
-        }
+        //foreach (var gameId in ClientBase.GetSinglePlayerSessions())
+        // {
+        //     File.Delete(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+        // }
     }
 
     [HarmonyPrefix]
@@ -133,8 +133,8 @@ internal static class Compatibility
         File.Delete(Path.Combine(Application.persistentDataPath, $"{GameManager.Client.gameId}.signatures"));
     }
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(ClientBase), nameof(ClientBase.CreateSession), typeof(GameSettings), typeof(Il2CppSystem.Guid))]
+    //[HarmonyPostfix]
+    //[HarmonyPatch(typeof(ClientBase), nameof(ClientBase.CreateSession), typeof(GameSettings), typeof(Il2CppSystem.Guid))]
     private static void ClientBase_CreateSession(GameSettings settings, Il2CppSystem.Guid gameId)
     {
         File.WriteAllLinesAsync(

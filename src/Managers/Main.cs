@@ -23,11 +23,11 @@ public static class Main
 		if (!fullyInitialized)
 		{
 			Load(rootObject);
-			foreach (Visual.SkinInfo skin in Registry.skinInfo)
-			{
-				if (skin.skinData != null)
-					__instance.skinData[(SkinType)skin.idx] = skin.skinData;
-			}
+			// foreach (Visual.SkinInfo skin in Registry.skinInfo)
+			// {
+			// 	if (skin.skinData != null)
+			// 		__instance.skinData[(SkinType)skin.idx] = skin.skinData;
+			// }
 			fullyInitialized = true;
 		}
 	}

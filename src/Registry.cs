@@ -13,7 +13,7 @@ public static class Registry
 	public static Dictionary<string, Visual.PreviewTile[]> tribePreviews = new();
 	public static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
 	public static List<TribeData.Type> customTribes = new();
-	public static List<Visual.SkinInfo> skinInfo = new();
+	//public static List<Visual.SkinInfo> skinInfo = new();
 	public static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 
 	public static Sprite? GetSprite(string name, string style = "", int level = 0)

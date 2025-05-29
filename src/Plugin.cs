@@ -14,6 +14,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	);
 
 	internal const int AUTOIDX_STARTS_FROM = 1000;
+	internal const bool OUTDATED = true;
 	public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
 	public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
 	public static readonly string DUMPED_DATA_PATH = Path.Combine(BASE_PATH, "DumpedData");
@@ -53,12 +54,13 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 
 		Compatibility.Init();
 
-		Audio.Init();
-		Loc.Init();
-		Visual.Init();
+		//Audio.Init();
+		//Loc.Init();
+		//Visual.Init();
 		Hub.Init();
 
 		Main.Init();
+		Multiplayer.Init();
 	}
 
 	internal static Stream GetResource(string id)

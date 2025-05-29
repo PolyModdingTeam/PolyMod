@@ -160,24 +160,24 @@ internal static class Hub
             popup.ShowSetWidth(1000);
         }
 
-        if (Main.dependencyCycle)
-        {
-            var popup = PopupManager.GetBasicPopup(new(
-                Localization.Get("polymod.cycle"),
-                Localization.Get("polymod.cycle.description"),
-                new(new PopupBase.PopupButtonData[] {
-                    new(
-                        "buttons.exitgame",
-                        PopupBase.PopupButtonData.States.None,
-                        (Il2CppSystem.Action)Application.Quit,
-                        closesPopup: false,
-                        customColorStates: ColorConstants.redButtonColorStates
-                    )
-                })
-            ));
-            popup.IsUnskippable = true;
-            popup.Show();
-        }
+        // if (Main.dependencyCycle)
+        // {
+        //     var popup = PopupManager.GetBasicPopup(new(
+        //         Localization.Get("polymod.cycle"),
+        //         Localization.Get("polymod.cycle.description"),
+        //         new(new PopupBase.PopupButtonData[] {
+        //             new(
+        //                 "buttons.exitgame",
+        //                 PopupBase.PopupButtonData.States.None,
+        //                 (Il2CppSystem.Action)Application.Quit,
+        //                 closesPopup: false,
+        //                 customColorStates: ColorConstants.redButtonColorStates
+        //             )
+        //         })
+        //     ));
+        //     popup.IsUnskippable = true;
+        //     popup.Show();
+        // }
     }
 
     internal static void Init()

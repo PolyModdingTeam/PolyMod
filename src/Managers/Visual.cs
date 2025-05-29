@@ -31,7 +31,7 @@ public static class Visual
 		public ImprovementData.Type improvementType = ImprovementData.Type.None;
 	}
 	public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot);
-	public record SkinInfo(int idx, string id, SkinData? skinData);
+	//public record SkinInfo(int idx, string id, SkinData? skinData);
 	public static Dictionary<int, int> basicPopupWidths = new();
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
@@ -89,137 +89,137 @@ public static class Visual
 		}
 	}
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
-	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeData.Type tribe, SkinType skin, bool checkForOutline, int level)
-	{
-		baseName = Util.FormatSpriteName(baseName);
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
+	// private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeData.Type tribe, SkinType skin, bool checkForOutline, int level)
+	// {
+	// 	baseName = Util.FormatSpriteName(baseName);
 
-		Sprite? sprite = Registry.GetSprite(baseName, Util.GetStyle(tribe, skin), level);
-		if (sprite != null)
-			__result.sprite = sprite;
-	}
+	// 	Sprite? sprite = Registry.GetSprite(baseName, Util.GetStyle(tribe, skin), level);
+	// 	if (sprite != null)
+	// 		__result.sprite = sprite;
+	// }
 
 	#endregion
 	#region Units
 
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
+	//[HarmonyPrefix]
+	//[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
 	private static bool UIUnitRenderer_CreateUnit_Prefix(UIUnitRenderer __instance)
 	{
-		currentUnitTypeUI = __instance.unitType;
+		//currentUnitTypeUI = __instance.unitType;
 		return true;
 	}
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
+	//[HarmonyPostfix]
+	//[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
 	private static void UIUnitRenderer_CreateUnit_Postfix(UIUnitRenderer __instance)
 	{
 		currentUnitTypeUI = UnitData.Type.None;
 	}
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(SkinVisualsRenderer), nameof(SkinVisualsRenderer.SkinWorldObject))]
-	private static void SkinVisualsRenderer_SkinWorldObject(
-		SkinVisualsRenderer.SkinWorldType type,
-		SkinVisualsReference skinVisuals,
-		SkinVisualsTransientData transientSkinData,
-		bool checkOutlines,
-		int level)
-	{
-		if (type != SkinVisualsRenderer.SkinWorldType.Unit || skinVisuals == null || transientSkinData == null)
-			return;
+	//[HarmonyPostfix]
+	//[HarmonyPatch(typeof(SkinVisualsRenderer), nameof(SkinVisualsRenderer.SkinWorldObject))]
+	// private static void SkinVisualsRenderer_SkinWorldObject(
+	// 	SkinVisualsRenderer.SkinWorldType type,
+	// 	SkinVisualsReference skinVisuals,
+	// 	SkinVisualsTransientData transientSkinData,
+	// 	bool checkOutlines,
+	// 	int level)
+	// {
+	// 	if (type != SkinVisualsRenderer.SkinWorldType.Unit || skinVisuals == null || transientSkinData == null)
+	// 		return;
 
-		Unit unit = skinVisuals.gameObject.GetComponent<Unit>();
-		string unitTypeName = unit?.unitData != null
-			? EnumCache<UnitData.Type>.GetName(unit.unitData.type)
-			: EnumCache<UnitData.Type>.GetName(UnitData.Type.Warrior);
-		if (currentUnitTypeUI != UnitData.Type.None)
-			unitTypeName = EnumCache<UnitData.Type>.GetName(currentUnitTypeUI);
+	// 	Unit unit = skinVisuals.gameObject.GetComponent<Unit>();
+	// 	string unitTypeName = unit?.unitData != null
+	// 		? EnumCache<UnitData.Type>.GetName(unit.unitData.type)
+	// 		: EnumCache<UnitData.Type>.GetName(UnitData.Type.Warrior);
+	// 	if (currentUnitTypeUI != UnitData.Type.None)
+	// 		unitTypeName = EnumCache<UnitData.Type>.GetName(currentUnitTypeUI);
 
-		string style = Util.GetStyle(transientSkinData.unitSettings.tribe, transientSkinData.unitSettings.skin);
+	// 	string style = Util.GetStyle(transientSkinData.unitSettings.tribe, transientSkinData.unitSettings.skin);
 
-		foreach (var visualPart in skinVisuals.visualParts)
-		{
-			UpdateVisualPart(visualPart, $"{visualPart.visualPart.name}_{unitTypeName}", style);
-		}
-	}
+	// 	foreach (var visualPart in skinVisuals.visualParts)
+	// 	{
+	// 		UpdateVisualPart(visualPart, $"{visualPart.visualPart.name}_{unitTypeName}", style);
+	// 	}
+	// }
 
 	#endregion
 	#region Level
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(SkinVisualsTransientData))]
-	private static void Resource_UpdateObject(Resource __instance, SkinVisualsTransientData transientSkinData)
-	{
-		if (__instance.data != null)
-		{
-			string style = Util.GetStyle(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(__instance.tile.data.climate), __instance.tile.data.Skin);
-			string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(SkinVisualsTransientData))]
+	// private static void Resource_UpdateObject(Resource __instance, SkinVisualsTransientData transientSkinData)
+	// {
+	// 	if (__instance.data != null)
+	// 	{
+	// 		string style = Util.GetStyle(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(__instance.tile.data.climate), __instance.tile.data.Skin);
+	// 		string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
 
-			foreach (SkinVisualsReference.VisualPart visualPart in __instance.GetSkinVisualsReference().visualParts)
-			{
-				UpdateVisualPart(visualPart, name, style);
-			}
-		}
-	}
+	// 		foreach (SkinVisualsReference.VisualPart visualPart in __instance.GetSkinVisualsReference().visualParts)
+	// 		{
+	// 			UpdateVisualPart(visualPart, name, style);
+	// 		}
+	// 	}
+	// }
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(Building), nameof(Building.UpdateObject), typeof(SkinVisualsTransientData))]
-	private static void Building_UpdateObject(Building __instance, SkinVisualsTransientData transientSkinData)
-	{
-		string style = Util.GetStyle(transientSkinData.foundingTribeSettings.tribe, transientSkinData.foundingTribeSettings.skin);
-		string name = EnumCache<ImprovementData.Type>.GetName(__instance.tile.data.improvement.type);
-		Sprite? sprite = Registry.GetSprite(name, style, __instance.Level);
-		if (sprite != null)
-		{
-			__instance.Sprite = sprite;
-		}
-	}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(Building), nameof(Building.UpdateObject), typeof(SkinVisualsTransientData))]
+	// private static void Building_UpdateObject(Building __instance, SkinVisualsTransientData transientSkinData)
+	// {
+	// 	string style = Util.GetStyle(transientSkinData.foundingTribeSettings.tribe, transientSkinData.foundingTribeSettings.skin);
+	// 	string name = EnumCache<ImprovementData.Type>.GetName(__instance.tile.data.improvement.type);
+	// 	Sprite? sprite = Registry.GetSprite(name, style, __instance.Level);
+	// 	if (sprite != null)
+	// 	{
+	// 		__instance.Sprite = sprite;
+	// 	}
+	// }
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))]
-	private static void TerrainRenderer_UpdateGraphics(TerrainRenderer __instance, Tile tile)
-	{
-		string terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain) ?? string.Empty;
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))]
+	// private static void TerrainRenderer_UpdateGraphics(TerrainRenderer __instance, Tile tile)
+	// {
+	// 	string terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain) ?? string.Empty;
 
-		TribeData.Type tribe = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate);
-		SkinType skinType = tile.data.Skin;
+	// 	TribeData.Type tribe = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate);
+	// 	SkinType skinType = tile.data.Skin;
 
-		string flood = "";
-		if (tile.data.effects.Contains(TileData.EffectType.Flooded))
-		{
-			flood = "_flooded";
-		}
-		if (tile.data.terrain is Polytopia.Data.TerrainData.Type.Forest or Polytopia.Data.TerrainData.Type.Mountain)
-		{
-			string propertyName = terrain.ToLower();
-			terrain = "field";
+	// 	string flood = "";
+	// 	if (tile.data.effects.Contains(TileData.EffectType.Flooded))
+	// 	{
+	// 		flood = "_flooded";
+	// 	}
+	// 	if (tile.data.terrain is Polytopia.Data.TerrainData.Type.Forest or Polytopia.Data.TerrainData.Type.Mountain)
+	// 	{
+	// 		string propertyName = terrain.ToLower();
+	// 		terrain = "field";
 
-			PropertyInfo? rendererProperty = tile.GetType().GetProperty(propertyName + "Renderer",
-				BindingFlags.Public | BindingFlags.Instance);
+	// 		PropertyInfo? rendererProperty = tile.GetType().GetProperty(propertyName + "Renderer",
+	// 			BindingFlags.Public | BindingFlags.Instance);
 
-			if (rendererProperty != null)
-			{
-				PolytopiaSpriteRenderer? renderer = (PolytopiaSpriteRenderer?)rendererProperty.GetValue(tile);
-				if (renderer != null)
-				{
-					Sprite? additionalSprite = Registry.GetSprite(propertyName + flood, Util.GetStyle(tribe, skinType));
-					if (additionalSprite != null)
-					{
-						renderer.Sprite = additionalSprite;
-						rendererProperty.SetValue(tile, renderer);
-					}
-				}
-			}
-		}
+	// 		if (rendererProperty != null)
+	// 		{
+	// 			PolytopiaSpriteRenderer? renderer = (PolytopiaSpriteRenderer?)rendererProperty.GetValue(tile);
+	// 			if (renderer != null)
+	// 			{
+	// 				Sprite? additionalSprite = Registry.GetSprite(propertyName + flood, Util.GetStyle(tribe, skinType));
+	// 				if (additionalSprite != null)
+	// 				{
+	// 					renderer.Sprite = additionalSprite;
+	// 					rendererProperty.SetValue(tile, renderer);
+	// 				}
+	// 			}
+	// 		}
+	// 	}
 
-		Sprite? sprite = Registry.GetSprite(terrain + flood, Util.GetStyle(tribe, skinType));
-		if (sprite != null)
-		{
-			__instance.spriteRenderer.Sprite = sprite;
-		}
-	}
+	// 	Sprite? sprite = Registry.GetSprite(terrain + flood, Util.GetStyle(tribe, skinType));
+	// 	if (sprite != null)
+	// 	{
+	// 		__instance.spriteRenderer.Sprite = sprite;
+	// 	}
+	// }
 
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PolytopiaSpriteRenderer), nameof(PolytopiaSpriteRenderer.ForceUpdateMesh))]
@@ -258,7 +258,7 @@ public static class Visual
 					resourceType = previewTile.resourceType,
 					unitType = previewTile.unitType,
 					improvementType = previewTile.improvementType,
-					tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>()
+					//tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>()
 				};
 				__result = true;
 			}
@@ -289,34 +289,34 @@ public static class Visual
 	#endregion
 	#region UI
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteAtlasManager))]
-	private static void UIUtils_GetImprovementSprite(ref Sprite __result, ImprovementData.Type improvement, TribeData.Type tribe, SkinType skin, SpriteAtlasManager atlasManager)
-	{
-		Sprite? sprite = Registry.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvement), Util.GetStyle(tribe, skin));
-		if (sprite != null)
-		{
-			__result = sprite;
-		}
-	}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteAtlasManager))]
+	// private static void UIUtils_GetImprovementSprite(ref Sprite __result, ImprovementData.Type improvement, TribeData.Type tribe, SkinType skin, SpriteAtlasManager atlasManager)
+	// {
+	// 	Sprite? sprite = Registry.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvement), Util.GetStyle(tribe, skin));
+	// 	if (sprite != null)
+	// 	{
+	// 		__result = sprite;
+	// 	}
+	// }
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(SkinVisualsTransientData), typeof(ImprovementData.Type), typeof(SpriteAtlasManager))]
-	private static void UIUtils_GetImprovementSprite_2(ref Sprite __result, SkinVisualsTransientData data, ImprovementData.Type improvement, SpriteAtlasManager atlasManager)
-	{
-		UIUtils_GetImprovementSprite(ref __result, improvement, data.foundingTribeSettings.tribe, data.foundingTribeSettings.skin, atlasManager);
-	}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(SkinVisualsTransientData), typeof(ImprovementData.Type), typeof(SpriteAtlasManager))]
+	// private static void UIUtils_GetImprovementSprite_2(ref Sprite __result, SkinVisualsTransientData data, ImprovementData.Type improvement, SpriteAtlasManager atlasManager)
+	// {
+	// 	UIUtils_GetImprovementSprite(ref __result, improvement, data.foundingTribeSettings.tribe, data.foundingTribeSettings.skin, atlasManager);
+	// }
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetResourceSprite))]
-	private static void UIUtils_GetResourceSprite(ref Sprite __result, SkinVisualsTransientData data, ResourceData.Type resource, SpriteAtlasManager atlasManager)
-	{
-		Sprite? sprite = Registry.GetSprite(EnumCache<ResourceData.Type>.GetName(resource), Util.GetStyle(data.tileClimateSettings.tribe, data.tileClimateSettings.skin));
-		if (sprite != null)
-		{
-			__result = sprite;
-		}
-	}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetResourceSprite))]
+	// private static void UIUtils_GetResourceSprite(ref Sprite __result, SkinVisualsTransientData data, ResourceData.Type resource, SpriteAtlasManager atlasManager)
+	// {
+	// 	Sprite? sprite = Registry.GetSprite(EnumCache<ResourceData.Type>.GetName(resource), Util.GetStyle(data.tileClimateSettings.tribe, data.tileClimateSettings.skin));
+	// 	if (sprite != null)
+	// 	{
+	// 		__result = sprite;
+	// 	}
+	// }
 
 	#endregion
 	#region Houses
@@ -339,32 +339,32 @@ public static class Visual
 		}
 	}
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UICityRenderer), nameof(UICityRenderer.GetResource))]
-	private static void UICityRenderer_GetResource(ref GameObject __result, string baseName, Polytopia.Data.TribeData.Type tribe, Polytopia.Data.SkinType skin)
-	{
-		Image imageComponent = __result.GetComponent<Image>();
-		string[] tokens = baseName.Split('_');
-		if (tokens.Length > 0)
-		{
-			if (tokens[0] == "House")
-			{
-				int level = 0;
-				if (tokens.Length > 1)
-				{
-					_ = int.TryParse(tokens[1], out level);
-				}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(UICityRenderer), nameof(UICityRenderer.GetResource))]
+	// private static void UICityRenderer_GetResource(ref GameObject __result, string baseName, Polytopia.Data.TribeData.Type tribe, Polytopia.Data.SkinType skin)
+	// {
+	// 	Image imageComponent = __result.GetComponent<Image>();
+	// 	string[] tokens = baseName.Split('_');
+	// 	if (tokens.Length > 0)
+	// 	{
+	// 		if (tokens[0] == "House")
+	// 		{
+	// 			int level = 0;
+	// 			if (tokens.Length > 1)
+	// 			{
+	// 				_ = int.TryParse(tokens[1], out level);
+	// 			}
 
-				Sprite? sprite = Registry.GetSprite("house", Util.GetStyle(tribe, skin), level);
-				if (sprite == null)
-				{
-					return;
-				}
-				imageComponent.sprite = sprite;
-				imageComponent.SetNativeSize();
-			}
-		}
-	}
+	// 			Sprite? sprite = Registry.GetSprite("house", Util.GetStyle(tribe, skin), level);
+	// 			if (sprite == null)
+	// 			{
+	// 				return;
+	// 			}
+	// 			imageComponent.sprite = sprite;
+	// 			imageComponent.SetNativeSize();
+	// 		}
+	// 	}
+	// }
 
 	#endregion
 	#region Icons
@@ -423,21 +423,21 @@ public static class Visual
 		}
 	}
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(PlayerInfoIcon), nameof(PlayerInfoIcon.SetData), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteData.SpecialFaceIcon), typeof(Color), typeof(DiplomacyRelationState), typeof(PlayerInfoIcon.Mood))]
-	private static void PlayerInfoIcon_SetData(PlayerInfoIcon __instance, TribeData.Type tribe, SkinType skin, SpriteData.SpecialFaceIcon face, Color color, DiplomacyRelationState diplomacyState, PlayerInfoIcon.Mood mood)
-	{
-		if (face == SpriteData.SpecialFaceIcon.tribe)
-		{
-			Sprite? sprite = Registry.GetSprite("head", Util.GetStyle(tribe, skin));
-			if (sprite != null)
-			{
-				__instance.HeadImage.sprite = sprite;
-				Vector2 size = sprite.rect.size;
-				__instance.HeadImage.rectTransform.sizeDelta = size * __instance.rectTransform.GetHeight() / 512f;
-			}
-		}
-	}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(PlayerInfoIcon), nameof(PlayerInfoIcon.SetData), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteData.SpecialFaceIcon), typeof(Color), typeof(DiplomacyRelationState), typeof(PlayerInfoIcon.Mood))]
+	// private static void PlayerInfoIcon_SetData(PlayerInfoIcon __instance, TribeData.Type tribe, SkinType skin, SpriteData.SpecialFaceIcon face, Color color, DiplomacyRelationState diplomacyState, PlayerInfoIcon.Mood mood)
+	// {
+	// 	if (face == SpriteData.SpecialFaceIcon.tribe)
+	// 	{
+	// 		Sprite? sprite = Registry.GetSprite("head", Util.GetStyle(tribe, skin));
+	// 		if (sprite != null)
+	// 		{
+	// 			__instance.HeadImage.sprite = sprite;
+	// 			Vector2 size = sprite.rect.size;
+	// 			__instance.HeadImage.rectTransform.sizeDelta = size * __instance.rectTransform.GetHeight() / 512f;
+	// 		}
+	// 	}
+	// }
 
 	#endregion
 	#region Popups
@@ -466,26 +466,26 @@ public static class Visual
 
 	#endregion
 
-	private static void UpdateVisualPart(SkinVisualsReference.VisualPart visualPart, string name, string style)
-	{
-		Sprite? sprite = Registry.GetSprite(name, style) ?? Registry.GetSprite(visualPart.visualPart.name, style);
-		if (sprite != null)
-		{
-			if (visualPart.renderer.spriteRenderer != null)
-				visualPart.renderer.spriteRenderer.sprite = sprite;
-			else if (visualPart.renderer.polytopiaSpriteRenderer != null)
-				visualPart.renderer.polytopiaSpriteRenderer.sprite = sprite;
-		}
+	// private static void UpdateVisualPart(SkinVisualsReference.VisualPart visualPart, string name, string style)
+	// {
+	// 	Sprite? sprite = Registry.GetSprite(name, style) ?? Registry.GetSprite(visualPart.visualPart.name, style);
+	// 	if (sprite != null)
+	// 	{
+	// 		if (visualPart.renderer.spriteRenderer != null)
+	// 			visualPart.renderer.spriteRenderer.sprite = sprite;
+	// 		else if (visualPart.renderer.polytopiaSpriteRenderer != null)
+	// 			visualPart.renderer.polytopiaSpriteRenderer.sprite = sprite;
+	// 	}
 
-		Sprite? outlineSprite = Registry.GetSprite($"{name}_outline", style) ?? Registry.GetSprite($"{visualPart.visualPart.name}_outline", style);
-		if (outlineSprite != null)
-		{
-			if (visualPart.outlineRenderer.spriteRenderer != null)
-				visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
-			else if (visualPart.outlineRenderer.polytopiaSpriteRenderer != null)
-				visualPart.outlineRenderer.polytopiaSpriteRenderer.sprite = outlineSprite;
-		}
-	}
+	// 	Sprite? outlineSprite = Registry.GetSprite($"{name}_outline", style) ?? Registry.GetSprite($"{visualPart.visualPart.name}_outline", style);
+	// 	if (outlineSprite != null)
+	// 	{
+	// 		if (visualPart.outlineRenderer.spriteRenderer != null)
+	// 			visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
+	// 		else if (visualPart.outlineRenderer.polytopiaSpriteRenderer != null)
+	// 			visualPart.outlineRenderer.polytopiaSpriteRenderer.sprite = outlineSprite;
+	// 	}
+	// }
 
 	public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
 	{

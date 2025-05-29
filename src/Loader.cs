@@ -314,7 +314,7 @@ public static class Loader
 	{
 		try
 		{
-			HandleSkins(gld, patch);
+			//HandleSkins(gld, patch);
 			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
 			{
 				JObject? token = jtoken.TryCast<JObject>();
@@ -430,19 +430,19 @@ public static class Loader
 					{
 						EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
 						EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
-						Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
+						//Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
 						Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
 						Registry.autoidx++;
 					}
 				}
-				foreach (var skin in Registry.skinInfo)
-				{
-					if (skins._values.Contains(skin.id))
-					{
-						skins._values.Remove(skin.id);
-						skins._values.Add(skin.idx);
-					}
-				}
+				// foreach (var skin in Registry.skinInfo)
+				// {
+				// 	if (skins._values.Contains(skin.id))
+				// 	{
+				// 		skins._values.Remove(skin.id);
+				// 		skins._values.Add(skin.idx);
+				// 	}
+				// }
 				JToken originalSkins = gld.SelectToken(skins.Path, false);
 				if (originalSkins != null)
 				{
@@ -455,25 +455,25 @@ public static class Loader
 				}
 			}
 		}
-		foreach (JToken jtoken in patch.SelectTokens("$.skinData.*").ToArray())
-		{
-			JObject token = jtoken.Cast<JObject>();
-			string id = Util.GetJTokenName(token);
-			int index = Registry.skinInfo.FindIndex(t => t.id == id);
-			if (Registry.skinInfo.ElementAtOrDefault(index) != null)
-			{
-				SkinData skinData = new();
-				if (token["color"] != null)
-				{
-					skinData.color = (int)token["color"];
-				}
-				if (token["language"] != null)
-				{
-					skinData.language = token["language"].ToString();
-				}
-				Registry.skinInfo[index] = new Visual.SkinInfo(Registry.skinInfo[index].idx, Registry.skinInfo[index].id, skinData);
-			}
-		}
-		patch.Remove("skinData");
+		// foreach (JToken jtoken in patch.SelectTokens("$.skinData.*").ToArray())
+		// {
+		// 	JObject token = jtoken.Cast<JObject>();
+		// 	string id = Util.GetJTokenName(token);
+		// 	int index = Registry.skinInfo.FindIndex(t => t.id == id);
+		// 	if (Registry.skinInfo.ElementAtOrDefault(index) != null)
+		// 	{
+		// 		SkinData skinData = new();
+		// 		if (token["color"] != null)
+		// 		{
+		// 			skinData.color = (int)token["color"];
+		// 		}
+		// 		if (token["language"] != null)
+		// 		{
+		// 			skinData.language = token["language"].ToString();
+		// 		}
+		// 		Registry.skinInfo[index] = new Visual.SkinInfo(Registry.skinInfo[index].idx, Registry.skinInfo[index].id, skinData);
+		// 	}
+		// }
+		// patch.Remove("skinData");
 	}
 }

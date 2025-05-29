@@ -12,10 +12,10 @@ public static class Audio
     {
         foreach (var item in Registry.customTribes)
         {
-            if (PolytopiaDataManager.GetLatestGameLogicData().TryGetData(item, out TribeData data))
-            {
-                AudioManager.instance.climateTribeMap.Add(data.climate, item);
-            }
+            // if (PolytopiaDataManager.GetLatestGameLogicData().TryGetData(item, out TribeData data))
+            // {
+            //     AudioManager.instance.climateTribeMap.Add(data.climate, item);
+            // }
         }
     }
 
