@@ -189,6 +189,27 @@ public static class Visual
 		string flood = "";
 		if (tile.data.effects.Contains(TileData.EffectType.Flooded))
 		{
+			Il2CppSystem.Collections.Generic.List<CommandBase> newStack = new Il2CppSystem.Collections.Generic.List<CommandBase>();
+			foreach (CommandBase command in GameManager.GameState.CommandStack)
+			{
+				newStack.Add(command);
+			}
+			newStack.Reverse();
+			foreach (CommandBase command in GameManager.GameState.CommandStack)
+			{
+				if (command.GetCommandType() == CommandType.Flood)
+				{
+					FloodCommand floodCommand = command.Cast<FloodCommand>();
+					if (floodCommand.Coordinates == tile.Coordinates)
+					{
+						if (GameManager.GameState.TryGetPlayer(floodCommand.PlayerId, out PlayerState playerState))
+						{
+							skinType = playerState.skinType;
+						}
+						break;
+					}
+				}
+			}
 			flood = "_flooded";
 		}
 		if (tile.data.terrain is Polytopia.Data.TerrainData.Type.Forest or Polytopia.Data.TerrainData.Type.Mountain)
@@ -219,6 +240,24 @@ public static class Visual
 		{
 			__instance.spriteRenderer.Sprite = sprite;
 		}
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(TileData), nameof(TileData.Flood))]
+	private static void TileData_Flood(TileData __instance, PlayerState playerState)
+	{
+		if (GameManager.Instance.isLevelLoaded)
+		{
+			GameManager.Client.ActionManager.ExecuteCommand(new FloodCommand(playerState.Id, __instance.coordinates), out string error);
+		}
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(FloodCommand), nameof(FloodCommand.IsValid))]
+	private static bool FloodCommand_IsValid(ref bool __result, FloodCommand __instance, GameState state, ref string validationError)
+	{
+		__result = true;
+		return false;
 	}
 
 	[HarmonyPostfix]
@@ -499,6 +538,11 @@ public static class Visual
 		texture.SetPixels(pixels);
 		texture.filterMode = FilterMode.Trilinear;
 		texture.Apply();
+		return BuildSpriteWithTexture(texture, pivot, pixelsPerUnit);
+	}
+
+	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float pixelsPerUnit = 2112f)
+	{
 		return Sprite.Create(
 			texture,
 			new(0, 0, texture.width, texture.height),
