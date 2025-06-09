@@ -10,7 +10,8 @@ namespace PolyMod;
 public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 {
 	internal record PolyConfig(
-		bool debug = false
+		bool debug = false,
+		string backendUrl = "http://127.0.0.1:8090"
 	);
 
 	internal const int AUTOIDX_STARTS_FROM = 1000;
@@ -59,6 +60,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		Hub.Init();
 
 		Main.Init();
+		Multiplayer.Init();
 	}
 
 	internal static Stream GetResource(string id)
