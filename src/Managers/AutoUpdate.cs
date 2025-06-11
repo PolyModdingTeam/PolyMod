@@ -1,9 +1,11 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Text.Json;
 using HarmonyLib;
 using UnityEngine;
 
 namespace PolyMod.Managers;
+
 internal static class AutoUpdate
 {
     [HarmonyPostfix]
@@ -11,6 +13,11 @@ internal static class AutoUpdate
     private static void StartScreen_Start()
     {
         if (!Plugin.config.autoUpdate) return;
+        if (Environment.GetEnvironmentVariable("WINEPREFIX") != null)
+        {
+            Plugin.logger.LogWarning("Wine/Proton is not supported!");
+            return;
+        }
         HttpClient client = new();
         client.DefaultRequestHeaders.Add("User-Agent", "PolyMod");
         try
@@ -32,29 +39,53 @@ internal static class AutoUpdate
                 <=
                 new Version(Plugin.VERSION)
             ) return;
+            Console.WriteLine(latest?.GetProperty("assets")[0].GetProperty("browser_download_url").GetString()!);
+            string bepinex_version = client.GetAsync("https://polymod.dev/data/bepinex.txt").UnwrapAsync().Content.ReadAsStringAsync().UnwrapAsync();
+            string os = Application.platform switch
+            {
+                RuntimePlatform.WindowsPlayer => "win",
+                RuntimePlatform.LinuxPlayer => "linux",
+                RuntimePlatform.OSXPlayer => "macos",
+                _ => "unknown",
+            };
+            if (os == "unknown") return;
+            bepinex_version = bepinex_version.Replace("{os}", os);
+            Console.WriteLine(bepinex_version);
             void Update()
             {
+                Time.timeScale = 0;
                 File.WriteAllBytes(
-                    Path.Combine(Plugin.BASE_PATH, "BepInEx", "plugins", "PolyMod.new.dll"),
+                    Path.Combine(Plugin.BASE_PATH, "PolyMod.new.dll"),
                     client.GetAsync(latest?.GetProperty("assets")[0].GetProperty("browser_download_url").GetString()!).UnwrapAsync()
                     .Content.ReadAsByteArrayAsync().UnwrapAsync()
                 );
+                using ZipArchive bepinex = new(client.GetAsync(bepinex_version).UnwrapAsync().Content.ReadAsStream());
+                bepinex.ExtractToDirectory(Path.Combine(Plugin.BASE_PATH, "New"));
                 ProcessStartInfo info = new()
                 {
-                    WorkingDirectory = Path.Combine(Plugin.BASE_PATH, "BepInEx", "plugins"),
+                    WorkingDirectory = Path.Combine(Plugin.BASE_PATH),
                     CreateNoWindow = true,
                 };
                 if (Application.platform == RuntimePlatform.WindowsPlayer)
                 {
                     info.FileName = "cmd.exe";
-                    info.Arguments
-                        = "/C timeout 3 && del /F /Q PolyMod.dll && move /Y PolyMod.new.dll PolyMod.dll && start steam://rungameid/874390";
+                    info.Arguments =
+                        "/C timeout 3" +
+                        " && robocopy \"New\" . /E /MOVE /NFL /NDL /NJH /NJS /NP" +
+                        " && rmdir /S /Q \"New\"" +
+                        " && del /F /Q \"BepInEx\\plugins\\PolyMod.dll\"" +
+                        " && move /Y \"PolyMod.new.dll\" \"BepInEx\\plugins\\PolyMod.dll\"" +
+                        " && start steam://rungameid/874390";
                 }
                 else
                 {
                     info.FileName = "/bin/bash";
-                    info.Arguments
-                        = "-c 'sleep 3 && rm -f PolyMod.dll && mv PolyMod.new.dll PolyMod.dll && xdg-open steam://rungameid/874390'";
+                    info.Arguments =
+                        "-c 'sleep 3" +
+                        " && mv -f New/* . && mv -f New/.* . 2>/dev/null || true && rm -rf New" +
+                        " && rm -f BepInEx/plugins/PolyMod.dll" +
+                        " && mv -f PolyMod.new.dll BepInEx/plugins/PolyMod.dll" +
+                        " && xdg-open steam://rungameid/874390'";
                 }
                 Process.Start(info);
                 Application.Quit();
@@ -66,8 +97,7 @@ internal static class AutoUpdate
                     new(
                         "polymod.autoupdate.update",
                         PopupBase.PopupButtonData.States.None,
-                        (Il2CppSystem.Action)Update,
-                        closesPopup: false
+                        (Il2CppSystem.Action)Update
                     )
                 }))
             ).Show();
