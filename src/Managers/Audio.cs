@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 
 namespace PolyMod.Managers;
+
 public static class Audio
 {
     [HarmonyPostfix]

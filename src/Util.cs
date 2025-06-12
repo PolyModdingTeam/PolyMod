@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using Polytopia.Data;
 
 namespace PolyMod;
+
 internal static class Util
 {
     internal static Il2CppSystem.Type WrapType<T>() where T : class
