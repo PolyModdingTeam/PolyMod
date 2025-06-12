@@ -17,6 +17,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace PolyMod;
+
 public static class Loader
 {
 	internal static Dictionary<string, Type> typeMappings = new()
@@ -308,7 +309,11 @@ public static class Loader
 		if (Registry.spriteInfos.ContainsKey(name) && Registry.sprites.ContainsKey(name))
 		{
 			Visual.SpriteInfo spriteData = Registry.spriteInfos[name];
-			Sprite sprite = Visual.BuildSpriteWithTexture(Registry.sprites[name].texture, spriteData.pivot, (float)spriteData.pixelsPerUnit);
+			Sprite sprite = Visual.BuildSpriteWithTexture(
+				Registry.sprites[name].texture,
+				spriteData.pivot,
+				spriteData.pixelsPerUnit
+			);
 			GameManager.GetSpriteAtlasManager().cachedSprites["Heads"][name] = sprite;
 			Registry.sprites[name] = sprite;
 		}

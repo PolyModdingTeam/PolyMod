@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace PolyMod.Managers;
+
 public static class Main
 {
 	internal const int MAX_TECH_TIER = 100;
@@ -179,8 +180,8 @@ public static class Main
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(TechView), nameof(TechView.CreateNode))]
-	public static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle) 
-  {
+	public static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle)
+	{
 		GameLogicData gameLogicData = GameManager.GameState.GameLogicData;
 		TribeData tribeData = gameLogicData.GetTribeData(GameManager.LocalPlayer.tribe);
 		float baseAngle = 360 / gameLogicData.GetOverride(gameLogicData.GetTechData(TechData.Type.Basic), tribeData).techUnlocks.Count;

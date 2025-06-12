@@ -6,6 +6,7 @@ using LibCpp2IL;
 using Polytopia.Data;
 
 namespace PolyMod.Managers;
+
 public static class Loc
 {
 	[HarmonyPostfix]

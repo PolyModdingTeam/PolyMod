@@ -9,6 +9,7 @@ using PolyMod.Json;
 using System.Text.Json.Serialization;
 
 namespace PolyMod.Managers;
+
 public static class Visual
 {
 	public class PreviewTile
@@ -69,7 +70,7 @@ public static class Visual
 				string style = "";
 				foreach (string item in names)
 				{
-					string upperitem = char.ToUpper(item[0]) + item.Substring(1);
+					string upperitem = char.ToUpper(item[0]) + item[1..];
 					if (EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
 					|| EnumCache<TribeData.Type>.TryGetType(upperitem, out TribeData.Type tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
 					{
@@ -541,13 +542,13 @@ public static class Visual
 		return BuildSpriteWithTexture(texture, pivot, pixelsPerUnit);
 	}
 
-	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float pixelsPerUnit = 2112f)
+	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f)
 	{
 		return Sprite.Create(
 			texture,
 			new(0, 0, texture.width, texture.height),
 			pivot ?? new(0.5f, 0.5f),
-			pixelsPerUnit
+			pixelsPerUnit ?? 2112f
 		);
 	}
 

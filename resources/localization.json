@@ -162,27 +162,31 @@
 		"German (Germany)": "Diese Version von PolyMod ist nicht für die aktuelle Version der Anwendung ausgelegt und könnte nicht funktionieren!"
 	},
 	"polymod_hub_config": {
-		"English": "SETTINGS"
+		"English": "CONFIG",
+		"Russian": "КОНФИГ"
 	},
-	"polymod_hub_debugenable": {
-		"English": "ENABLE DEBUG"
+	"polymod_hub_config_enable": {
+		"English": "ENABLE {0}",
+		"Russian": "ВКЛЮЧИТЬ {0}"
 	},
-	"polymod_hub_debugdisable": {
-		"English": "DISABLE DEBUG"
+	"polymod_hub_config_disable": {
+		"English": "DISABLE {0}",
+		"Russian": "ВЫЛЮЧИТЬ {0}"
 	},
-	"polymod_hub_debugswitch": {
-		"English": "Debug set to {0}."
+	"polymod_config_setto": {
+		"English": "{0} is set to {1}!",
+		"Russian": "{0} задан на {1}!"
 	},
-	"polymod_hub_updatespriteinfos": {
-		"English": "UPDATE SPRITES"
+	"polymod_hub_spriteinfo_update": {
+		"English": "UPDATE SPRITES",
+		"Russian": "ОБНОВИТЬ СПРАЙТЫ"
 	},
 	"polymod_spriteinfo_updated": {
-		"English": "Sprite info for mod {0} updated."
+		"English": "Sprite info for mod {0} updated!",
+		"Russian": "Данные спрайтов обновлены для мода {0}!"
 	},
 	"polymod_spriteinfo_notupdated": {
-		"English": "No sprite infos were found."
-	},
-	"polymod_popup_header": {
-		"English": "POLYMOD"
+		"English": "No sprite infos were found!",
+		"Russian": "Данные спрайтов не найдены!"
 	}
 }
