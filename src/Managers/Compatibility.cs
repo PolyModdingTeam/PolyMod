@@ -76,6 +76,7 @@ internal static class Compatibility
                 Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
                 VersionManager.SemanticVersion.Cast().CutRevision().ToString()
             );
+            PlayerPrefs.Save();
             PopupManager.GetBasicPopup(new(
                 Localization.Get("polymod.version.mismatch"),
                 Localization.Get("polymod.version.mismatch.description"),
