@@ -35,11 +35,10 @@ internal static class AutoUpdate
                 break;
             }
             if (
-                new Version(latest?.GetProperty("tag_name").GetString()!.TrimStart('v')!)
+                new Version(latest?.GetProperty("tag_name").GetString()!.TrimStart('v')!.Split('-')[0]!)
                 <=
-                new Version(Plugin.VERSION)
+                new Version(Plugin.VERSION.Split('-')[0])
             ) return;
-            Console.WriteLine(latest?.GetProperty("assets")[0].GetProperty("browser_download_url").GetString()!);
             string bepinex_version = client.GetAsync("https://polymod.dev/data/bepinex.txt").UnwrapAsync().Content.ReadAsStringAsync().UnwrapAsync();
             string os = Application.platform switch
             {
@@ -49,8 +48,6 @@ internal static class AutoUpdate
                 _ => "unknown",
             };
             if (os == "unknown") return;
-            bepinex_version = bepinex_version.Replace("{os}", os);
-            Console.WriteLine(bepinex_version);
             void Update()
             {
                 Time.timeScale = 0;
