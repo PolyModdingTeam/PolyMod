@@ -272,8 +272,11 @@ public static class Loader
 	{
 		try
 		{
-			Loc.BuildAndLoadLocalization(JsonSerializer
-				.Deserialize<Dictionary<string, Dictionary<string, string>>>(file.bytes)!);
+			Loc.BuildAndLoadLocalization(
+				mod,
+				JsonSerializer
+					.Deserialize<Dictionary<string, Dictionary<string, string>>>(file.bytes)!
+			);
 			Plugin.logger.LogInfo($"Registered localization from {mod.id} mod");
 		}
 		catch (Exception e)
@@ -284,8 +287,10 @@ public static class Loader
 
 	public static void LoadSpriteFile(Mod mod, Mod.File file)
 	{
-		string name = Path.GetFileNameWithoutExtension(file.name);
-		Vector2 pivot = name.Split("_")[0] switch
+		string[] parts = Path.GetFileNameWithoutExtension(file.name).Split('_');
+		parts[1] = new Identifier(mod.id, parts[1]);
+		string name = string.Join('_', parts);
+		Vector2 pivot = parts[0] switch
 		{
 			"field" => new(0.5f, 0.0f),
 			"mountain" => new(0.5f, -0.375f),
@@ -301,6 +306,7 @@ public static class Loader
 		Sprite sprite = Visual.BuildSprite(file.bytes, pivot, pixelsPerUnit);
 		GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
 		GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
+		Console.WriteLine(name);
 		Registry.sprites.Add(name, sprite);
 	}
 
@@ -356,6 +362,7 @@ public static class Loader
 		// audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
 		// Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
 		// TODO: issue #71
+		// DONT FORGET NAMESPACES!!!
 	}
 
 	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
@@ -370,7 +377,9 @@ public static class Loader
 				{
 					if (token["idx"] != null && (int)token["idx"] == -1)
 					{
-						string id = Util.GetJTokenName(token);
+						string id = new Identifier(mod.id, Util.GetJTokenName(token));
+						Util.RenameJToken(token, id);
+						Console.WriteLine(token.Parent.Parent.ToString()); // DEBUG
 						string dataType = Util.GetJTokenName(token, 2);
 						token["idx"] = Registry.autoidx;
 						if (typeMappings.TryGetValue(dataType, out Type? targetType))
@@ -485,7 +494,7 @@ public static class Loader
 	public static void LoadAssetBundle(Mod mod, Mod.File file)
 	{
 		Registry.assetBundles.Add(
-			Path.GetFileNameWithoutExtension(file.name),
+			Path.GetFileNameWithoutExtension(new Identifier(mod.id, file.name)),
 			AssetBundle.LoadFromMemory(file.bytes)
 		);
 	}

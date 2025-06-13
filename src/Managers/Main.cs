@@ -334,6 +334,7 @@ public static class Main
 	{
 		stopwatch.Start();
 		Loc.BuildAndLoadLocalization(
+			null,
 			JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
 				Plugin.GetResource("localization.json")
 			)!

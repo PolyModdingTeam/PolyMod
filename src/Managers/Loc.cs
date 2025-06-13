@@ -76,13 +76,16 @@ public static class Loc
 		return true;
 	}
 
-	public static void BuildAndLoadLocalization(Dictionary<string, Dictionary<string, string>> localization)
+	public static void BuildAndLoadLocalization(Mod? mod, Dictionary<string, Dictionary<string, string>> localization)
 	{
 		foreach (var (key, data) in localization)
 		{
-			string name = key.Replace("_", ".");
-			name = name.Replace("..", "_");
+			string name;
+			if (mod == null) name = key;
+			else name = new Identifier(mod.id, key);
+			name = name.Replace("_", ".").Replace("..", "_");
 			if (name.StartsWith("tribeskins")) name = "TribeSkins/" + name;
+			Console.WriteLine(name);
 			TermData term = LocalizationManager.Sources[0].AddTerm(name);
 			List<string> strings = new();
 			foreach (string language in LocalizationManager.GetAllLanguages(false))

@@ -26,6 +26,14 @@ internal static class Util
         return token.Path.Split('.')[^n];
     }
 
+    internal static void RenameJToken(JToken token, string name)
+    { 
+        JProperty property = token.Parent.Cast<JProperty>();
+        JToken content = property.Value;
+        property.Value = null;
+        property.Replace(new JProperty(name, content));
+    }
+
     internal static Version Cast(this Il2CppSystem.Version self)
     {
         return new(self.ToString());
