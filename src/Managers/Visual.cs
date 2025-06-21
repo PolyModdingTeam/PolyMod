@@ -36,6 +36,7 @@ public static class Visual
 	public static Dictionary<int, int> basicPopupWidths = new();
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
+	private static TribeData.Type attackerTribe = TribeData.Type.None;
 
 	#region General
 
@@ -489,6 +490,32 @@ public static class Visual
 		int id = __instance.GetInstanceID();
 		if (Visual.basicPopupWidths.ContainsKey(id))
 			__instance.rectTransform.SetWidth(basicPopupWidths[id]);
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(Unit), nameof(Unit.Attack))]
+	private static bool Unit_Attack(Unit __instance, WorldCoordinates target, bool moveToTarget = false, Il2CppSystem.Action onComplete = null)
+	{
+		if (__instance.Owner != null)
+		{
+			attackerTribe = __instance.Owner.tribe;
+		}
+		return true;
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.SetSkin))]
+	private static void WeaponGFX_SetSkin(WeaponGFX __instance, SkinType skinType)
+	{
+		if (attackerTribe != TribeData.Type.None)
+		{
+			Sprite? sprite = Registry.GetSprite(__instance.defaultSprite.name, Util.GetStyle(attackerTribe, skinType));
+			if (sprite != null)
+			{
+				__instance.spriteRenderer.sprite = sprite;
+			}
+			attackerTribe = TribeData.Type.None;
+		}
 	}
 
 	[HarmonyPostfix]
