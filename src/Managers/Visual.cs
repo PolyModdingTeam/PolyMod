@@ -488,13 +488,13 @@ public static class Visual
 	private static void BasicPopup_Update(BasicPopup __instance)
 	{
 		int id = __instance.GetInstanceID();
-		if (Visual.basicPopupWidths.ContainsKey(id))
+		if (basicPopupWidths.ContainsKey(id))
 			__instance.rectTransform.SetWidth(basicPopupWidths[id]);
 	}
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(Unit), nameof(Unit.Attack))]
-	private static bool Unit_Attack(Unit __instance, WorldCoordinates target, bool moveToTarget = false, Il2CppSystem.Action onComplete = null)
+	private static bool Unit_Attack(Unit __instance, WorldCoordinates target, bool moveToTarget, Il2CppSystem.Action onComplete)
 	{
 		if (__instance.Owner != null)
 		{

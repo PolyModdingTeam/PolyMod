@@ -463,7 +463,6 @@ public static class Loader
 		try
 		{
 			HandleSkins(gld, patch);
-			Action<JObject, bool> handler;
 			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
 			{
 				JObject? token = jtoken.TryCast<JObject>();
@@ -482,7 +481,7 @@ public static class Loader
 								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
 								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
 
-								if (typeHandlers.TryGetValue(targetType, out handler))
+								if (typeHandlers.TryGetValue(targetType, out var handler))
 								{
 									handler(token, true);
 								}
@@ -501,7 +500,7 @@ public static class Loader
 					string dataType = Util.GetJTokenName(token, 2);
 					if (typeMappings.TryGetValue(dataType, out Type? targetType))
 					{
-						if (typeHandlers.TryGetValue(targetType, out handler))
+						if (typeHandlers.TryGetValue(targetType, out var handler))
 						{
 							handler(token, false);
 						}
