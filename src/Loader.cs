@@ -32,9 +32,109 @@ public static class Loader
 		{ "tribeAbility", typeof(TribeAbility.Type) },
 		{ "unitAbility", typeof(UnitAbility.Type) },
 		{ "improvementAbility", typeof(ImprovementAbility.Type) },
-		{ "playerAbility", typeof(PlayerAbility.Type) }
+		{ "playerAbility", typeof(PlayerAbility.Type) },
+		{ "weaponData", typeof(UnitData.WeaponEnum) }
 	};
 	internal static List<GameModeButtonsInformation> gamemodes = new();
+	private static readonly Dictionary<Type, Action<JObject, bool>> typeHandlers = new()
+	{
+		[typeof(TribeData.Type)] = new((token, duringEnumCacheCreation) =>
+		{
+			if (duringEnumCacheCreation)
+			{
+				Registry.customTribes.Add((TribeData.Type)Registry.autoidx);
+				token["style"] = Registry.climateAutoidx;
+				token["climate"] = Registry.climateAutoidx;
+				Registry.climateAutoidx++;
+			}
+			else
+			{
+				if (token["preview"] != null)
+				{
+					Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
+					Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
+				}
+			}
+		}),
+
+		[typeof(UnitData.Type)] = new((token, duringEnumCacheCreation) =>
+		{
+			if (duringEnumCacheCreation)
+			{
+				UnitData.Type unitPrefabType = UnitData.Type.Scout;
+				if (token["prefab"] != null)
+				{
+					string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
+					if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
+						unitPrefabType = parsedType;
+				}
+				PrefabManager.units.TryAdd((int)(UnitData.Type)Registry.autoidx, PrefabManager.units[(int)unitPrefabType]);
+			}
+			else
+			{
+				if (token["embarksTo"] != null)
+				{
+					string unitId = Util.GetJTokenName(token);
+					string embarkUnitId = token["embarksTo"].ToString();
+					Main.embarkNames[unitId] = embarkUnitId;
+				}
+				if (token["weapon"] != null)
+				{
+					string weaponString = token["weapon"].ToString();
+					if (EnumCache<UnitData.WeaponEnum>.TryGetType(weaponString, out UnitData.WeaponEnum type))
+					{
+						token["weapon"] = (int)type;
+					}
+				}
+			}
+		}),
+
+		[typeof(ImprovementData.Type)] = new((token, duringEnumCacheCreation) =>
+		{
+			if (duringEnumCacheCreation)
+			{
+				ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
+				if (token["prefab"] != null)
+				{
+					string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
+					if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
+						improvementPrefabType = parsedType;
+				}
+				PrefabManager.improvements.TryAdd((ImprovementData.Type)Registry.autoidx, PrefabManager.improvements[improvementPrefabType]);
+			}
+			else
+			{
+				if (token["attractsResource"] != null)
+				{
+					string improvementId = Util.GetJTokenName(token);
+					string attractsId = token["attractsResource"].ToString();
+					Main.attractsResourceNames[improvementId] = attractsId;
+				}
+				if (token["attractsToTerrain"] != null)
+				{
+					string improvementId = Util.GetJTokenName(token);
+					string attractsId = token["attractsToTerrain"].ToString();
+					Main.attractsTerrainNames[improvementId] = attractsId;
+				}
+			}
+		}),
+
+		[typeof(ResourceData.Type)] = new((token, duringEnumCacheCreation) =>
+		{
+			if (duringEnumCacheCreation)
+			{
+				ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
+				if (token["prefab"] != null)
+				{
+					string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
+					if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
+						resourcePrefabType = parsedType;
+				}
+				PrefabManager.resources.TryAdd((ResourceData.Type)Registry.autoidx, PrefabManager.resources[resourcePrefabType]);
+			}
+		})
+	};
+
 	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
 
 	public static void AddGameModeButton(string id, UIButtonBase.ButtonAction action, Sprite? sprite)
@@ -368,66 +468,22 @@ public static class Loader
 				JObject? token = jtoken.TryCast<JObject>();
 				if (token != null)
 				{
-					if (token["idx"] != null && (int)token["idx"] == -1)
+					string dataType = Util.GetJTokenName(token, 2);
+					if (typeMappings.TryGetValue(dataType, out Type? targetType))
 					{
-						string id = Util.GetJTokenName(token);
-						string dataType = Util.GetJTokenName(token, 2);
-						token["idx"] = Registry.autoidx;
-						if (typeMappings.TryGetValue(dataType, out Type? targetType))
+						if (token["idx"] != null && (int)token["idx"] == -1)
 						{
+							string id = Util.GetJTokenName(token);
+							token["idx"] = Registry.autoidx;
 							MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
 							if (methodInfo != null)
 							{
 								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
 								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
-								if (targetType == typeof(TribeData.Type))
+
+								if (typeHandlers.TryGetValue(targetType, out var handler))
 								{
-									Registry.customTribes.Add((TribeData.Type)Registry.autoidx);
-									token["style"] = Registry.climateAutoidx;
-									token["climate"] = Registry.climateAutoidx;
-									Registry.climateAutoidx++;
-								}
-								else if (targetType == typeof(UnitData.Type))
-								{
-									UnitData.Type unitPrefabType = UnitData.Type.Scout;
-									if (token["prefab"] != null)
-									{
-										TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-										string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-										if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
-										{
-											unitPrefabType = parsedType;
-										}
-									}
-									PrefabManager.units.TryAdd((int)(UnitData.Type)Registry.autoidx, PrefabManager.units[(int)unitPrefabType]);
-								}
-								else if (targetType == typeof(ImprovementData.Type))
-								{
-									ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
-									if (token["prefab"] != null)
-									{
-										TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-										string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-										if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
-										{
-											improvementPrefabType = parsedType;
-										}
-									}
-									PrefabManager.improvements.TryAdd((ImprovementData.Type)Registry.autoidx, PrefabManager.improvements[improvementPrefabType]);
-								}
-								else if (targetType == typeof(ResourceData.Type))
-								{
-									ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
-									if (token["prefab"] != null)
-									{
-										TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-										string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-										if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
-										{
-											resourcePrefabType = parsedType;
-										}
-									}
-									PrefabManager.resources.TryAdd((ResourceData.Type)Registry.autoidx, PrefabManager.resources[resourcePrefabType]);
+									handler(token, true);
 								}
 								Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + Registry.autoidx);
 								Registry.autoidx++;
@@ -436,40 +492,19 @@ public static class Loader
 					}
 				}
 			}
-			foreach (JToken jtoken in patch.SelectTokens("$.tribeData.*").ToArray())
+			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
 			{
-				JObject token = jtoken.Cast<JObject>();
-
-				if (token["preview"] != null)
+				JObject? token = jtoken.TryCast<JObject>();
+				if (token != null)
 				{
-					Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
-					Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
-				}
-			}
-			foreach (JToken jtoken in patch.SelectTokens("$.unitData.*").ToArray())
-			{
-				JObject token = jtoken.Cast<JObject>();
-				if (token["embarksTo"] != null)
-				{
-					string unitId = Util.GetJTokenName(token);
-					string embarkUnitId = token["embarksTo"].ToString();
-					Main.embarkNames[unitId] = embarkUnitId;
-				}
-			}
-			foreach (JToken jtoken in patch.SelectTokens("$.improvementData.*").ToArray())
-			{
-				JObject token = jtoken.Cast<JObject>();
-				if (token["attractsResource"] != null)
-				{
-					string improvementId = Util.GetJTokenName(token);
-					string attractsId = token["attractsResource"].ToString();
-					Main.attractsResourceNames[improvementId] = attractsId;
-				}
-				if (token["attractsToTerrain"] != null)
-				{
-					string improvementId = Util.GetJTokenName(token);
-					string attractsId = token["attractsToTerrain"].ToString();
-					Main.attractsTerrainNames[improvementId] = attractsId;
+					string dataType = Util.GetJTokenName(token, 2);
+					if (typeMappings.TryGetValue(dataType, out Type? targetType))
+					{
+						if (typeHandlers.TryGetValue(targetType, out var handler))
+						{
+							handler(token, false);
+						}
+					}
 				}
 			}
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
