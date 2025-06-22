@@ -3,6 +3,7 @@ using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using I2.Loc;
 using Il2CppInterop.Runtime;
+using Polytopia.Data;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -181,6 +182,35 @@ internal static class Hub
                                     File.WriteAllBytes(Path.Combine(Plugin.DUMPED_DATA_PATH, $"sprites_{entry.Key}.json"), file.bytes);
                                 }
                             }
+                        }
+                        foreach (TribeData.Type type in Enum.GetValues(typeof(TribeData.Type)))
+                        {
+                            List<Visual.PreviewTile> previewTiles = new();
+                            SelectTribePopup popup = PopupManager.GetSelectTribePopup();
+                            for (int x = -3; x <= 3; x++)
+                            {
+                                for (int y = -7; y <= 7; y++)
+                                {
+                                    Vector2Int pos = new Vector2Int(x, y);
+                                    if (popup.UIWorldPreview.worldPreviewData.TryGetData(pos, type, out UITileData tileData))
+                                    {
+                                        Visual.PreviewTile previewTile = new Visual.PreviewTile
+                                        {
+                                            x = tileData.Position.x,
+                                            y = tileData.Position.y,
+                                            terrainType = tileData.terrainType,
+                                            resourceType = tileData.resourceType,
+                                            unitType = tileData.unitType,
+                                            improvementType = tileData.improvementType
+                                        };
+                                        previewTiles.Add(previewTile);
+                                    }
+                                }
+                            }
+                            File.WriteAllTextAsync(
+                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"preview_{type}.json"),
+                                JsonSerializer.Serialize(previewTiles, new JsonSerializerOptions { WriteIndented = true })
+                            );
                         }
                         NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
                     }),
