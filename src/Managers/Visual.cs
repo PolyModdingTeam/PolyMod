@@ -9,6 +9,7 @@ using PolyMod.Json;
 using System.Text.Json.Serialization;
 
 namespace PolyMod.Managers;
+
 public static class Visual
 {
 	public class PreviewTile
@@ -37,6 +38,7 @@ public static class Visual
 	public static Dictionary<int, int> basicPopupWidths = new();
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
+	private static TribeData.Type attackerTribe = TribeData.Type.None;
 
 	#region General
 
@@ -71,7 +73,7 @@ public static class Visual
 				string style = "";
 				foreach (string item in names)
 				{
-					string upperitem = char.ToUpper(item[0]) + item.Substring(1);
+					string upperitem = char.ToUpper(item[0]) + item[1..];
 					if (EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
 					|| EnumCache<TribeData.Type>.TryGetType(upperitem, out TribeData.Type tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
 					{
@@ -487,8 +489,34 @@ public static class Visual
 	private static void BasicPopup_Update(BasicPopup __instance)
 	{
 		int id = __instance.GetInstanceID();
-		if (Visual.basicPopupWidths.ContainsKey(id))
+		if (basicPopupWidths.ContainsKey(id))
 			__instance.rectTransform.SetWidth(basicPopupWidths[id]);
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(Unit), nameof(Unit.Attack))]
+	private static bool Unit_Attack(Unit __instance, WorldCoordinates target, bool moveToTarget, Il2CppSystem.Action onComplete)
+	{
+		if (__instance.Owner != null)
+		{
+			attackerTribe = __instance.Owner.tribe;
+		}
+		return true;
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.SetSkin))]
+	private static void WeaponGFX_SetSkin(WeaponGFX __instance, SkinType skinType)
+	{
+		if (attackerTribe != TribeData.Type.None)
+		{
+			Sprite? sprite = Registry.GetSprite(__instance.defaultSprite.name, Util.GetStyle(attackerTribe, skinType));
+			if (sprite != null)
+			{
+				__instance.spriteRenderer.sprite = sprite;
+			}
+			attackerTribe = TribeData.Type.None;
+		}
 	}
 
 	[HarmonyPostfix]
@@ -542,13 +570,13 @@ public static class Visual
 		return BuildSpriteWithTexture(texture, pivot, pixelsPerUnit);
 	}
 
-	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float pixelsPerUnit = 2112f)
+	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f)
 	{
 		return Sprite.Create(
 			texture,
 			new(0, 0, texture.width, texture.height),
 			pivot ?? new(0.5f, 0.5f),
-			pixelsPerUnit
+			pixelsPerUnit ?? 2112f
 		);
 	}
 

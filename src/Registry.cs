@@ -5,6 +5,7 @@ using PolytopiaBackendBase.Game;
 using UnityEngine;
 
 namespace PolyMod;
+
 public static class Registry
 {
 	public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;

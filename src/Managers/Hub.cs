@@ -3,6 +3,7 @@ using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using I2.Loc;
 using Il2CppInterop.Runtime;
+using Polytopia.Data;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -10,12 +11,13 @@ using UnityEngine.UI;
 using static PopupBase;
 
 namespace PolyMod.Managers;
+
 internal static class Hub
 {
     private const string HEADER_PREFIX = "<align=\"center\"><size=150%><b>";
     private const string HEADER_POSTFIX = "</b></size><align=\"left\">";
     private const int POPUP_WIDTH = 1400;
-    public static bool isLevelPopupActive = false;
+    public static bool isConfigPopupActive = false;
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SplashController), nameof(SplashController.LoadAndPlayClip))]
@@ -147,7 +149,7 @@ internal static class Hub
                     "polymod.hub.config",
                     callback: (UIButtonBase.ButtonAction)((_, _) =>
                     {
-                        ShowLevelPopup();
+                        ShowConfigPopup();
                     })
                 )
             };
@@ -181,12 +183,41 @@ internal static class Hub
                                 }
                             }
                         }
+                        foreach (TribeData.Type type in Enum.GetValues(typeof(TribeData.Type)))
+                        {
+                            List<Visual.PreviewTile> previewTiles = new();
+                            SelectTribePopup popup = PopupManager.GetSelectTribePopup();
+                            for (int x = -3; x <= 3; x++)
+                            {
+                                for (int y = -7; y <= 7; y++)
+                                {
+                                    Vector2Int pos = new Vector2Int(x, y);
+                                    if (popup.UIWorldPreview.worldPreviewData.TryGetData(pos, type, out UITileData tileData))
+                                    {
+                                        Visual.PreviewTile previewTile = new Visual.PreviewTile
+                                        {
+                                            x = tileData.Position.x,
+                                            y = tileData.Position.y,
+                                            terrainType = tileData.terrainType,
+                                            resourceType = tileData.resourceType,
+                                            unitType = tileData.unitType,
+                                            improvementType = tileData.improvementType
+                                        };
+                                        previewTiles.Add(previewTile);
+                                    }
+                                }
+                            }
+                            File.WriteAllTextAsync(
+                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"preview_{type}.json"),
+                                JsonSerializer.Serialize(previewTiles, new JsonSerializerOptions { WriteIndented = true })
+                            );
+                        }
                         NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
                     }),
                     closesPopup: false
                 ));
                 popupButtons.Add(new(
-                    "polymod.hub.updatespriteinfos",
+                    "polymod.hub.spriteinfo.update",
                     callback: (UIButtonBase.ButtonAction)((_, _) =>
                     {
                         UpdateSpriteInfos();
@@ -222,9 +253,9 @@ internal static class Hub
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
     private static void GameManager_Update()
     {
-        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.Tab) && !isLevelPopupActive)
+        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.Tab) && !isConfigPopupActive)
         {
-            ShowLevelPopup();
+            ShowConfigPopup();
         }
     }
 
@@ -248,7 +279,7 @@ internal static class Hub
                     {
                         Loader.UpdateSprite(kvp.Key);
                     }
-                    message += Localization.Get("polymod.spriteinfo.updated", new Il2CppSystem.Object[] {subnames[1]});
+                    message += Localization.Get("polymod.spriteinfo.updated", new Il2CppSystem.Object[] { subnames[1] });
                 }
             }
         }
@@ -259,17 +290,18 @@ internal static class Hub
         NotificationManager.Notify(message);
     }
 
-    internal static void ShowLevelPopup()
+    internal static void ShowConfigPopup()
     {
         BasicPopup polymodPopup = PopupManager.GetBasicPopup();
 
-        polymodPopup.Header = Localization.Get("polymod.popup.header");
+        polymodPopup.Header = Localization.Get("polymod.hub.config");
+        polymodPopup.Description = "";
 
-        polymodPopup.buttonData = CreatePopupButtonData();
+        polymodPopup.buttonData = CreateConfigPopupButtonData();
         polymodPopup.Show();
     }
 
-    internal static PopupButtonData[] CreatePopupButtonData()
+    internal static PopupButtonData[] CreateConfigPopupButtonData()
     {
         List<PopupButtonData> popupButtons = new()
         {
@@ -278,14 +310,20 @@ internal static class Hub
 
         if (GameManager.Instance.isLevelLoaded)
         {
-            popupButtons.Add(new PopupButtonData(Localization.Get("polymod.hub.spriteinfo"), PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnUpdateSpritesButtonClicked, -1, true, null));
+            popupButtons.Add(new PopupButtonData(Localization.Get("polymod.hub.spriteinfo.update"), PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnUpdateSpritesButtonClicked, -1, true, null));
         }
         else
         {
-            string debugButtonName = Localization.Get("polymod.hub.debugenable");
+            string debugButtonName = Localization.Get(
+                "polymod.hub.config.enable",
+                new Il2CppSystem.Object[] { "DEBUG" }
+            );
             if (Plugin.config.debug)
             {
-                debugButtonName = Localization.Get("polymod.hub.debugdisable");
+                debugButtonName = Localization.Get(
+                    "polymod.hub.config.disable",
+                    new Il2CppSystem.Object[] { "DEBUG" }
+                );
             }
             popupButtons.Add(new PopupButtonData(debugButtonName, PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnDebugButtonClicked, -1, true, null));
             //popupButtons.Add(new PopupButtonData("", PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnAutoUpdateButtonClicked, -1, true, null));
@@ -296,38 +334,34 @@ internal static class Hub
         void OnDebugButtonClicked(int buttonId, BaseEventData eventData)
         {
             Plugin.config = new(debug: !Plugin.config.debug);
-            File.WriteAllText(Plugin.CONFIG_PATH, JsonSerializer.Serialize(Plugin.config));
-            NotificationManager.Notify(Localization.Get("polymod.hub.debugswitch", new Il2CppSystem.Object[] { Plugin.config.debug }));
-            if (Plugin.config.debug)
-            {
-                BepInEx.ConsoleManager.CreateConsole();
-            }
-            else
-            {
-                BepInEx.ConsoleManager.DetachConsole();
-            }
-            isLevelPopupActive = false;
+            Plugin.WriteConfig();
+            Plugin.UpdateConsole();
+            NotificationManager.Notify(Localization.Get(
+                "polymod.config.setto",
+                new Il2CppSystem.Object[] { "Debug", Plugin.config.debug }
+            ));
+            isConfigPopupActive = false;
         }
 
         void OnAutoUpdateButtonClicked(int buttonId, BaseEventData eventData)
         {
-            isLevelPopupActive = false;
+            isConfigPopupActive = false;
         }
 
         void OnIncludeAlphasButtonClicked(int buttonId, BaseEventData eventData)
         {
-            isLevelPopupActive = false;
+            isConfigPopupActive = false;
         }
 
         void OnUpdateSpritesButtonClicked(int buttonId, BaseEventData eventData)
         {
             UpdateSpriteInfos();
-            isLevelPopupActive = false;
+            isConfigPopupActive = false;
         }
 
         void OnBackButtonClicked(int buttonId, BaseEventData eventData)
         {
-            isLevelPopupActive = false;
+            isConfigPopupActive = false;
         }
     }
 

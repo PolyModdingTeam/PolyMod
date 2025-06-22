@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace PolyMod.Managers;
+
 internal static class Compatibility
 {
     internal static string checksum = string.Empty;
@@ -54,7 +55,7 @@ internal static class Compatibility
         {
             lastChecksum = new(File.ReadAllText(Plugin.CHECKSUM_PATH));
         }
-        catch (FileNotFoundException){}
+        catch (FileNotFoundException) { }
 
         File.WriteAllText(
             Plugin.CHECKSUM_PATH,
@@ -65,18 +66,17 @@ internal static class Compatibility
             shouldResetSettings = true;
         }
 
-        Version incompatibilityWarningLastVersion = Plugin.POLYTOPIA_VERSION.CutRevision();
-        try
-        {
-            incompatibilityWarningLastVersion = new(File.ReadAllText(Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_PATH));
-        }
-        catch (FileNotFoundException) { }
+        Version incompatibilityWarningLastVersion = new(PlayerPrefs.GetString(
+            Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
+            Plugin.POLYTOPIA_VERSION.CutRevision().ToString()
+        ));
         if (VersionManager.SemanticVersion.Cast().CutRevision() > incompatibilityWarningLastVersion)
         {
-            File.WriteAllText(
-                Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_PATH,
+            PlayerPrefs.SetString(
+                Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
                 VersionManager.SemanticVersion.Cast().CutRevision().ToString()
             );
+            PlayerPrefs.Save();
             PopupManager.GetBasicPopup(new(
                 Localization.Get("polymod.version.mismatch"),
                 Localization.Get("polymod.version.mismatch.description"),
