@@ -458,6 +458,98 @@ public static class Loader
 		// TODO: issue #71
 	}
 
+	public static void LoadPrefabInfoFile(Mod mod, Mod.File file)
+	{
+		try
+		{
+			string name = Path.GetFileNameWithoutExtension(file.name);
+			var options = new JsonSerializerOptions
+			{
+				PropertyNameCaseInsensitive = true
+			};
+
+			Visual.PrefabInfo? prefab = JsonSerializer.Deserialize<Visual.PrefabInfo>(file.bytes, options);
+
+			if (prefab != null)
+			{
+				Console.WriteLine(prefab);
+				Registry.prefabInfos.Add(name, prefab);
+
+				Unit unit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeData.Type.Imperius, SkinType.Default);
+				if (unit != null)
+				{
+					Unit instantiatedUnit = GameObject.Instantiate<Unit>(unit);
+					if (instantiatedUnit != null)
+					{
+						var svr = instantiatedUnit.GetComponent<SkinVisualsReference>();
+						var spriteContainer = instantiatedUnit.transform.GetChild(0);
+						List<SkinVisualsReference.VisualPart> visualParts = new();
+						int childCount = spriteContainer.childCount;
+						for (int i = 0; i < childCount; i++)
+						{
+							var child = spriteContainer.GetChild(i);
+							// Console.Write(child.gameObject.name);
+							// if (child.gameObject.name == "Head")
+							// {
+							// 	Console.Write(child.gameObject.transform.position);
+							// }
+							GameObject.Destroy(child.gameObject);
+						}
+						foreach (Visual.VisualPartInfo visualPartInfo in prefab.visualParts)
+						{
+							SkinVisualsReference.VisualPart visualPartComponent = new();
+							visualPartComponent.DefaultSpriteName = visualPartInfo.baseName;
+							visualPartComponent.visualPart = new GameObject();
+							visualPartComponent.visualPart.name = visualPartInfo.gameObjectName;
+							visualPartComponent.visualPart.transform.position = visualPartInfo.coordinates;
+							visualPartComponent.visualPart.transform.SetParent(spriteContainer.transform);
+							visualPartComponent.outline = new GameObject();
+							visualPartComponent.outline.name = "Outline";
+							visualPartComponent.outline.transform.position = visualPartInfo.coordinates;
+							visualPartComponent.outline.transform.SetParent(visualPartComponent.visualPart.transform);
+							if (visualPartComponent.visualPart.GetComponent<SpriteRenderer>() == null)
+								visualPartComponent.visualPart.AddComponent<SpriteRenderer>();
+
+							visualParts.Add(visualPartComponent);
+						}
+						svr.visualParts = new(visualParts.ToArray());
+
+
+						Console.WriteLine(svr.visualParts.Length);
+						GameObject.DontDestroyOnLoad(instantiatedUnit.gameObject);
+						//PrefabManager.units[GetSkinnedHashKey(2, SkinType.Default)] = instantiatedUnit.GetComponent<Unit>(); THIS LINE REPLACES ALL WARRIORS WITHYOUR PREFAB
+					}
+				}
+
+				Plugin.logger.LogInfo($"Registered prefab info from {mod.id} mod");
+			}
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading prefab info from {mod.id} mod: {e.Message}");
+		}
+	}
+
+	public static Transform? GetPlaceholderVisualPart(Transform spriteContainer)
+	{
+		int childCount = spriteContainer.childCount;
+		for (int i = 0; i < childCount; i++)
+		{
+			var child = spriteContainer.GetChild(i);
+			Console.Write(child.gameObject.name);
+			if (child.gameObject.name == "Head")
+			{
+				return child.transform;
+			}
+		}
+		return null;
+	}
+
+	private static int GetSkinnedHashKey(int type, SkinType skin)
+	{
+		return type + ((int)skin * 1000);
+	}
+
 	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
 	{
 		try

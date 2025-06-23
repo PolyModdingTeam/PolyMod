@@ -286,6 +286,15 @@ public static class Main
 		}
 	}
 
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(Unit), nameof(Unit.CreateUnit))]
+	private static bool Unit_CreateUnit(Unit __instance, UnitData unitData, TribeData.Type tribe, SkinType unitSkin)
+	{
+		Unit unit = PrefabManager.GetPrefab(unitData.type, tribe, unitSkin);
+		if (unit == null) Console.Write("THIS FUCKING SHIT IS NULL WHAT THE FUCK");
+		return true;
+	}
+
 	internal static void Init()
 	{
 		stopwatch.Start();
@@ -356,6 +365,14 @@ public static class Main
 						mod,
 						gameLogicdata,
 						JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd())
+					);
+					continue;
+				}
+				if (Regex.IsMatch(Path.GetFileName(file.name), @"^prefab(_.*)?\.json$"))
+				{
+					Loader.LoadPrefabInfoFile(
+						mod,
+						file
 					);
 					continue;
 				}

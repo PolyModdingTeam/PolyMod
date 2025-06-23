@@ -37,6 +37,14 @@ public static class Visual
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
 	private static TribeData.Type attackerTribe = TribeData.Type.None;
+	public enum PrefabType
+	{
+		Unit,
+		Improvement,
+		Resource
+	}
+	public record PrefabInfo(PrefabType type, string name, List<VisualPartInfo> visualParts);
+	public record VisualPartInfo(string gameObjectName, string baseName, Vector3 coordinates);
 
 	#region General
 
