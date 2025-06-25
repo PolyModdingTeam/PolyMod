@@ -61,14 +61,10 @@ public static class Loader
 		{
 			if (duringEnumCacheCreation)
 			{
-				UnitData.Type unitPrefabType = UnitData.Type.Scout;
 				if (token["prefab"] != null)
 				{
-					string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
-					if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
-						unitPrefabType = parsedType;
+					Registry.prefabNames.Add((int)(UnitData.Type)Registry.autoidx, CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString()));
 				}
-				PrefabManager.units.TryAdd((int)(UnitData.Type)Registry.autoidx, PrefabManager.units[(int)unitPrefabType]);
 			}
 			else
 			{
@@ -465,59 +461,85 @@ public static class Loader
 			string name = Path.GetFileNameWithoutExtension(file.name);
 			var options = new JsonSerializerOptions
 			{
-				PropertyNameCaseInsensitive = true
+				Converters = { new Vector2Json() },
+				PropertyNameCaseInsensitive = true,
 			};
 
 			Visual.PrefabInfo? prefab = JsonSerializer.Deserialize<Visual.PrefabInfo>(file.bytes, options);
-
 			if (prefab != null)
 			{
-				Console.WriteLine(prefab);
-				Registry.prefabInfos.Add(name, prefab);
-
-				Unit unit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeData.Type.Imperius, SkinType.Default);
-				if (unit != null)
+				if (prefab.type == Visual.PrefabType.Unit)
 				{
-					Unit instantiatedUnit = GameObject.Instantiate<Unit>(unit);
-					if (instantiatedUnit != null)
+					Unit unit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeData.Type.Imperius, SkinType.Default);
+					if (unit != null)
 					{
-						var svr = instantiatedUnit.GetComponent<SkinVisualsReference>();
-						var spriteContainer = instantiatedUnit.transform.GetChild(0);
-						List<SkinVisualsReference.VisualPart> visualParts = new();
-						int childCount = spriteContainer.childCount;
-						for (int i = 0; i < childCount; i++)
+						Unit instantiatedUnit = GameObject.Instantiate<Unit>(unit);
+						if (instantiatedUnit != null)
 						{
-							var child = spriteContainer.GetChild(i);
-							// Console.Write(child.gameObject.name);
-							// if (child.gameObject.name == "Head")
-							// {
-							// 	Console.Write(child.gameObject.transform.position);
-							// }
-							GameObject.Destroy(child.gameObject);
+							Material? spritesMaterial = null;
+							var svr = instantiatedUnit.GetComponent<SkinVisualsReference>();
+							var spriteContainer = instantiatedUnit.transform.GetChild(0);
+							List<SkinVisualsReference.VisualPart> visualParts = new();
+							int childCount = spriteContainer.childCount;
+							for (int i = 0; i < childCount; i++)
+							{
+								var child = spriteContainer.GetChild(i);
+								if (child.gameObject.name == "Head")
+								{
+									SpriteRenderer? headRenderer = child.gameObject.GetComponent<SpriteRenderer>();
+									if (headRenderer != null)
+									{
+										spritesMaterial = headRenderer.material;
+									}
+								}
+								GameObject.Destroy(child.gameObject);
+							}
+							foreach (Visual.VisualPartInfo visualPartInfo in prefab.visualParts)
+							{
+								SkinVisualsReference.VisualPart visualPartComponent = new();
+								visualPartComponent.DefaultSpriteName = visualPartInfo.baseName;
+								visualPartComponent.visualPart = new GameObject();
+								visualPartComponent.visualPart.name = visualPartInfo.gameObjectName;
+								visualPartComponent.visualPart.transform.SetParent(spriteContainer.transform);
+								visualPartComponent.outline = new GameObject();
+								visualPartComponent.outline.name = "Outline";
+								visualPartComponent.outline.transform.SetParent(visualPartComponent.visualPart.transform);
+								if (visualPartComponent.visualPart.GetComponent<SpriteRenderer>() == null)
+								{
+									SpriteRenderer renderer = visualPartComponent.visualPart.AddComponent<SpriteRenderer>();
+									renderer.material = spritesMaterial;
+									renderer.sortingLayerName = "Units";
+									renderer.sortingOrder = 1;
+									SkinVisualsReference.RendererUnion rendererUnion = new();
+									rendererUnion.spriteRenderer = renderer;
+									visualPartComponent.renderer = rendererUnion;
+								}
+								if (visualPartComponent.outline.GetComponent<SpriteRenderer>() == null)
+								{
+									SpriteRenderer outlineRenderer = visualPartComponent.outline.AddComponent<SpriteRenderer>();
+									outlineRenderer.material = spritesMaterial;
+									outlineRenderer.sortingLayerName = "Units";
+									outlineRenderer.sortingOrder = -1;
+									SkinVisualsReference.RendererUnion outlineRendererUnion = new();
+									outlineRendererUnion.spriteRenderer = outlineRenderer;
+									visualPartComponent.outlineRenderer = outlineRendererUnion;
+								}
+								visualPartComponent.tintable = visualPartInfo.tintable;
+
+								visualPartComponent.visualPart.transform.position = visualPartInfo.coordinates;
+								visualPartComponent.outline.transform.position = visualPartInfo.coordinates;
+
+								visualPartComponent.visualPart.transform.localScale = visualPartInfo.scale;
+								visualPartComponent.outline.transform.localScale = visualPartInfo.scale;
+								visualParts.Add(visualPartComponent);
+							}
+							svr.visualParts = new(visualParts.ToArray());
+
+
+							Console.WriteLine(svr.visualParts.Length);
+							GameObject.DontDestroyOnLoad(instantiatedUnit.gameObject);
+							Registry.unitPrefabs.Add(prefab, instantiatedUnit.GetComponent<Unit>());
 						}
-						foreach (Visual.VisualPartInfo visualPartInfo in prefab.visualParts)
-						{
-							SkinVisualsReference.VisualPart visualPartComponent = new();
-							visualPartComponent.DefaultSpriteName = visualPartInfo.baseName;
-							visualPartComponent.visualPart = new GameObject();
-							visualPartComponent.visualPart.name = visualPartInfo.gameObjectName;
-							visualPartComponent.visualPart.transform.position = visualPartInfo.coordinates;
-							visualPartComponent.visualPart.transform.SetParent(spriteContainer.transform);
-							visualPartComponent.outline = new GameObject();
-							visualPartComponent.outline.name = "Outline";
-							visualPartComponent.outline.transform.position = visualPartInfo.coordinates;
-							visualPartComponent.outline.transform.SetParent(visualPartComponent.visualPart.transform);
-							if (visualPartComponent.visualPart.GetComponent<SpriteRenderer>() == null)
-								visualPartComponent.visualPart.AddComponent<SpriteRenderer>();
-
-							visualParts.Add(visualPartComponent);
-						}
-						svr.visualParts = new(visualParts.ToArray());
-
-
-						Console.WriteLine(svr.visualParts.Length);
-						GameObject.DontDestroyOnLoad(instantiatedUnit.gameObject);
-						//PrefabManager.units[GetSkinnedHashKey(2, SkinType.Default)] = instantiatedUnit.GetComponent<Unit>(); THIS LINE REPLACES ALL WARRIORS WITHYOUR PREFAB
 					}
 				}
 

@@ -44,7 +44,14 @@ public static class Visual
 		Resource
 	}
 	public record PrefabInfo(PrefabType type, string name, List<VisualPartInfo> visualParts);
-	public record VisualPartInfo(string gameObjectName, string baseName, Vector3 coordinates);
+	public record VisualPartInfo(
+		string gameObjectName,
+		string baseName,
+		Quaternion rotation,
+		Vector2 coordinates = new Vector2(),
+		Vector2 scale = new Vector2(),
+		bool tintable = false
+	);
 
 	#region General
 

@@ -32,6 +32,34 @@ public static class Main
 		if (!fullyInitialized)
 		{
 			Load(rootObject);
+			foreach (System.Collections.Generic.KeyValuePair<int, string> item in Registry.prefabNames)
+			{
+				UnitData.Type unitPrefabType = UnitData.Type.Scout;
+				string prefabId = item.Value;
+				if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
+				{
+					unitPrefabType = parsedType;
+					PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
+				}
+				else
+				{
+					KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(kv => kv.Key.name == prefabId);
+					if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
+					{
+						// UnitData? data = prefabInfo.Value.UnitData;
+						// if (data != null)
+						// {
+						// 	data.type = (UnitData.Type)Registry.autoidx;
+						// 	prefabInfo.Value.SetData(data);
+						// }
+						PrefabManager.units.TryAdd(item.Key, prefabInfo.Value);
+					}
+					else
+					{
+						PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
+					}
+				}
+			}
 			foreach (Visual.SkinInfo skin in Registry.skinInfo)
 			{
 				if (skin.skinData != null)
