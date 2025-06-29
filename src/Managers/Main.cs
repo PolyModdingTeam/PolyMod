@@ -46,12 +46,6 @@ public static class Main
 					KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(kv => kv.Key.name == prefabId);
 					if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
 					{
-						// UnitData? data = prefabInfo.Value.UnitData;
-						// if (data != null)
-						// {
-						// 	data.type = (UnitData.Type)Registry.autoidx;
-						// 	prefabInfo.Value.SetData(data);
-						// }
 						PrefabManager.units.TryAdd(item.Key, prefabInfo.Value);
 					}
 					else
