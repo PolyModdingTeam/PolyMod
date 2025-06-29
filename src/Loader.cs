@@ -482,8 +482,6 @@ public static class Loader
 			var svr = unitInstance.GetComponent<SkinVisualsReference>();
 			svr.visualParts = visualParts.ToArray();
 
-			Console.WriteLine(svr.visualParts.Length);
-
 			GameObject.DontDestroyOnLoad(unitInstance.gameObject);
 			Registry.unitPrefabs.Add(prefab, unitInstance.GetComponent<Unit>());
 
