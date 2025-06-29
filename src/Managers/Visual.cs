@@ -37,6 +37,22 @@ public static class Visual
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
 	private static TribeData.Type attackerTribe = TribeData.Type.None;
+	public enum PrefabType
+	{
+		Unit,
+		Improvement,
+		Resource
+	}
+	public record PrefabInfo(PrefabType type, string name, List<VisualPartInfo> visualParts);
+	public record VisualPartInfo(
+		string gameObjectName,
+		string baseName,
+		float rotation = 0f,
+		Vector2 coordinates = new Vector2(),
+		Vector2 scale = new Vector2(),
+		bool tintable = false
+	);
+	private static bool enableOutlines = false;
 
 	#region General
 
@@ -104,6 +120,30 @@ public static class Visual
 
 	#endregion
 	#region Units
+
+	// lobotomy
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.Show))]
+	private static bool InteractionBar_Show(InteractionBar __instance, bool instant, bool force)
+	{
+		enableOutlines = true;
+		return true;
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(UISpriteDuplicator), nameof(UISpriteDuplicator.CreateImage), typeof(SpriteRenderer), typeof(Transform), typeof(Transform), typeof(float), typeof(Vector2), typeof(bool))]
+	private static bool UISpriteDuplicator_CreateImage(SpriteRenderer spriteRenderer, Transform source, Transform destination, float scale, Vector2 offset, bool forceFullAlpha)
+	{
+		return !(spriteRenderer.sortingOrder == -1 && !enableOutlines);
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.Show))]
+	private static void InteractionBar_Show_Postfix(InteractionBar __instance, bool instant, bool force)
+	{
+		enableOutlines = false;
+	}
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]

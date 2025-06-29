@@ -32,6 +32,28 @@ public static class Main
 		if (!fullyInitialized)
 		{
 			Load(rootObject);
+			foreach (System.Collections.Generic.KeyValuePair<int, string> item in Registry.prefabNames)
+			{
+				UnitData.Type unitPrefabType = UnitData.Type.Scout;
+				string prefabId = item.Value;
+				if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
+				{
+					unitPrefabType = parsedType;
+					PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
+				}
+				else
+				{
+					KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(kv => kv.Key.name == prefabId);
+					if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
+					{
+						PrefabManager.units.TryAdd(item.Key, prefabInfo.Value);
+					}
+					else
+					{
+						PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
+					}
+				}
+			}
 			foreach (Visual.SkinInfo skin in Registry.skinInfo)
 			{
 				if (skin.skinData != null)
@@ -286,6 +308,15 @@ public static class Main
 		}
 	}
 
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(Unit), nameof(Unit.CreateUnit))]
+	private static bool Unit_CreateUnit(Unit __instance, UnitData unitData, TribeData.Type tribe, SkinType unitSkin)
+	{
+		Unit unit = PrefabManager.GetPrefab(unitData.type, tribe, unitSkin);
+		if (unit == null) Console.Write("THIS FUCKING SHIT IS NULL WHAT THE FUCK");
+		return true;
+	}
+
 	internal static void Init()
 	{
 		stopwatch.Start();
@@ -356,6 +387,14 @@ public static class Main
 						mod,
 						gameLogicdata,
 						JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd())
+					);
+					continue;
+				}
+				if (Regex.IsMatch(Path.GetFileName(file.name), @"^prefab(_.*)?\.json$"))
+				{
+					Loader.LoadPrefabInfoFile(
+						mod,
+						file
 					);
 					continue;
 				}

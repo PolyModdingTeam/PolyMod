@@ -61,14 +61,10 @@ public static class Loader
 		{
 			if (duringEnumCacheCreation)
 			{
-				UnitData.Type unitPrefabType = UnitData.Type.Scout;
 				if (token["prefab"] != null)
 				{
-					string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
-					if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
-						unitPrefabType = parsedType;
+					Registry.prefabNames.Add((int)(UnitData.Type)Registry.autoidx, CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString()));
 				}
-				PrefabManager.units.TryAdd((int)(UnitData.Type)Registry.autoidx, PrefabManager.units[(int)unitPrefabType]);
 			}
 			else
 			{
@@ -456,6 +452,119 @@ public static class Loader
 		// audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
 		// Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
 		// TODO: issue #71
+	}
+
+	public static void LoadPrefabInfoFile(Mod mod, Mod.File file)
+	{
+		try
+		{
+			var prefab = JsonSerializer.Deserialize<Visual.PrefabInfo>(file.bytes, new JsonSerializerOptions
+			{
+				Converters = { new Vector2Json() },
+				PropertyNameCaseInsensitive = true,
+			});
+			if (prefab == null || prefab.type != Visual.PrefabType.Unit)
+				return;
+
+			var baseUnit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeData.Type.Imperius, SkinType.Default);
+			if (baseUnit == null)
+				return;
+
+			var unitInstance = GameObject.Instantiate(baseUnit);
+			if (unitInstance == null)
+				return;
+
+			var spriteContainer = unitInstance.transform.GetChild(0);
+			var material = ClearExistingPartsAndExtractMaterial(spriteContainer);
+
+			var visualParts = ApplyVisualParts(prefab.visualParts, spriteContainer, material);
+
+			var svr = unitInstance.GetComponent<SkinVisualsReference>();
+			svr.visualParts = visualParts.ToArray();
+
+			GameObject.DontDestroyOnLoad(unitInstance.gameObject);
+			Registry.unitPrefabs.Add(prefab, unitInstance.GetComponent<Unit>());
+
+			Plugin.logger.LogInfo($"Registered prefab info from {mod.id} mod");
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading prefab info from {mod.id} mod: {e.Message}");
+		}
+	}
+
+	private static Material? ClearExistingPartsAndExtractMaterial(Transform spriteContainer)
+	{
+		Material? material = null;
+		for (int i = 0; i < spriteContainer.childCount; i++)
+		{
+			var child = spriteContainer.GetChild(i);
+			if (child.gameObject.name == "Head")
+			{
+				var renderer = child.GetComponent<SpriteRenderer>();
+				if (renderer != null)
+					material = renderer.material;
+			}
+			GameObject.Destroy(child.gameObject);
+		}
+		return material;
+	}
+
+	private static List<SkinVisualsReference.VisualPart> ApplyVisualParts(
+		List<Visual.VisualPartInfo> partInfos,
+		Transform spriteContainer,
+		Material? material)
+	{
+		List<SkinVisualsReference.VisualPart> parts = new();
+
+		foreach (var info in partInfos)
+		{
+			parts.Add(CreateVisualPart(info, spriteContainer, material));
+		}
+
+		return parts;
+	}
+
+	private static SkinVisualsReference.VisualPart CreateVisualPart(
+		Visual.VisualPartInfo info,
+		Transform parent,
+		Material? material)
+	{
+		var visualPartObj = new GameObject(info.gameObjectName);
+		visualPartObj.transform.SetParent(parent);
+		visualPartObj.transform.position = info.coordinates;
+		visualPartObj.transform.localScale = info.scale;
+		visualPartObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
+
+		var outlineObj = new GameObject("Outline");
+		outlineObj.transform.SetParent(visualPartObj.transform);
+		outlineObj.transform.position = info.coordinates;
+		outlineObj.transform.localScale = info.scale;
+		outlineObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
+
+		var visualPart = new SkinVisualsReference.VisualPart
+		{
+			DefaultSpriteName = info.baseName,
+			visualPart = visualPartObj,
+			outline = outlineObj,
+			tintable = info.tintable
+		};
+
+		var renderer = visualPartObj.AddComponent<SpriteRenderer>();
+		renderer.material = material;
+		renderer.sortingLayerName = "Units";
+		renderer.sortingOrder = info.tintable ? 0 : 1;
+
+		visualPart.renderer = new SkinVisualsReference.RendererUnion { spriteRenderer = renderer };
+
+		var outlineRenderer = outlineObj.AddComponent<SpriteRenderer>();
+		outlineRenderer.material = material;
+		outlineRenderer.sortingLayerName = "Units";
+		outlineRenderer.sortingOrder = -1;
+
+		visualPart.outlineRenderer = new SkinVisualsReference.RendererUnion { spriteRenderer = outlineRenderer };
+
+		return visualPart;
 	}
 
 	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
