@@ -534,11 +534,13 @@ public static class Loader
 		visualPartObj.transform.SetParent(parent);
 		visualPartObj.transform.position = info.coordinates;
 		visualPartObj.transform.localScale = info.scale;
+		visualPartObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
 
 		var outlineObj = new GameObject("Outline");
 		outlineObj.transform.SetParent(visualPartObj.transform);
 		outlineObj.transform.position = info.coordinates;
 		outlineObj.transform.localScale = info.scale;
+		outlineObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
 
 		var visualPart = new SkinVisualsReference.VisualPart
 		{

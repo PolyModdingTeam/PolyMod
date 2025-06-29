@@ -47,7 +47,7 @@ public static class Visual
 	public record VisualPartInfo(
 		string gameObjectName,
 		string baseName,
-		Quaternion rotation,
+		float rotation = 0f,
 		Vector2 coordinates = new Vector2(),
 		Vector2 scale = new Vector2(),
 		bool tintable = false
