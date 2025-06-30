@@ -39,7 +39,6 @@ internal static class AutoUpdate
                 <=
                 new Version(Plugin.VERSION.Split('-')[0])
             ) return;
-            string bepinex_version = client.GetAsync("https://polymod.dev/data/bepinex.txt").UnwrapAsync().Content.ReadAsStringAsync().UnwrapAsync();
             string os = Application.platform switch
             {
                 RuntimePlatform.WindowsPlayer => "win",
@@ -48,6 +47,7 @@ internal static class AutoUpdate
                 _ => "unknown",
             };
             if (os == "unknown") return;
+            string bepinex_url = client.GetAsync("https://polymod.dev/data/bepinex.txt").UnwrapAsync().Content.ReadAsStringAsync().UnwrapAsync().Replace("{os}", os);
             void Update()
             {
                 Time.timeScale = 0;
@@ -56,23 +56,43 @@ internal static class AutoUpdate
                     client.GetAsync(latest?.GetProperty("assets")[0].GetProperty("browser_download_url").GetString()!).UnwrapAsync()
                     .Content.ReadAsByteArrayAsync().UnwrapAsync()
                 );
-                using ZipArchive bepinex = new(client.GetAsync(bepinex_version).UnwrapAsync().Content.ReadAsStream());
-                bepinex.ExtractToDirectory(Path.Combine(Plugin.BASE_PATH, "New"));
+                using ZipArchive bepinex = new(client.GetAsync(bepinex_url).UnwrapAsync().Content.ReadAsStream());
+                bepinex.ExtractToDirectory(Path.Combine(Plugin.BASE_PATH, "New"), overwriteFiles: true);
                 ProcessStartInfo info = new()
                 {
                     WorkingDirectory = Path.Combine(Plugin.BASE_PATH),
                     CreateNoWindow = true,
                 };
+                Console.Write(5);
                 if (Application.platform == RuntimePlatform.WindowsPlayer)
                 {
+                    string batchPath = Path.Combine(Plugin.BASE_PATH, "update.bat");
+                    File.WriteAllText(batchPath, $@"
+                        @echo off
+                        echo Waiting for Polytopia.exe to exit...
+                        :waitloop
+                        tasklist | findstr /I ""Polytopia.exe"" >nul
+                        if not errorlevel 1 (
+                            timeout /T 1 >nul
+                            goto waitloop
+                        )
+
+                        echo Updating...
+                        robocopy ""New"" . /E /MOVE /NFL /NDL /NJH /NJS /NP >nul
+                        rmdir /S /Q ""New""
+                        del /F /Q ""BepInEx\plugins\PolyMod.dll""
+                        move /Y ""PolyMod.new.dll"" ""BepInEx\plugins\PolyMod.dll""
+
+                        echo Launching game...
+                        start steam://rungameid/874390
+                        timeout /T 3 /NOBREAK >nul
+                        exit
+                    ");
                     info.FileName = "cmd.exe";
-                    info.Arguments =
-                        "/C timeout 3" +
-                        " && robocopy \"New\" . /E /MOVE /NFL /NDL /NJH /NJS /NP" +
-                        " && rmdir /S /Q \"New\"" +
-                        " && del /F /Q \"BepInEx\\plugins\\PolyMod.dll\"" +
-                        " && move /Y \"PolyMod.new.dll\" \"BepInEx\\plugins\\PolyMod.dll\"" +
-                        " && start steam://rungameid/874390";
+                    info.Arguments = $"/C start \"\" \"{batchPath}\"";
+                    info.WorkingDirectory = Plugin.BASE_PATH;
+                    info.CreateNoWindow = true;
+                    info.UseShellExecute = false;
                 }
                 else
                 {
