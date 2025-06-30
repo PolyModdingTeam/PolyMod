@@ -1,4 +1,5 @@
 namespace PolyMod;
+
 public class Mod
 {
     public record Dependency(string id, Version min, Version max, bool required = true);
