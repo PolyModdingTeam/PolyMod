@@ -6,7 +6,6 @@ using Newtonsoft.Json.Linq;
 using Polytopia.Data;
 
 namespace PolyMod;
-
 internal static class Util
 {
     internal static Il2CppSystem.Type WrapType<T>() where T : class
@@ -39,6 +38,23 @@ internal static class Util
     internal static Version CutRevision(this Version self)
     {
         return new(self.Major, self.Minor, self.Build);
+    }
+
+    internal static bool IsVersionOlderOrEqual(this string version1, string version2)
+    {
+        Version version1_ = new(version1.Split('-')[0]);
+        Version version2_ = new(version2.Split('-')[0]);
+
+        if (version1_ < version2_) return true;
+        if (version1_ > version2_) return false;
+
+        string pre1 = version1.Contains('-') ? version1.Split('-')[1] : "";
+        string pre2 = version2.Contains('-') ? version2.Split('-')[1] : "";
+
+        if (string.IsNullOrEmpty(pre1) && !string.IsNullOrEmpty(pre2)) return false;
+        if (!string.IsNullOrEmpty(pre1) && string.IsNullOrEmpty(pre2)) return true;
+
+        return string.Compare(pre1, pre2, StringComparison.Ordinal) <= 0;
     }
 
     internal static string GetStyle(TribeData.Type tribe, SkinType skin)
@@ -91,8 +107,6 @@ internal static class Util
         baseName = baseName.Replace(SpriteData.TILE_UNKNOWN, EnumCache<TerrainData.Type>.GetName(TerrainData.Type.Field));
         baseName = baseName.Replace(SpriteData.TILE_WATER, EnumCache<TerrainData.Type>.GetName(TerrainData.Type.Water));
         baseName = baseName.Replace(SpriteData.TILE_WETLAND, EnumCache<TerrainData.Type>.GetName(TerrainData.Type.Field) + "_flooded");
-
-        baseName = baseName.Replace("UI_", "");
         return baseName;
     }
 }

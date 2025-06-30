@@ -15,7 +15,7 @@ internal static class AutoUpdate
         if (!Plugin.config.autoUpdate) return;
         if (Environment.GetEnvironmentVariable("WINEPREFIX") != null)
         {
-            Plugin.logger.LogWarning("Wine/Proton is not supported!");
+            Plugin.logger.LogError("Autoupdate is not supported on Wine!");
             return;
         }
         HttpClient client = new();
@@ -34,11 +34,8 @@ internal static class AutoUpdate
                 latest = release;
                 break;
             }
-            if (
-                new Version(latest?.GetProperty("tag_name").GetString()!.TrimStart('v')!.Split('-')[0]!)
-                <=
-                new Version(Plugin.VERSION.Split('-')[0])
-            ) return;
+            string newVersion = latest?.GetProperty("tag_name").GetString()!.TrimStart('v')!;
+            if (newVersion.IsVersionOlderOrEqual(Plugin.VERSION)) return;
             string os = Application.platform switch
             {
                 RuntimePlatform.WindowsPlayer => "win",
@@ -46,8 +43,15 @@ internal static class AutoUpdate
                 RuntimePlatform.OSXPlayer => "macos",
                 _ => "unknown",
             };
-            if (os == "unknown") return;
-            string bepinex_url = client.GetAsync("https://polymod.dev/data/bepinex.txt").UnwrapAsync().Content.ReadAsStringAsync().UnwrapAsync().Replace("{os}", os);
+            if (os == "unknown")
+            { 
+                Plugin.logger.LogError("Unsupported platform for autoupdate!");
+                return;
+            }
+            string bepinex_url = client
+                .GetAsync("https://polymod.dev/data/bepinex.txt").UnwrapAsync()
+                .Content.ReadAsStringAsync().UnwrapAsync()
+                .Replace("{os}", os);
             void Update()
             {
                 Time.timeScale = 0;
@@ -63,46 +67,28 @@ internal static class AutoUpdate
                     WorkingDirectory = Path.Combine(Plugin.BASE_PATH),
                     CreateNoWindow = true,
                 };
-                Console.Write(5);
                 if (Application.platform == RuntimePlatform.WindowsPlayer)
                 {
-                    string batchPath = Path.Combine(Plugin.BASE_PATH, "update.bat");
-                    File.WriteAllText(batchPath, $@"
-                        @echo off
-                        echo Waiting for Polytopia.exe to exit...
-                        :waitloop
-                        tasklist | findstr /I ""Polytopia.exe"" >nul
-                        if not errorlevel 1 (
-                            timeout /T 1 >nul
-                            goto waitloop
-                        )
-
-                        echo Updating...
-                        robocopy ""New"" . /E /MOVE /NFL /NDL /NJH /NJS /NP >nul
-                        rmdir /S /Q ""New""
-                        del /F /Q ""BepInEx\plugins\PolyMod.dll""
-                        move /Y ""PolyMod.new.dll"" ""BepInEx\plugins\PolyMod.dll""
-
-                        echo Launching game...
-                        start steam://rungameid/874390
-                        timeout /T 3 /NOBREAK >nul
-                        exit
-                    ");
                     info.FileName = "cmd.exe";
-                    info.Arguments = $"/C start \"\" \"{batchPath}\"";
-                    info.WorkingDirectory = Plugin.BASE_PATH;
-                    info.CreateNoWindow = true;
-                    info.UseShellExecute = false;
+                    info.Arguments = "/C " +
+                        ":waitloop & " +
+                        "tasklist | findstr /I \"Polytopia.exe\" >nul && (timeout /T 1 >nul & goto waitloop) & " +
+                        "robocopy \"New\" . /E /MOVE /NFL /NDL /NJH /NJS /NP >nul & " +
+                        "rmdir /S /Q \"New\" & " +
+                        "del /F /Q \"BepInEx\\plugins\\PolyMod.dll\" & " +
+                        "move /Y \"PolyMod.new.dll\" \"BepInEx\\plugins\\PolyMod.dll\" & " +
+                        "start steam://rungameid/874390";
                 }
-                else
+                if (Application.platform == RuntimePlatform.LinuxPlayer || Application.platform == RuntimePlatform.OSXPlayer)
                 {
                     info.FileName = "/bin/bash";
-                    info.Arguments =
-                        "-c 'sleep 3" +
-                        " && mv -f New/* . && mv -f New/.* . 2>/dev/null || true && rm -rf New" +
-                        " && rm -f BepInEx/plugins/PolyMod.dll" +
-                        " && mv -f PolyMod.new.dll BepInEx/plugins/PolyMod.dll" +
-                        " && xdg-open steam://rungameid/874390'";
+                    info.Arguments = "-c \"" +
+                        "while pgrep -x Polytopia > /dev/null; do sleep 1; done && " +
+                        "mv New/* . && rm -rf New && " +
+                        "rm -f BepInEx/plugins/PolyMod.dll && " +
+                        "mv PolyMod.new.dll BepInEx/plugins/PolyMod.dll && " +
+                        "steam steam://rungameid/874390" +
+                        "\"";
                 }
                 Process.Start(info);
                 Application.Quit();
