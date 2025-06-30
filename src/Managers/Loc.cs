@@ -6,6 +6,7 @@ using LibCpp2IL;
 using Polytopia.Data;
 
 namespace PolyMod.Managers;
+
 public static class Loc
 {
 	[HarmonyPostfix]
@@ -41,7 +42,7 @@ public static class Loc
 		{
 			if (int.TryParse(item, out int parsedIdx))
 			{
-				if(parsedIdx >= Plugin.AUTOIDX_STARTS_FROM)
+				if (parsedIdx >= Plugin.AUTOIDX_STARTS_FROM)
 				{
 					idx = parsedIdx;
 				}

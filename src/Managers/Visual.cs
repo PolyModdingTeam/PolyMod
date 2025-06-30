@@ -9,6 +9,7 @@ using PolyMod.Json;
 using System.Text.Json.Serialization;
 
 namespace PolyMod.Managers;
+
 public static class Visual
 {
 	public class PreviewTile
@@ -35,6 +36,23 @@ public static class Visual
 	public static Dictionary<int, int> basicPopupWidths = new();
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
+	private static TribeData.Type attackerTribe = TribeData.Type.None;
+	public enum PrefabType
+	{
+		Unit,
+		Improvement,
+		Resource
+	}
+	public record PrefabInfo(PrefabType type, string name, List<VisualPartInfo> visualParts);
+	public record VisualPartInfo(
+		string gameObjectName,
+		string baseName,
+		float rotation = 0f,
+		Vector2 coordinates = new Vector2(),
+		Vector2 scale = new Vector2(),
+		bool tintable = false
+	);
+	private static bool enableOutlines = false;
 
 	#region General
 
@@ -69,7 +87,7 @@ public static class Visual
 				string style = "";
 				foreach (string item in names)
 				{
-					string upperitem = char.ToUpper(item[0]) + item.Substring(1);
+					string upperitem = char.ToUpper(item[0]) + item[1..];
 					if (EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
 					|| EnumCache<TribeData.Type>.TryGetType(upperitem, out TribeData.Type tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
 					{
@@ -102,6 +120,30 @@ public static class Visual
 
 	#endregion
 	#region Units
+
+	// lobotomy
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.Show))]
+	private static bool InteractionBar_Show(InteractionBar __instance, bool instant, bool force)
+	{
+		enableOutlines = true;
+		return true;
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(UISpriteDuplicator), nameof(UISpriteDuplicator.CreateImage), typeof(SpriteRenderer), typeof(Transform), typeof(Transform), typeof(float), typeof(Vector2), typeof(bool))]
+	private static bool UISpriteDuplicator_CreateImage(SpriteRenderer spriteRenderer, Transform source, Transform destination, float scale, Vector2 offset, bool forceFullAlpha)
+	{
+		return !(spriteRenderer.sortingOrder == -1 && !enableOutlines);
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.Show))]
+	private static void InteractionBar_Show_Postfix(InteractionBar __instance, bool instant, bool force)
+	{
+		enableOutlines = false;
+	}
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
@@ -189,6 +231,27 @@ public static class Visual
 		string flood = "";
 		if (tile.data.effects.Contains(TileData.EffectType.Flooded))
 		{
+			Il2CppSystem.Collections.Generic.List<CommandBase> newStack = new Il2CppSystem.Collections.Generic.List<CommandBase>();
+			foreach (CommandBase command in GameManager.GameState.CommandStack)
+			{
+				newStack.Add(command);
+			}
+			newStack.Reverse();
+			foreach (CommandBase command in GameManager.GameState.CommandStack)
+			{
+				if (command.GetCommandType() == CommandType.Flood)
+				{
+					FloodCommand floodCommand = command.Cast<FloodCommand>();
+					if (floodCommand.Coordinates == tile.Coordinates)
+					{
+						if (GameManager.GameState.TryGetPlayer(floodCommand.PlayerId, out PlayerState playerState))
+						{
+							skinType = playerState.skinType;
+						}
+						break;
+					}
+				}
+			}
 			flood = "_flooded";
 		}
 		if (tile.data.terrain is Polytopia.Data.TerrainData.Type.Forest or Polytopia.Data.TerrainData.Type.Mountain)
@@ -219,6 +282,24 @@ public static class Visual
 		{
 			__instance.spriteRenderer.Sprite = sprite;
 		}
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(TileData), nameof(TileData.Flood))]
+	private static void TileData_Flood(TileData __instance, PlayerState playerState)
+	{
+		if (GameManager.Instance.isLevelLoaded)
+		{
+			GameManager.Client.ActionManager.ExecuteCommand(new FloodCommand(playerState.Id, __instance.coordinates), out string error);
+		}
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(FloodCommand), nameof(FloodCommand.IsValid))]
+	private static bool FloodCommand_IsValid(ref bool __result, FloodCommand __instance, GameState state, ref string validationError)
+	{
+		__result = true;
+		return false;
 	}
 
 	[HarmonyPostfix]
@@ -447,8 +528,34 @@ public static class Visual
 	private static void BasicPopup_Update(BasicPopup __instance)
 	{
 		int id = __instance.GetInstanceID();
-		if (Visual.basicPopupWidths.ContainsKey(id))
+		if (basicPopupWidths.ContainsKey(id))
 			__instance.rectTransform.SetWidth(basicPopupWidths[id]);
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(Unit), nameof(Unit.Attack))]
+	private static bool Unit_Attack(Unit __instance, WorldCoordinates target, bool moveToTarget, Il2CppSystem.Action onComplete)
+	{
+		if (__instance.Owner != null)
+		{
+			attackerTribe = __instance.Owner.tribe;
+		}
+		return true;
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.SetSkin))]
+	private static void WeaponGFX_SetSkin(WeaponGFX __instance, SkinType skinType)
+	{
+		if (attackerTribe != TribeData.Type.None)
+		{
+			Sprite? sprite = Registry.GetSprite(__instance.defaultSprite.name, Util.GetStyle(attackerTribe, skinType));
+			if (sprite != null)
+			{
+				__instance.spriteRenderer.sprite = sprite;
+			}
+			attackerTribe = TribeData.Type.None;
+		}
 	}
 
 	[HarmonyPostfix]
@@ -499,11 +606,16 @@ public static class Visual
 		texture.SetPixels(pixels);
 		texture.filterMode = FilterMode.Trilinear;
 		texture.Apply();
+		return BuildSpriteWithTexture(texture, pivot, pixelsPerUnit);
+	}
+
+	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f)
+	{
 		return Sprite.Create(
 			texture,
 			new(0, 0, texture.width, texture.height),
 			pivot ?? new(0.5f, 0.5f),
-			pixelsPerUnit
+			pixelsPerUnit ?? 2112f
 		);
 	}
 
