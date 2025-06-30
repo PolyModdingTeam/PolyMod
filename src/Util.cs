@@ -107,6 +107,8 @@ internal static class Util
         baseName = baseName.Replace(SpriteData.TILE_UNKNOWN, EnumCache<TerrainData.Type>.GetName(TerrainData.Type.Field));
         baseName = baseName.Replace(SpriteData.TILE_WATER, EnumCache<TerrainData.Type>.GetName(TerrainData.Type.Water));
         baseName = baseName.Replace(SpriteData.TILE_WETLAND, EnumCache<TerrainData.Type>.GetName(TerrainData.Type.Field) + "_flooded");
+
+        baseName = baseName.Replace("UI_", "");
         return baseName;
     }
 }
