@@ -69,26 +69,70 @@ internal static class AutoUpdate
                 };
                 if (Application.platform == RuntimePlatform.WindowsPlayer)
                 {
+                    string batchPath = Path.Combine(Plugin.BASE_PATH, "update.bat");
+                    File.WriteAllText(batchPath, $@"
+                        @echo off
+                        echo Waiting for Polytopia.exe to exit...
+                        :waitloop
+                        tasklist | findstr /I ""Polytopia.exe"" >nul
+                        if not errorlevel 1 (
+                            timeout /T 1 >nul
+                            goto waitloop
+                        )
+
+                        echo Updating...
+                        robocopy ""New"" . /E /MOVE /NFL /NDL /NJH /NJS /NP >nul
+                        rmdir /S /Q ""New""
+                        del /F /Q ""BepInEx\plugins\PolyMod.dll""
+                        move /Y ""PolyMod.new.dll"" ""BepInEx\plugins\PolyMod.dll""
+
+                        echo Launching game...
+                        start steam://rungameid/874390
+                        timeout /T 3 /NOBREAK >nul
+                        exit
+                    ");
                     info.FileName = "cmd.exe";
-                    info.Arguments = "/C " +
-                        ":waitloop & " +
-                        "tasklist | findstr /I \"Polytopia.exe\" >nul && (timeout /T 1 >nul & goto waitloop) & " +
-                        "robocopy \"New\" . /E /MOVE /NFL /NDL /NJH /NJS /NP >nul & " +
-                        "rmdir /S /Q \"New\" & " +
-                        "del /F /Q \"BepInEx\\plugins\\PolyMod.dll\" & " +
-                        "move /Y \"PolyMod.new.dll\" \"BepInEx\\plugins\\PolyMod.dll\" & " +
-                        "start steam://rungameid/874390";
+                    info.Arguments = $"/C start \"\" \"{batchPath}\"";
+                    info.WorkingDirectory = Plugin.BASE_PATH;
+                    info.CreateNoWindow = true;
+                    info.UseShellExecute = false;
                 }
                 if (Application.platform == RuntimePlatform.LinuxPlayer || Application.platform == RuntimePlatform.OSXPlayer)
                 {
+                    string bashPath = Path.Combine(Plugin.BASE_PATH, "update.sh");
+                    File.WriteAllText(bashPath, $@"
+                        #!/bin/bash
+
+                        echo ""Waiting for Polytopia to exit...""
+                        while pgrep -x ""Polytopia"" > /dev/null; do
+                            sleep 1
+                        done
+
+                        echo ""Updating...""
+                        mv New/* . && rm -rf New
+                        rm -f BepInEx/plugins/PolyMod.dll
+                        mv -f PolyMod.new.dll BepInEx/plugins/PolyMod.dll
+
+                        echo ""Launching game...""
+                        xdg-open steam://rungameid/874390 &
+
+                        sleep 3
+                        exit 0
+                    ");
+
+                    System.Diagnostics.Process chmod = new System.Diagnostics.Process();
+                    chmod.StartInfo.FileName = "chmod";
+                    chmod.StartInfo.Arguments = $"+x \"{bashPath}\"";
+                    chmod.StartInfo.UseShellExecute = false;
+                    chmod.StartInfo.CreateNoWindow = true;
+                    chmod.Start();
+                    chmod.WaitForExit();
+
                     info.FileName = "/bin/bash";
-                    info.Arguments = "-c \"" +
-                        "while pgrep -x Polytopia > /dev/null; do sleep 1; done && " +
-                        "mv New/* . && rm -rf New && " +
-                        "rm -f BepInEx/plugins/PolyMod.dll && " +
-                        "mv PolyMod.new.dll BepInEx/plugins/PolyMod.dll && " +
-                        "steam steam://rungameid/874390" +
-                        "\"";
+                    info.Arguments = $"\"{bashPath}\"";
+                    info.WorkingDirectory = Plugin.BASE_PATH;
+                    info.CreateNoWindow = true;
+                    info.UseShellExecute = false;
                 }
                 Process.Start(info);
                 Application.Quit();
