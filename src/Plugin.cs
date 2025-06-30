@@ -51,8 +51,8 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		catch
 		{
 			config = new();
-			WriteConfig();
 		}
+		WriteConfig();
 		UpdateConsole();
 		logger = Log;
 		ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
