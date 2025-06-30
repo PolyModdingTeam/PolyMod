@@ -161,6 +161,26 @@
 		"Elyrion": "πȱ∫ỹmȱδ ƒƒƒƒƒƒƒ ŋȱŧ ȱrrȱ #₺rr∑ŋŧ ƒƒƒƒƒƒƒ ỹ maỹ ŋȱŧ ~ȱr§ #ȱrr∑#ŧ∫ỹ!",
 		"German (Germany)": "Diese Version von PolyMod ist nicht für die aktuelle Version der Anwendung ausgelegt und könnte nicht funktionieren!"
 	},
+	"polymod_debug": {
+		"English": "Debug",
+		"Russian": "Дебаг"
+	},
+	"polymod_autoupdate": {
+		"English": "Auto-update",
+		"Russian": "Автообновление"
+	},
+	"polymod_autoupdate_alpha": {
+		"English": "Include alphas",
+		"Russian": "Include alphas"
+	},
+	"polymod_autoupdate_description": {
+		"English": "New update available!",
+		"Russian": "Доступно новое обновление!"
+	},
+	"polymod_autoupdate_update": {
+		"English": "Update",
+		"Russian": "Обновить"
+	},
 	"polymod_hub_config": {
 		"English": "CONFIG",
 		"Russian": "КОНФИГ"

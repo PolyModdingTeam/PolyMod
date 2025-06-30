@@ -298,6 +298,7 @@ internal static class Hub
         polymodPopup.Description = "";
 
         polymodPopup.buttonData = CreateConfigPopupButtonData();
+        polymodPopup.ShowSetWidth(POPUP_WIDTH);
         polymodPopup.Show();
     }
 
@@ -315,41 +316,62 @@ internal static class Hub
         else
         {
             string debugButtonName = Localization.Get(
-                "polymod.hub.config.enable",
-                new Il2CppSystem.Object[] { "DEBUG" }
+                Plugin.config.debug ? "polymod.hub.config.disable" : "polymod.hub.config.enable",
+                new Il2CppSystem.Object[] { Localization.Get("polymod.debug",
+                new Il2CppSystem.Object[]{}).ToUpperInvariant() }
             );
-            if (Plugin.config.debug)
-            {
-                debugButtonName = Localization.Get(
-                    "polymod.hub.config.disable",
-                    new Il2CppSystem.Object[] { "DEBUG" }
-                );
-            }
+            string autoUpdateButtonName = Localization.Get(
+                Plugin.config.autoUpdate ? "polymod.hub.config.disable" : "polymod.hub.config.enable",
+                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate",
+                new Il2CppSystem.Object[]{}).ToUpperInvariant() }
+            );
+            string includeAlphasButtonName = Localization.Get(
+                Plugin.config.updatePrerelease ? "polymod.hub.config.disable" : "polymod.hub.config.enable",
+                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate.alpha",
+                new Il2CppSystem.Object[]{}).ToUpperInvariant() }
+            );
             popupButtons.Add(new PopupButtonData(debugButtonName, PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnDebugButtonClicked, -1, true, null));
-            //popupButtons.Add(new PopupButtonData("", PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnAutoUpdateButtonClicked, -1, true, null));
-            //popupButtons.Add(new PopupButtonData("", PopupButtonData.States.Disabled, (UIButtonBase.ButtonAction)OnIncludeAlphasButtonClicked, -1, true, null));
+            popupButtons.Add(new PopupButtonData(autoUpdateButtonName, PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnAutoUpdateButtonClicked, -1, true, null));
+            popupButtons.Add(new PopupButtonData(includeAlphasButtonName, Plugin.config.autoUpdate ? PopupButtonData.States.None : PopupButtonData.States.Disabled, (UIButtonBase.ButtonAction)OnIncludeAlphasButtonClicked, -1, true, null));
         }
         return popupButtons.ToArray();
 
         void OnDebugButtonClicked(int buttonId, BaseEventData eventData)
         {
-            Plugin.config = new(debug: !Plugin.config.debug);
+            Plugin.config = new(debug: !Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
             Plugin.WriteConfig();
             Plugin.UpdateConsole();
             NotificationManager.Notify(Localization.Get(
                 "polymod.config.setto",
-                new Il2CppSystem.Object[] { "Debug", Plugin.config.debug }
+                new Il2CppSystem.Object[] { Localization.Get("polymod.debug",
+                new Il2CppSystem.Object[]{}), Plugin.config.debug }
             ));
             isConfigPopupActive = false;
         }
 
         void OnAutoUpdateButtonClicked(int buttonId, BaseEventData eventData)
         {
+            Plugin.config = new(debug: Plugin.config.debug, autoUpdate: !Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
+            Plugin.WriteConfig();
+            Plugin.UpdateConsole();
+            NotificationManager.Notify(Localization.Get(
+                "polymod.config.setto",
+                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate",
+                new Il2CppSystem.Object[]{}), Plugin.config.autoUpdate }
+            ));
             isConfigPopupActive = false;
         }
 
         void OnIncludeAlphasButtonClicked(int buttonId, BaseEventData eventData)
         {
+            Plugin.config = new(debug: Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: !Plugin.config.updatePrerelease);
+            Plugin.WriteConfig();
+            Plugin.UpdateConsole();
+            NotificationManager.Notify(Localization.Get(
+                "polymod.config.setto",
+                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate.alpha",
+                new Il2CppSystem.Object[]{}), Plugin.config.updatePrerelease }
+            ));
             isConfigPopupActive = false;
         }
 
