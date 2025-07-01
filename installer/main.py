@@ -74,6 +74,7 @@ def install(path):
     for release in requests.get(POLYMOD).json():
         if release["prerelease"] and not prerelease_checkbox.get(): continue
         latest = release
+        break
     open(path + "/BepInEx/plugins/PolyMod.dll", "wb").write(
         requests.get(latest["assets"][0]["browser_download_url"]).content
     )
