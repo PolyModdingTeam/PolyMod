@@ -19,8 +19,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.733" />
-        <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)" />
+        <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.738" />
+        <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)-738" />
         <EmbeddedResource Include="resources\*.*" />
     </ItemGroup>
 
