@@ -4,16 +4,16 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace PolyMod.Managers;
+
 internal static class Compatibility
 {
-    internal static string signature = string.Empty;
-    internal static string looseSignature = string.Empty;
+    internal static string checksum = string.Empty;
+    internal static bool shouldResetSettings = false;
     private static bool sawSignatureWarning;
 
-    public static void HashSignatures(StringBuilder looseSignatureString, StringBuilder signatureString)
+    public static void HashSignatures(StringBuilder checksumString)
     {
-        looseSignature = Util.Hash(looseSignatureString);
-        signature = Util.Hash(signatureString);
+        checksum = Util.Hash(checksumString);
     }
 
     private static bool CheckSignatures(Action<int, BaseEventData> action, int id, BaseEventData eventData, Il2CppSystem.Guid gameId)
@@ -24,38 +24,21 @@ internal static class Compatibility
             return true;
         }
 
-        string[] signatures = { string.Empty, string.Empty };
+        string signature = string.Empty;
         try
         {
-            signatures = File.ReadAllLines(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+            signature = File.ReadAllText(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
         }
         catch { }
-        if (signatures[0] == string.Empty && signatures[1] == string.Empty) return true;
+        if (signature == string.Empty) return true;
         if (Plugin.config.debug) return true;
-        if (looseSignature != signatures[0])
+        if (checksum != signature)
         {
             PopupManager.GetBasicPopup(new(
                 Localization.Get("polymod.signature.mismatch"),
                 Localization.Get("polymod.signature.incompatible"),
                 new(new PopupBase.PopupButtonData[] {
                     new("OK")
-                })
-            )).Show();
-            return false;
-        }
-        if (signature != signatures[1])
-        {
-            PopupManager.GetBasicPopup(new(
-                Localization.Get("polymod.signature.mismatch"),
-                Localization.Get("polymod.signature.maybe.incompatible"),
-                new(new PopupBase.PopupButtonData[] {
-                    new(
-                        "OK",
-                        callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) => {
-                            sawSignatureWarning = true;
-                            action(id, eventData);
-                        })
-                    )
                 })
             )).Show();
             return false;
@@ -67,18 +50,33 @@ internal static class Compatibility
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
     private static void StartScreen_Start()
     {
-        Version incompatibilityWarningLastVersion = Plugin.POLYTOPIA_VERSION.CutRevision();
+        string lastChecksum = checksum;
         try
         {
-            incompatibilityWarningLastVersion = new(File.ReadAllText(Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_PATH));
+            lastChecksum = new(File.ReadAllText(Plugin.CHECKSUM_PATH));
         }
         catch (FileNotFoundException) { }
+
+        File.WriteAllText(
+            Plugin.CHECKSUM_PATH,
+            checksum
+        );
+        if (lastChecksum != checksum)
+        {
+            shouldResetSettings = true;
+        }
+
+        Version incompatibilityWarningLastVersion = new(PlayerPrefs.GetString(
+            Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
+            Plugin.POLYTOPIA_VERSION.CutRevision().ToString()
+        ));
         if (VersionManager.SemanticVersion.Cast().CutRevision() > incompatibilityWarningLastVersion)
         {
-            File.WriteAllText(
-                Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_PATH,
+            PlayerPrefs.SetString(
+                Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
                 VersionManager.SemanticVersion.Cast().CutRevision().ToString()
             );
+            PlayerPrefs.Save();
             PopupManager.GetBasicPopup(new(
                 Localization.Get("polymod.version.mismatch"),
                 Localization.Get("polymod.version.mismatch.description"),
@@ -139,8 +137,27 @@ internal static class Compatibility
     {
         File.WriteAllLinesAsync(
             Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"),
-            new string[] { looseSignature, signature }
+            new string[] { checksum }
         );
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(TribeSelectorScreen), nameof(TribeSelectorScreen.Show))]
+    private static bool TribeSelectorScreen_Show(bool instant = false)
+    {
+        if (shouldResetSettings)
+        {
+            RestorePreliminaryGameSettings();
+            shouldResetSettings = false;
+        }
+        return true;
+    }
+
+    internal static void RestorePreliminaryGameSettings()
+    {
+        GameManager.PreliminaryGameSettings.disabledTribes.Clear();
+        GameManager.PreliminaryGameSettings.selectedSkins.Clear();
+        GameManager.PreliminaryGameSettings.SaveToDisk();
     }
 
     internal static void Init()

@@ -44,8 +44,8 @@
 		"German (Germany)": "{0} Willkommen! {1}\nDiese Mods sind gerade eben geladen:"
 	},
 	"polymod_hub_mod": {
-		"English": "Name: {0}\nStatus: {1}\nAuthors: {2}\nVersion: {3}",
-		"Russian": "Имя: {0}\nСтатус: {1}\nАвторы: {2}\nВерсия: {3}",
+		"English": "Name: {0}\nStatus: {1}\nAuthors: {2}\nVersion: {3}\nDescription: {4}",
+		"Russian": "Имя: {0}\nСтатус: {1}\nАвторы: {2}\nВерсия: {3}\nОписание: {4}",
 		"Turkish": "İsim: {0}\nDurum: {1}\nYaratıcılar: {2}\nSürüm: {3}",
 		"Spanish (Mexico)": "Titulo: {0}\nEstado: {1}\nPublicador: {2}\nVersion: {3}",
 		"French (France)": "Titre: {0}\nEtat: {1}\nAuteurs: {2}\nVersion: {3}",
@@ -160,5 +160,53 @@
 		"Portuguese (Brazil)": "Essa versão do PolyMod não foi desenvolvida para a versão atual do aplicativo e pode não funcionar corretamente!",
 		"Elyrion": "πȱ∫ỹmȱδ ƒƒƒƒƒƒƒ ŋȱŧ ȱrrȱ #₺rr∑ŋŧ ƒƒƒƒƒƒƒ ỹ maỹ ŋȱŧ ~ȱr§ #ȱrr∑#ŧ∫ỹ!",
 		"German (Germany)": "Diese Version von PolyMod ist nicht für die aktuelle Version der Anwendung ausgelegt und könnte nicht funktionieren!"
+	},
+	"polymod_debug": {
+		"English": "Debug",
+		"Russian": "Дебаг"
+	},
+	"polymod_autoupdate": {
+		"English": "Auto-update",
+		"Russian": "Автообновление"
+	},
+	"polymod_autoupdate_alpha": {
+		"English": "Include alphas",
+		"Russian": "Include alphas"
+	},
+	"polymod_autoupdate_description": {
+		"English": "New update available!",
+		"Russian": "Доступно новое обновление!"
+	},
+	"polymod_autoupdate_update": {
+		"English": "Update",
+		"Russian": "Обновить"
+	},
+	"polymod_hub_config": {
+		"English": "CONFIG",
+		"Russian": "КОНФИГ"
+	},
+	"polymod_hub_config_enable": {
+		"English": "ENABLE {0}",
+		"Russian": "ВКЛЮЧИТЬ {0}"
+	},
+	"polymod_hub_config_disable": {
+		"English": "DISABLE {0}",
+		"Russian": "ВЫЛЮЧИТЬ {0}"
+	},
+	"polymod_config_setto": {
+		"English": "{0} is set to {1}!",
+		"Russian": "{0} задан на {1}!"
+	},
+	"polymod_hub_spriteinfo_update": {
+		"English": "UPDATE SPRITES",
+		"Russian": "ОБНОВИТЬ СПРАЙТЫ"
+	},
+	"polymod_spriteinfo_updated": {
+		"English": "Sprite info for mod {0} updated!",
+		"Russian": "Данные спрайтов обновлены для мода {0}!"
+	},
+	"polymod_spriteinfo_notupdated": {
+		"English": "No sprite infos were found!",
+		"Russian": "Данные спрайтов не найдены!"
 	}
 }

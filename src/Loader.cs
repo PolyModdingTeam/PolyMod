@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using PolyMod.Json;
 using PolyMod.Managers;
 using Polytopia.Data;
+using PolytopiaBackendBase.Game;
 using System.Data;
 using System.Diagnostics;
 using System.Globalization;
@@ -16,6 +17,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace PolyMod;
+
 public static class Loader
 {
 	internal static Dictionary<string, Type> typeMappings = new()
@@ -30,8 +32,114 @@ public static class Loader
 		{ "tribeAbility", typeof(TribeAbility.Type) },
 		{ "unitAbility", typeof(UnitAbility.Type) },
 		{ "improvementAbility", typeof(ImprovementAbility.Type) },
-		{ "playerAbility", typeof(PlayerAbility.Type) }
+		{ "playerAbility", typeof(PlayerAbility.Type) },
+		{ "weaponData", typeof(UnitData.WeaponEnum) }
 	};
+	internal static List<GameModeButtonsInformation> gamemodes = new();
+	private static readonly Dictionary<Type, Action<JObject, bool>> typeHandlers = new()
+	{
+		[typeof(TribeData.Type)] = new((token, duringEnumCacheCreation) =>
+		{
+			if (duringEnumCacheCreation)
+			{
+				Registry.customTribes.Add((TribeData.Type)Registry.autoidx);
+				token["style"] = Registry.climateAutoidx;
+				token["climate"] = Registry.climateAutoidx;
+				Registry.climateAutoidx++;
+			}
+			else
+			{
+				if (token["preview"] != null)
+				{
+					Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
+					Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
+				}
+			}
+		}),
+
+		[typeof(UnitData.Type)] = new((token, duringEnumCacheCreation) =>
+		{
+			if (duringEnumCacheCreation)
+			{
+				if (token["prefab"] != null)
+				{
+					Registry.prefabNames.Add((int)(UnitData.Type)Registry.autoidx, CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString()));
+				}
+			}
+			else
+			{
+				if (token["embarksTo"] != null)
+				{
+					string unitId = Util.GetJTokenName(token);
+					string embarkUnitId = token["embarksTo"].ToString();
+					Main.embarkNames[unitId] = embarkUnitId;
+				}
+				if (token["weapon"] != null)
+				{
+					string weaponString = token["weapon"].ToString();
+					if (EnumCache<UnitData.WeaponEnum>.TryGetType(weaponString, out UnitData.WeaponEnum type))
+					{
+						token["weapon"] = (int)type;
+					}
+				}
+			}
+		}),
+
+		[typeof(ImprovementData.Type)] = new((token, duringEnumCacheCreation) =>
+		{
+			if (duringEnumCacheCreation)
+			{
+				ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
+				if (token["prefab"] != null)
+				{
+					string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
+					if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
+						improvementPrefabType = parsedType;
+				}
+				PrefabManager.improvements.TryAdd((ImprovementData.Type)Registry.autoidx, PrefabManager.improvements[improvementPrefabType]);
+			}
+			else
+			{
+				if (token["attractsResource"] != null)
+				{
+					string improvementId = Util.GetJTokenName(token);
+					string attractsId = token["attractsResource"].ToString();
+					Main.attractsResourceNames[improvementId] = attractsId;
+				}
+				if (token["attractsToTerrain"] != null)
+				{
+					string improvementId = Util.GetJTokenName(token);
+					string attractsId = token["attractsToTerrain"].ToString();
+					Main.attractsTerrainNames[improvementId] = attractsId;
+				}
+			}
+		}),
+
+		[typeof(ResourceData.Type)] = new((token, duringEnumCacheCreation) =>
+		{
+			if (duringEnumCacheCreation)
+			{
+				ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
+				if (token["prefab"] != null)
+				{
+					string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
+					if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
+						resourcePrefabType = parsedType;
+				}
+				PrefabManager.resources.TryAdd((ResourceData.Type)Registry.autoidx, PrefabManager.resources[resourcePrefabType]);
+			}
+		})
+	};
+
+	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
+
+	public static void AddGameModeButton(string id, UIButtonBase.ButtonAction action, Sprite? sprite)
+	{
+		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
+		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
+		gamemodes.Add(new GameModeButtonsInformation(Registry.gameModesAutoidx, action, null, sprite));
+		Registry.gameModesAutoidx++;
+	}
 
 	public static void AddPatchDataType(string typeId, Type type)
 	{
@@ -88,30 +196,42 @@ public static class Loader
 				}
 			}
 
-			if (manifest != null
-				&& manifest.id != null
-				&& Regex.IsMatch(manifest.id, @"^(?!polytopia$)[a-z_]+$")
-				&& manifest.version != null
-				&& manifest.authors != null
-				&& manifest.authors.Length != 0
-			)
+			if (manifest == null)
 			{
-				if (mods.ContainsKey(manifest.id))
-				{
-					Plugin.logger.LogError($"Mod {manifest.id} already exists");
-					continue;
-				}
-				mods.Add(manifest.id, new(
-					manifest,
-					Mod.Status.Success,
-					files
-				));
-				Plugin.logger.LogInfo($"Registered mod {manifest.id}");
+				Plugin.logger.LogError($"Mod manifest not found in {modContainer}");
+				continue;
 			}
-			else
+			if (manifest.id == null)
 			{
-				Plugin.logger.LogError("An invalid mod manifest was found or not found at all");
+				Plugin.logger.LogError($"Mod id not found in {modContainer}");
+				continue;
 			}
+			if (!Regex.IsMatch(manifest.id, @"^(?!polytopia$)[a-z_]+$"))
+			{
+				Plugin.logger.LogError($"Mod id {manifest.id} is invalid in {modContainer}");
+				continue;
+			}
+			if (manifest.version == null)
+			{
+				Plugin.logger.LogError($"Mod version not found in {modContainer}");
+				continue;
+			}
+			if (manifest.authors == null || manifest.authors.Length == 0)
+			{
+				Plugin.logger.LogError($"Mod authors not found in {modContainer}");
+				continue;
+			}
+			if (mods.ContainsKey(manifest.id))
+			{
+				Plugin.logger.LogError($"Mod {manifest.id} already exists");
+				continue;
+			}
+			mods.Add(manifest.id, new(
+				manifest,
+				Mod.Status.Success,
+				files
+			));
+			Plugin.logger.LogInfo($"Registered mod {manifest.id}");
 		}
 
 		foreach (var (id, mod) in mods)
@@ -250,7 +370,7 @@ public static class Loader
 		{
 			Loc.BuildAndLoadLocalization(JsonSerializer
 				.Deserialize<Dictionary<string, Dictionary<string, string>>>(file.bytes)!);
-			Plugin.logger.LogInfo($"Registried localization from {mod.id} mod");
+			Plugin.logger.LogInfo($"Registered localization from {mod.id} mod");
 		}
 		catch (Exception e)
 		{
@@ -280,24 +400,48 @@ public static class Loader
 		Registry.sprites.Add(name, sprite);
 	}
 
-	public static void LoadSpriteInfoFile(Mod mod, Mod.File file)
+	public static void UpdateSprite(string name)
+	{
+		if (Registry.spriteInfos.ContainsKey(name) && Registry.sprites.ContainsKey(name))
+		{
+			Visual.SpriteInfo spriteData = Registry.spriteInfos[name];
+			Sprite sprite = Visual.BuildSpriteWithTexture(
+				Registry.sprites[name].texture,
+				spriteData.pivot,
+				spriteData.pixelsPerUnit
+			);
+			GameManager.GetSpriteAtlasManager().cachedSprites["Heads"][name] = sprite;
+			Registry.sprites[name] = sprite;
+		}
+	}
+
+	public static Dictionary<string, Visual.SpriteInfo>? LoadSpriteInfoFile(Mod mod, Mod.File file)
 	{
 		try
 		{
-			Registry.spriteInfos = Registry.spriteInfos
-				.Concat(JsonSerializer.Deserialize<Dictionary<string, Visual.SpriteInfo>>(
-					file.bytes,
-					new JsonSerializerOptions()
-					{
-						Converters = { new Vector2Json() },
-					}
-				)!)
-				.ToDictionary(e => e.Key, e => e.Value);
-			Plugin.logger.LogInfo($"Registried sprite data from {mod.id} mod");
+			var deserialized = JsonSerializer.Deserialize<Dictionary<string, Visual.SpriteInfo>>(
+				file.bytes,
+				new JsonSerializerOptions()
+				{
+					Converters = { new Vector2Json() },
+				}
+			);
+
+			if (deserialized != null)
+			{
+				foreach (var kvp in deserialized)
+				{
+					Registry.spriteInfos[kvp.Key] = kvp.Value;
+				}
+			}
+
+			Plugin.logger.LogInfo($"Registered sprite data from {mod.id} mod");
+			return deserialized;
 		}
 		catch (Exception e)
 		{
 			Plugin.logger.LogError($"Error on loading sprite data from {mod.id} mod: {e.Message}");
+			return null;
 		}
 	}
 
@@ -310,6 +454,119 @@ public static class Loader
 		// TODO: issue #71
 	}
 
+	public static void LoadPrefabInfoFile(Mod mod, Mod.File file)
+	{
+		try
+		{
+			var prefab = JsonSerializer.Deserialize<Visual.PrefabInfo>(file.bytes, new JsonSerializerOptions
+			{
+				Converters = { new Vector2Json() },
+				PropertyNameCaseInsensitive = true,
+			});
+			if (prefab == null || prefab.type != Visual.PrefabType.Unit)
+				return;
+
+			var baseUnit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeData.Type.Imperius, SkinType.Default);
+			if (baseUnit == null)
+				return;
+
+			var unitInstance = GameObject.Instantiate(baseUnit);
+			if (unitInstance == null)
+				return;
+
+			var spriteContainer = unitInstance.transform.GetChild(0);
+			var material = ClearExistingPartsAndExtractMaterial(spriteContainer);
+
+			var visualParts = ApplyVisualParts(prefab.visualParts, spriteContainer, material);
+
+			var svr = unitInstance.GetComponent<SkinVisualsReference>();
+			svr.visualParts = visualParts.ToArray();
+
+			GameObject.DontDestroyOnLoad(unitInstance.gameObject);
+			Registry.unitPrefabs.Add(prefab, unitInstance.GetComponent<Unit>());
+
+			Plugin.logger.LogInfo($"Registered prefab info from {mod.id} mod");
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading prefab info from {mod.id} mod: {e.Message}");
+		}
+	}
+
+	private static Material? ClearExistingPartsAndExtractMaterial(Transform spriteContainer)
+	{
+		Material? material = null;
+		for (int i = 0; i < spriteContainer.childCount; i++)
+		{
+			var child = spriteContainer.GetChild(i);
+			if (child.gameObject.name == "Head")
+			{
+				var renderer = child.GetComponent<SpriteRenderer>();
+				if (renderer != null)
+					material = renderer.material;
+			}
+			GameObject.Destroy(child.gameObject);
+		}
+		return material;
+	}
+
+	private static List<SkinVisualsReference.VisualPart> ApplyVisualParts(
+		List<Visual.VisualPartInfo> partInfos,
+		Transform spriteContainer,
+		Material? material)
+	{
+		List<SkinVisualsReference.VisualPart> parts = new();
+
+		foreach (var info in partInfos)
+		{
+			parts.Add(CreateVisualPart(info, spriteContainer, material));
+		}
+
+		return parts;
+	}
+
+	private static SkinVisualsReference.VisualPart CreateVisualPart(
+		Visual.VisualPartInfo info,
+		Transform parent,
+		Material? material)
+	{
+		var visualPartObj = new GameObject(info.gameObjectName);
+		visualPartObj.transform.SetParent(parent);
+		visualPartObj.transform.position = info.coordinates;
+		visualPartObj.transform.localScale = info.scale;
+		visualPartObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
+
+		var outlineObj = new GameObject("Outline");
+		outlineObj.transform.SetParent(visualPartObj.transform);
+		outlineObj.transform.position = info.coordinates;
+		outlineObj.transform.localScale = info.scale;
+		outlineObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
+
+		var visualPart = new SkinVisualsReference.VisualPart
+		{
+			DefaultSpriteName = info.baseName,
+			visualPart = visualPartObj,
+			outline = outlineObj,
+			tintable = info.tintable
+		};
+
+		var renderer = visualPartObj.AddComponent<SpriteRenderer>();
+		renderer.material = material;
+		renderer.sortingLayerName = "Units";
+		renderer.sortingOrder = info.tintable ? 0 : 1;
+
+		visualPart.renderer = new SkinVisualsReference.RendererUnion { spriteRenderer = renderer };
+
+		var outlineRenderer = outlineObj.AddComponent<SpriteRenderer>();
+		outlineRenderer.material = material;
+		outlineRenderer.sortingLayerName = "Units";
+		outlineRenderer.sortingOrder = -1;
+
+		visualPart.outlineRenderer = new SkinVisualsReference.RendererUnion { spriteRenderer = outlineRenderer };
+
+		return visualPart;
+	}
+
 	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
 	{
 		try
@@ -320,66 +577,22 @@ public static class Loader
 				JObject? token = jtoken.TryCast<JObject>();
 				if (token != null)
 				{
-					if (token["idx"] != null && (int)token["idx"] == -1)
+					string dataType = Util.GetJTokenName(token, 2);
+					if (typeMappings.TryGetValue(dataType, out Type? targetType))
 					{
-						string id = Util.GetJTokenName(token);
-						string dataType = Util.GetJTokenName(token, 2);
-						token["idx"] = Registry.autoidx;
-						if (typeMappings.TryGetValue(dataType, out Type? targetType))
+						if (token["idx"] != null && (int)token["idx"] == -1)
 						{
+							string id = Util.GetJTokenName(token);
+							token["idx"] = Registry.autoidx;
 							MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
 							if (methodInfo != null)
 							{
 								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
 								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
-								if (targetType == typeof(TribeData.Type))
+
+								if (typeHandlers.TryGetValue(targetType, out var handler))
 								{
-									Registry.customTribes.Add((TribeData.Type)Registry.autoidx);
-									token["style"] = Registry.climateAutoidx;
-									token["climate"] = Registry.climateAutoidx;
-									Registry.climateAutoidx++;
-								}
-								else if (targetType == typeof(UnitData.Type))
-								{
-									UnitData.Type unitPrefabType = UnitData.Type.Scout;
-									if (token["prefab"] != null)
-									{
-										TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-										string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-										if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
-										{
-											unitPrefabType = parsedType;
-										}
-									}
-									PrefabManager.units.TryAdd((int)(UnitData.Type)Registry.autoidx, PrefabManager.units[(int)unitPrefabType]);
-								}
-								else if (targetType == typeof(ImprovementData.Type))
-								{
-									ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
-									if (token["prefab"] != null)
-									{
-										TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-										string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-										if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
-										{
-											improvementPrefabType = parsedType;
-										}
-									}
-									PrefabManager.improvements.TryAdd((ImprovementData.Type)Registry.autoidx, PrefabManager.improvements[improvementPrefabType]);
-								}
-								else if (targetType == typeof(ResourceData.Type))
-								{
-									ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
-									if (token["prefab"] != null)
-									{
-										TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-										string prefabId = textInfo.ToTitleCase(token["prefab"].ToString());
-										if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
-										{
-											resourcePrefabType = parsedType;
-										}
-									}
-									PrefabManager.resources.TryAdd((ResourceData.Type)Registry.autoidx, PrefabManager.resources[resourcePrefabType]);
+									handler(token, true);
 								}
 								Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + Registry.autoidx);
 								Registry.autoidx++;
@@ -388,24 +601,37 @@ public static class Loader
 					}
 				}
 			}
-			foreach (JToken jtoken in patch.SelectTokens("$.tribeData.*").ToArray())
+			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
 			{
-				JObject token = jtoken.Cast<JObject>();
-
-				if (token["preview"] != null)
+				JObject? token = jtoken.TryCast<JObject>();
+				if (token != null)
 				{
-					Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
-					Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
+					string dataType = Util.GetJTokenName(token, 2);
+					if (typeMappings.TryGetValue(dataType, out Type? targetType))
+					{
+						if (typeHandlers.TryGetValue(targetType, out var handler))
+						{
+							handler(token, false);
+						}
+					}
 				}
 			}
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
-			Plugin.logger.LogInfo($"Registried patch from {mod.id} mod");
+			Plugin.logger.LogInfo($"Registered patch from {mod.id} mod");
 		}
 		catch (Exception e)
 		{
 			Plugin.logger.LogError($"Error on loading patch from {mod.id} mod: {e.Message}");
 			mod.status = Mod.Status.Error;
 		}
+	}
+
+	public static void LoadAssetBundle(Mod mod, Mod.File file)
+	{
+		Registry.assetBundles.Add(
+			Path.GetFileNameWithoutExtension(file.name),
+			AssetBundle.LoadFromMemory(file.bytes)
+		);
 	}
 
 	public static void HandleSkins(JObject gld, JObject patch)
