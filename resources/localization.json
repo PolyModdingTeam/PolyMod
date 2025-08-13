@@ -107,8 +107,8 @@
 		"German (Germany)": "Benötigte Dependenzen nicht aufgefunden"
 	},
 	"polymod_signature_incompatible": {
-		"English": "Current mods are not compatible with original mods!",
-		"Russian": "Текущие моды несовместимы с оригинальными модами!",
+		"English": "Current mods are not compatible with mods of this game!",
+		"Russian": "Текущие моды несовместимы с модами этого матча!",
 		"Turkish": "Mevcut modlar orijinal modlarla uyumsuz!",
 		"Spanish (Mexico)": "Falta de compatibilidad entre los mods concurrientes!",
 		"French (France)": "Les mods actuels ne sont pas compatibles avec les mods originaux!",
@@ -191,7 +191,7 @@
 	},
 	"polymod_hub_config_disable": {
 		"English": "DISABLE {0}",
-		"Russian": "ВЫЛЮЧИТЬ {0}"
+		"Russian": "ВЫКЛЮЧИТЬ {0}"
 	},
 	"polymod_config_setto": {
 		"English": "{0} is set to {1}!",

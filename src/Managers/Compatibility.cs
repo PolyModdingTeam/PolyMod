@@ -24,15 +24,30 @@ internal static class Compatibility
             return true;
         }
 
-        string signature = string.Empty;
+        string stateChecksum = string.Empty;
         try
         {
-            signature = File.ReadAllText(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+            Plugin.logger.LogInfo($"Getting checksum for state {gameId}");
+            stateChecksum = File.ReadAllText(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+            Plugin.logger.LogInfo($"Checksum found.");
         }
-        catch { }
-        if (signature == string.Empty) return true;
-        if (Plugin.config.debug) return true;
-        if (checksum != signature)
+        catch
+        {
+            Plugin.logger.LogInfo($"Failed to get checksum.");
+        }
+        if (stateChecksum == string.Empty)
+        {
+            Plugin.logger.LogInfo($"State checksum is empty, ignoring.");
+            return true;
+        }
+        bool doChecksumsMatch = stateChecksum == checksum;
+        Plugin.logger.LogInfo($"State checksum: '{stateChecksum}', global checksum: '{checksum}', comparison result : {doChecksumsMatch}");
+        if (Plugin.config.debug)
+        {
+            Plugin.logger.LogInfo($"Debug detected, ignoring.");
+            return true;
+        }
+        if (!doChecksumsMatch)
         {
             PopupManager.GetBasicPopup(new(
                 Localization.Get("polymod.signature.mismatch"),
@@ -135,9 +150,9 @@ internal static class Compatibility
     [HarmonyPatch(typeof(ClientBase), nameof(ClientBase.CreateSession), typeof(GameSettings), typeof(Il2CppSystem.Guid))]
     private static void ClientBase_CreateSession(GameSettings settings, Il2CppSystem.Guid gameId)
     {
-        File.WriteAllLinesAsync(
+        File.WriteAllTextAsync(
             Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"),
-            new string[] { checksum }
+            checksum
         );
     }
 
