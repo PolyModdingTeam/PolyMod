@@ -13,7 +13,7 @@ public abstract class PolyScriptModBase
     {
     }
 }
-public abstract class PolyMod<TConfig, TExposedConfig> : PolyScriptModBase where TConfig : class where TExposedConfig : class
+public abstract class PolyScriptMod<TConfig, TExposedConfig> : PolyScriptModBase where TConfig : class where TExposedConfig : class
 {
     internal override void Initialize(string name, ManualLogSource logger)
     {
@@ -29,6 +29,6 @@ public abstract class PolyMod<TConfig, TExposedConfig> : PolyScriptModBase where
     protected ManualLogSource Logger { get; private set; } = null!;
 }
 
-public abstract class PolyMod : PolyMod<JObject, JObject>
+public abstract class PolyScriptMod : PolyScriptMod<JObject, JObject>
 {
 }
