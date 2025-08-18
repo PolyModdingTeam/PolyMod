@@ -195,7 +195,7 @@ public static class Loader
 					files.Add(new(entry.FullName, entry.ReadBytes()));
 				}
 			}
-
+			#region ValidateManifest()
 			if (manifest == null)
 			{
 				Plugin.logger.LogError($"Mod manifest not found in {modContainer}");
@@ -226,6 +226,7 @@ public static class Loader
 				Plugin.logger.LogError($"Mod {manifest.id} already exists");
 				continue;
 			}
+			#endregion
 			mods.Add(manifest.id, new(
 				manifest,
 				Mod.Status.Success,
@@ -234,6 +235,11 @@ public static class Loader
 			Plugin.logger.LogInfo($"Registered mod {manifest.id}");
 		}
 
+		CheckDependencies(mods);
+	}
+
+	private static void CheckDependencies(Dictionary<string, Mod> mods)
+	{
 		foreach (var (id, mod) in mods)
 		{
 			foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
@@ -335,6 +341,15 @@ public static class Loader
 		try
 		{
 			Assembly assembly = Assembly.Load(file.bytes);
+			if (assembly
+				    .GetTypes()
+				    .FirstOrDefault(t => t.IsSubclassOf(typeof(PolyScriptModBase)))
+			    is { } modType)
+			{
+				var modInstance = (PolyScriptModBase) Activator.CreateInstance(modType)!;
+				modInstance.Initialize(mod.id);
+				modInstance.Load();
+			}
 			foreach (Type type in assembly.GetTypes())
 			{
 				MethodInfo? loadWithLogger = type.GetMethod("Load", new Type[] { typeof(ManualLogSource) });
