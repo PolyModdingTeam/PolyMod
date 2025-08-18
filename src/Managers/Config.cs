@@ -43,7 +43,7 @@ public class Config<T> where T : class
                     return;
                 }
                 var jsonText = File.ReadAllText(ExposedConfigPath);
-                _currentConfig = JsonNode.Parse(jsonText)![_modName]!.Deserialize<T>();
+                _currentConfig = JsonNode.Parse(jsonText)![_modName]?.Deserialize<T>();
                 break;
             }
             default:
