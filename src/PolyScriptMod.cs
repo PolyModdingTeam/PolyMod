@@ -3,9 +3,18 @@ using PolyMod.Managers;
 
 namespace PolyMod;
 
-public abstract class PolyScriptMod<TConfig, TExposedConfig> where TConfig : class where TExposedConfig : class
+public abstract class PolyScriptModBase
 {
-    internal void Initialize(string name)
+    internal abstract void Initialize(string name);
+    public abstract void Load();
+    public abstract void UnLoad();
+    internal PolyScriptModBase()
+    {
+    }
+}
+public abstract class PolyScriptMod<TConfig, TExposedConfig> : PolyScriptModBase where TConfig : class where TExposedConfig : class
+{
+    internal override void Initialize(string name)
     {
         ModName = name;
         Config = new Config<TConfig>(name, Config<TConfig>.ConfigTypes.PerMod);
@@ -15,7 +24,6 @@ public abstract class PolyScriptMod<TConfig, TExposedConfig> where TConfig : cla
     protected Config<TConfig> Config { get; private set; } = null!;
     protected Config<TExposedConfig> ExposedConfig { get; private set; } = null!;
     protected virtual JObject DefaultConfig => new JObject();
-    public abstract void OnLoad();
 }
 
 public abstract class PolyScriptMod : PolyScriptMod<JObject, JObject>
