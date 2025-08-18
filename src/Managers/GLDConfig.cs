@@ -37,6 +37,7 @@ public class GldConfigTemplate
 
     public string Render()
     {
+        if (!_templateText.Contains("{{")) return _templateText;
         var template = Template.Parse(_templateText);
         var context = new TemplateContext();
         var scriptObject = new ScriptObject();
