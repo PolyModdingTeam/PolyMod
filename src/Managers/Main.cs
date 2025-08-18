@@ -16,7 +16,7 @@ public static class Main
 	internal const int MAX_TECH_TIER = 100;
 	internal static readonly Stopwatch stopwatch = new();
 	internal static bool fullyInitialized;
-	internal static bool dependencyCycle;
+	internal static bool dependencyCycle = false; // that warning wasnt really my fault
 	internal static Dictionary<string, string> embarkNames = new();
 	internal static Dictionary<UnitData.Type, UnitData.Type> embarkOverrides = new();
 	internal static bool currentlyEmbarking = false;
