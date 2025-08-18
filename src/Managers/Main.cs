@@ -330,34 +330,8 @@ public static class Main
 			Array.Empty<Mod.Dependency>()
 		);
 		Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
+		Loader.RegisterMods(Registry.mods);
 		Loader.LoadMods(Registry.mods);
-		dependencyCycle = !Loader.SortMods(Registry.mods);
-		if (dependencyCycle) return;
-
-		StringBuilder checksumString = new();
-		foreach (var (id, mod) in Registry.mods)
-		{
-			if (mod.status != Mod.Status.Success) continue;
-			foreach (var file in mod.files)
-			{
-				checksumString.Append(JsonSerializer.Serialize(file));
-				if (Path.GetExtension(file.name) == ".dll")
-				{
-					Loader.LoadAssemblyFile(mod, file);
-				}
-				if (Path.GetFileName(file.name) == "sprites.json")
-				{
-					Loader.LoadSpriteInfoFile(mod, file);
-				}
-			}
-			if (!mod.client && id != "polytopia")
-			{
-				checksumString.Append(id);
-				checksumString.Append(mod.version.ToString());
-			}
-		}
-		Compatibility.HashSignatures(checksumString);
-
 		stopwatch.Stop();
 	}
 

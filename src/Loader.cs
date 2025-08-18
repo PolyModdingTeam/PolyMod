@@ -147,7 +147,7 @@ public static class Loader
 			typeMappings.Add(typeId, type);
 	}
 
-	internal static void LoadMods(Dictionary<string, Mod> mods)
+	internal static void RegisterMods(Dictionary<string, Mod> mods)
 	{
 		Directory.CreateDirectory(Plugin.MODS_PATH);
 		string[] modContainers = Directory.GetDirectories(Plugin.MODS_PATH)
@@ -238,6 +238,36 @@ public static class Loader
 		CheckDependencies(mods);
 	}
 
+	internal static void LoadMods(Dictionary<string, Mod> mods)
+	{
+		var dependencyCycle = !SortMods(Registry.mods);
+		if (dependencyCycle) return;
+
+		StringBuilder checksumString = new();
+		foreach (var (id, mod) in Registry.mods)
+		{
+			if (mod.status != Mod.Status.Success) continue;
+			foreach (var file in mod.files)
+			{
+				checksumString.Append(JsonSerializer.Serialize(file));
+				if (Path.GetExtension(file.name) == ".dll")
+				{
+					LoadAssemblyFile(mod, file);
+				}
+				if (Path.GetFileName(file.name) == "sprites.json")
+				{
+					LoadSpriteInfoFile(mod, file);
+				}
+			}
+			if (!mod.client && id != "polytopia")
+			{
+				checksumString.Append(id);
+				checksumString.Append(mod.version.ToString());
+			}
+		}
+		Compatibility.HashSignatures(checksumString);
+
+	}
 	private static void CheckDependencies(Dictionary<string, Mod> mods)
 	{
 		foreach (var (id, mod) in mods)
@@ -277,7 +307,7 @@ public static class Loader
 		}
 	}
 
-	internal static bool SortMods(Dictionary<string, Mod> mods)
+	private static bool SortMods(Dictionary<string, Mod> mods)
 	{
 		Stopwatch s = new();
 		Dictionary<string, List<string>> graph = new();

@@ -43,7 +43,7 @@ public class Config<T> where T : class
                     return;
                 }
                 var jsonText = File.ReadAllText(ExposedConfigPath);
-                _currentConfig = JObject.Parse(jsonText)[_modName].ToObject<T>();
+                _currentConfig = JObject.Parse(jsonText)[_modName]!.ToObject<T>();
                 break;
             }
             default:
@@ -104,7 +104,7 @@ public class Config<T> where T : class
             case ConfigTypes.Exposed:
                 var modsConfigText = File.ReadAllText(ExposedConfigPath);
                 var modsConfigJson = JObject.Parse(modsConfigText);
-                modsConfigJson[_modName] = JToken.FromObject(_currentConfig);
+                modsConfigJson[_modName] = JToken.FromObject(_currentConfig!);
                 File.WriteAllText(ExposedConfigPath, modsConfigJson.ToString(Formatting.Indented));
                 break;
             default:
