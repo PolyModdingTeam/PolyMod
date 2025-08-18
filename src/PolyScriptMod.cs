@@ -22,7 +22,8 @@ public abstract class PolyScriptMod<TConfig, TExposedConfig> : PolyScriptModBase
         ExposedConfig = new Config<TExposedConfig>(name, Config<TExposedConfig>.ConfigTypes.Exposed);
         Logger = logger;
     }
-    public string ModName { get; private set; }
+
+    public string ModName { get; private set; } = null!;
     protected Config<TConfig> Config { get; private set; } = null!;
     protected Config<TExposedConfig> ExposedConfig { get; private set; } = null!;
     protected ManualLogSource Logger { get; private set; } = null!;
