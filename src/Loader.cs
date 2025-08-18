@@ -230,7 +230,7 @@ public static class Loader
 	/// Loads all mods from the mods directory.
 	/// </summary>
 	/// <param name="mods">A dictionary to populate with the loaded mods.</param>
-	internal static void LoadMods(Dictionary<string, Mod> mods)
+	internal static void RegisterMods(Dictionary<string, Mod> mods)
 	{
 		Directory.CreateDirectory(Plugin.MODS_PATH);
 		string[] modContainers = Directory.GetDirectories(Plugin.MODS_PATH)
@@ -322,6 +322,36 @@ public static class Loader
 		CheckDependencies(mods);
 	}
 
+	internal static void LoadMods(Dictionary<string, Mod> mods)
+	{
+		var dependencyCycle = !SortMods(Registry.mods);
+		if (dependencyCycle) return;
+
+		StringBuilder checksumString = new();
+		foreach (var (id, mod) in Registry.mods)
+		{
+			if (mod.status != Mod.Status.Success) continue;
+			foreach (var file in mod.files)
+			{
+				checksumString.Append(JsonSerializer.Serialize(file));
+				if (Path.GetExtension(file.name) == ".dll")
+				{
+					LoadAssemblyFile(mod, file);
+				}
+				if (Path.GetFileName(file.name) == "sprites.json")
+				{
+					LoadSpriteInfoFile(mod, file);
+				}
+			}
+			if (!mod.client && id != "polytopia")
+			{
+				checksumString.Append(id);
+				checksumString.Append(mod.version.ToString());
+			}
+		}
+		Compatibility.HashSignatures(checksumString);
+
+	}
 	private static void CheckDependencies(Dictionary<string, Mod> mods)
 	{
 		foreach (var (id, mod) in mods)
@@ -366,7 +396,7 @@ public static class Loader
 	/// </summary>
 	/// <param name="mods">The dictionary of mods to sort.</param>
 	/// <returns>True if the mods could be sorted (no circular dependencies), false otherwise.</returns>
-	internal static bool SortMods(Dictionary<string, Mod> mods)
+	private static bool SortMods(Dictionary<string, Mod> mods)
 	{
 		Stopwatch s = new();
 		Dictionary<string, List<string>> graph = new();
