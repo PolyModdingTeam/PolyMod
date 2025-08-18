@@ -1,5 +1,5 @@
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace PolyMod.Managers;
 
@@ -33,7 +33,7 @@ public class Config<T> where T : class
                     return;
                 }
                 var jsonText = File.ReadAllText(_perModConfigPath);
-                _currentConfig = JsonConvert.DeserializeObject<T>(jsonText);
+                _currentConfig = JsonSerializer.Deserialize<T>(jsonText);
                 break;
             }
             case ConfigTypes.Exposed:
@@ -43,7 +43,7 @@ public class Config<T> where T : class
                     return;
                 }
                 var jsonText = File.ReadAllText(ExposedConfigPath);
-                _currentConfig = JObject.Parse(jsonText)[_modName]!.ToObject<T>();
+                _currentConfig = JsonNode.Parse(jsonText)![_modName]!.Deserialize<T>();
                 break;
             }
             default:
@@ -98,14 +98,14 @@ public class Config<T> where T : class
         switch (_configType)
         {
             case ConfigTypes.PerMod:
-                var json = JsonConvert.SerializeObject(_currentConfig, Formatting.Indented);
-                File.WriteAllText(_perModConfigPath, json);
+                var perModJson = JsonSerializer.Serialize(_currentConfig, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(_perModConfigPath, perModJson);
                 break;
             case ConfigTypes.Exposed:
                 var modsConfigText = File.ReadAllText(ExposedConfigPath);
-                var modsConfigJson = JObject.Parse(modsConfigText);
-                modsConfigJson[_modName] = JToken.FromObject(_currentConfig!);
-                File.WriteAllText(ExposedConfigPath, modsConfigJson.ToString(Formatting.Indented));
+                var modsConfigJson = JsonNode.Parse(modsConfigText)!.AsObject();
+                modsConfigJson[_modName] = JsonSerializer.SerializeToNode(_currentConfig!);
+                File.WriteAllText(ExposedConfigPath, modsConfigJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
