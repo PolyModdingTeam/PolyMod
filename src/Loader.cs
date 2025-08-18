@@ -474,6 +474,7 @@ public static class Loader
 				var modInstance = (PolyScriptModBase) Activator.CreateInstance(modType)!;
 				modInstance.Initialize(mod.id, BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.id}"));
 				modInstance.Load();
+				return;
 			}
 			foreach (Type type in assembly.GetTypes())
 			{
