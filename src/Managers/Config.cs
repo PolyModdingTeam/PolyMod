@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 namespace PolyMod.Managers;
 
 /// <summary>
-/// allows mods to save config.
+/// Allows mods to save config.
 /// </summary>
 public class Config<T> where T : class
 {
@@ -91,7 +91,7 @@ public class Config<T> where T : class
         return getter(_currentConfig ?? throw new InvalidOperationException("Must set default before reading config."));
     }
     /// <summary>
-    /// writes the config to disk
+    /// Writes the config to disk
     /// </summary>
     public void SaveChanges()
     {
