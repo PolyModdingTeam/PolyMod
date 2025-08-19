@@ -384,10 +384,16 @@ public static class Main
 				{
 					var patchText = new StreamReader(new MemoryStream(file.bytes)).ReadToEnd();
 					var template = new GldConfigTemplate(patchText, mod.id);
+					var text = template.Render();
+					if (text is null)
+					{
+						mod.status = Mod.Status.Error;
+						continue;
+					}
 					Loader.LoadGameLogicDataPatch(
 						mod,
 						json,
-						JObject.Parse(template.Render())
+						JObject.Parse(text)
 					);
 					continue;
 				}
