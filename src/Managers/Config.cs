@@ -8,32 +8,32 @@ namespace PolyMod.Managers;
 /// </summary>
 public class Config<T> where T : class
 {
-    private T? _currentConfig;
-    private readonly string _modName;
-    private readonly ConfigTypes _configType;
+    private T? currentConfig;
+    private readonly string modName;
+    private readonly ConfigTypes configType;
     private static readonly string ExposedConfigPath = Path.Combine(Plugin.BASE_PATH, "mods.json");
-    private readonly string _perModConfigPath;
-    private T? _defaultConfig;
+    private readonly string perModConfigPath;
+    private T? defaultConfig;
     public Config(string modName, ConfigTypes configType)
     {
-        _modName = modName;
-        _configType = configType;
-        _perModConfigPath = Path.Combine(Plugin.MODS_PATH, $"{modName}.json");
+        this.modName = modName;
+        this.configType = configType;
+        perModConfigPath = Path.Combine(Plugin.MODS_PATH, $"{modName}.json");
         Load();
     }
 
     internal void Load() // can be called internally if config changes; gui config not implemented yet
     {
-        switch (_configType)
+        switch (configType)
         {
             case ConfigTypes.PerMod:
             {
-                if (!File.Exists(_perModConfigPath))
+                if (!File.Exists(perModConfigPath))
                 {
                     return;
                 }
-                var jsonText = File.ReadAllText(_perModConfigPath);
-                _currentConfig = JsonSerializer.Deserialize<T>(jsonText);
+                var jsonText = File.ReadAllText(perModConfigPath);
+                currentConfig = JsonSerializer.Deserialize<T>(jsonText);
                 break;
             }
             case ConfigTypes.Exposed:
@@ -43,7 +43,7 @@ public class Config<T> where T : class
                     return;
                 }
                 var jsonText = File.ReadAllText(ExposedConfigPath);
-                _currentConfig = JsonNode.Parse(jsonText)![_modName]?.Deserialize<T>();
+                currentConfig = JsonNode.Parse(jsonText)![modName]?.Deserialize<T>();
                 break;
             }
             default:
@@ -55,9 +55,9 @@ public class Config<T> where T : class
     /// </summary>
     public void SetDefaultConfig(T defaultValue)
     {
-        _defaultConfig = defaultValue;
-        if (_currentConfig is not null) return;
-        Write(_defaultConfig);
+        defaultConfig = defaultValue;
+        if (currentConfig is not null) return;
+        Write(defaultConfig);
         SaveChanges();
     }
     
@@ -66,45 +66,45 @@ public class Config<T> where T : class
     /// </summary>
     public void Write(T config)
     {
-        _currentConfig = config;
+        currentConfig = config;
     }
     /// <summary>
     /// Gets the config. Should only be called after setting a default.
     /// </summary>
     public T Get()
     {
-        return _currentConfig ?? throw new InvalidOperationException("Must set default before reading config.");
+        return currentConfig ?? throw new InvalidOperationException("Must set default before reading config.");
     }
     /// <summary>
-    /// edits the config. Should only be called after setting a default.
+    /// Edits the config. Should only be called after setting a default.
     /// </summary>
     /// <remarks>Call SaveChanges after editing</remarks>
     public void Edit(Action<T> editor)
     {
-        editor(_currentConfig ?? throw new InvalidOperationException("Must set default before reading config."));
+        editor(currentConfig ?? throw new InvalidOperationException("Must set default before reading config."));
     }
     /// <summary>
     /// Gets part of the config. Should only be called after setting a default
     /// </summary>
     public TResult Get<TResult>(Func<T, TResult> getter)
     {
-        return getter(_currentConfig ?? throw new InvalidOperationException("Must set default before reading config."));
+        return getter(currentConfig ?? throw new InvalidOperationException("Must set default before reading config."));
     }
     /// <summary>
     /// writes the config to disk
     /// </summary>
     public void SaveChanges()
     {
-        switch (_configType)
+        switch (configType)
         {
             case ConfigTypes.PerMod:
-                var perModJson = JsonSerializer.Serialize(_currentConfig, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(_perModConfigPath, perModJson);
+                var perModJson = JsonSerializer.Serialize(currentConfig, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(perModConfigPath, perModJson);
                 break;
             case ConfigTypes.Exposed:
                 var modsConfigText = File.ReadAllText(ExposedConfigPath);
                 var modsConfigJson = JsonNode.Parse(modsConfigText)!.AsObject();
-                modsConfigJson[_modName] = JsonSerializer.SerializeToNode(_currentConfig!);
+                modsConfigJson[modName] = JsonSerializer.SerializeToNode(currentConfig!);
                 File.WriteAllText(ExposedConfigPath, modsConfigJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
                 break;
             default:

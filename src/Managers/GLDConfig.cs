@@ -9,14 +9,14 @@ public class GldConfigTemplate
 {
     private static readonly string ConfigPath = Path.Combine(Plugin.BASE_PATH, "mods.json");
     
-    private readonly string _templateText;
-    private JsonObject _currentConfig = new();
-    private string _modName;
+    private readonly string templateText;
+    private JsonObject currentConfig = new();
+    private string modName;
 
     public GldConfigTemplate(string templateText, string modName)
     {
-        _templateText = templateText;
-        _modName = modName;
+        this.templateText = templateText;
+        this.modName = modName;
         Load();
     }
     private void Load()
@@ -25,20 +25,20 @@ public class GldConfigTemplate
         {
             var json = File.ReadAllText(ConfigPath);
             if (JsonNode.Parse(json) is JsonObject modsConfig 
-                && modsConfig.TryGetPropertyValue(_modName, out var modConfigNode) 
+                && modsConfig.TryGetPropertyValue(modName, out var modConfigNode) 
                 && modConfigNode is JsonObject modConfig)
             {
-                _currentConfig = modConfig;
+                currentConfig = modConfig;
                 return;
             }
         }
-        _currentConfig = new JsonObject();
+        currentConfig = new JsonObject();
     }
 
     public string? Render()
     {
-        if (!_templateText.Contains("{{")) return _templateText;
-        var template = Template.Parse(_templateText);
+        if (!templateText.Contains("{{")) return templateText;
+        var template = Template.Parse(templateText);
         var context = new TemplateContext();
         var scriptObject = new ScriptObject();
         
@@ -46,13 +46,13 @@ public class GldConfigTemplate
         scriptObject.Import("config", 
             new Func<string, string, string>((key, defaultValue) =>
             {
-                if (_currentConfig.TryGetPropertyValue(key, out var token) && token != null)
+                if (currentConfig.TryGetPropertyValue(key, out var token) && token != null)
                 {
                     return token.ToString();
                 }
 
                 changedConfig = true;
-                _currentConfig[key] = defaultValue;
+                currentConfig[key] = defaultValue;
                 
                 return defaultValue;
             })
@@ -88,7 +88,7 @@ public class GldConfigTemplate
             modsConfigJson = new JsonObject();
         }
 
-        modsConfigJson[_modName] = _currentConfig;
+        modsConfigJson[modName] = currentConfig;
         File.WriteAllText(ConfigPath, modsConfigJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
     }
 }
