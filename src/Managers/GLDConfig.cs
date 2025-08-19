@@ -35,7 +35,7 @@ public class GldConfigTemplate
         _currentConfig = new JsonObject();
     }
 
-    public string Render()
+    public string? Render()
     {
         if (!_templateText.Contains("{{")) return _templateText;
         var template = Template.Parse(_templateText);
@@ -58,7 +58,16 @@ public class GldConfigTemplate
             })
         );
         context.PushGlobal(scriptObject);
-        var result = template.Render(context);
+        string? result;
+        try
+        {
+            result = template.Render(context);
+        }
+        catch (Exception e)
+        {
+            Plugin.logger.LogError("error during parse of gld patch template: " + e.ToString());
+            result = null;
+        }
         if (changedConfig)
         {
             SaveChanges();
