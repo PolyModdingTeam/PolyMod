@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -20,6 +20,10 @@
 
     <ItemGroup>
         <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.738" />
+        <PackageReference Include="Costura.Fody" Version="6.0.0">
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Scriban" Version="6.2.1" />
         <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)-738" />
         <EmbeddedResource Include="resources\*.*" />
     </ItemGroup>
