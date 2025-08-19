@@ -10,40 +10,93 @@ using System.Text.Json.Serialization;
 
 namespace PolyMod.Managers;
 
+/// <summary>
+/// Manages visual aspects of the game, including sprites, UI elements, and in-game object appearances.
+/// </summary>
 public static class Visual
 {
+	/// <summary>
+	/// Represents a single tile in a tribe's world preview.
+	/// </summary>
 	public class PreviewTile
 	{
+		/// <summary>The X-coordinate of the tile.</summary>
 		[JsonInclude]
 		public int? x = null;
+		/// <summary>The Y-coordinate of the tile.</summary>
 		[JsonInclude]
 		public int? y = null;
+		/// <summary>The type of terrain on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<Polytopia.Data.TerrainData.Type>))]
 		public Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.Ocean;
+		/// <summary>The type of resource on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<ResourceData.Type>))]
 		public ResourceData.Type resourceType = ResourceData.Type.None;
+		/// <summary>The type of unit on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<UnitData.Type>))]
 		public UnitData.Type unitType = UnitData.Type.None;
+		/// <summary>The type of improvement on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<ImprovementData.Type>))]
 		public ImprovementData.Type improvementType = ImprovementData.Type.None;
 	}
+
+	/// <summary>
+	/// Holds information for creating a custom sprite.
+	/// </summary>
+	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
+	/// <param name="pivot">The pivot point of the sprite.</param>
 	public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot);
+
+	/// <summary>
+	/// Holds information about a custom skin.
+	/// </summary>
+	/// <param name="idx">The index of the skin.</param>
+	/// <param name="id">The unique identifier for the skin.</param>
+	/// <param name="skinData">The data associated with the skin.</param>
 	public record SkinInfo(int idx, string id, SkinData? skinData);
+
+	/// <summary>
+	/// A dictionary mapping BasicPopup instance IDs to their custom widths.
+	/// </summary>
 	public static Dictionary<int, int> basicPopupWidths = new();
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
 	private static TribeData.Type attackerTribe = TribeData.Type.None;
+
+	/// <summary>
+	/// Defines the types of prefabs that can be customized.
+	/// </summary>
 	public enum PrefabType
 	{
+		/// <summary>A unit prefab.</summary>
 		Unit,
+		/// <summary>An improvement prefab.</summary>
 		Improvement,
+		/// <summary>A resource prefab.</summary>
 		Resource
 	}
+
+	/// <summary>
+	/// Holds information for a custom prefab.
+	/// </summary>
+	/// <param name="type">The type of the prefab.</param>
+	/// <param name="name">The name of the prefab.</param>
+	/// <param name="visualParts">A list of visual parts that make up the prefab.</param>
 	public record PrefabInfo(PrefabType type, string name, List<VisualPartInfo> visualParts);
+
+	/// <summary>
+	/// Represents a visual part of a custom prefab.
+	/// </summary>
+	/// <param name="gameObjectName">The name of the GameObject for this visual part.</param>
+	/// <param name="baseName">The base name for sprite lookups.</param>
+	/// <param name="rotation">The rotation of the visual part.</param>
+	/// <param name="coordinates">The local position of the visual part.</param>
+	/// <param name="scale">The local scale of the visual part.</param>
+	/// <param name="tintable">Whether the visual part can be tinted.</param>
 	public record VisualPartInfo(
 		string gameObjectName,
 		string baseName,
@@ -257,7 +310,7 @@ public static class Visual
 		if (tile.data.terrain is Polytopia.Data.TerrainData.Type.Forest or Polytopia.Data.TerrainData.Type.Mountain)
 		{
 			string propertyName = terrain.ToLower();
-			terrain = "field";
+				terrain = "field";
 
 			PropertyInfo? rendererProperty = tile.GetType().GetProperty(propertyName + "Renderer",
 				BindingFlags.Public | BindingFlags.Instance);
@@ -565,6 +618,11 @@ public static class Visual
 		basicPopupWidths.Remove(__instance.GetInstanceID());
 	}
 
+	/// <summary>
+	/// Shows a BasicPopup and sets its width.
+	/// </summary>
+	/// <param name="self">The BasicPopup instance.</param>
+	/// <param name="width">The desired width of the popup.</param>
 	public static void ShowSetWidth(this BasicPopup self, int width)
 	{
 		basicPopupWidths.Add(self.GetInstanceID(), width);
@@ -594,6 +652,13 @@ public static class Visual
 		}
 	}
 
+	/// <summary>
+	/// Creates a <see cref="Sprite"/> from raw image data.
+	/// </summary>
+	/// <param name="data">The byte array containing the image data.</param>
+	/// <param name="pivot">The pivot point for the sprite. Defaults to the center.</param>
+	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
+	/// <returns>A new <see cref="Sprite"/> instance.</returns>
 	public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
 	{
 		Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
@@ -609,6 +674,13 @@ public static class Visual
 		return BuildSpriteWithTexture(texture, pivot, pixelsPerUnit);
 	}
 
+	/// <summary>
+	/// Creates a <see cref="Sprite"/> from an existing <see cref="Texture2D"/>.
+	/// </summary>
+	/// <param name="texture">The texture to create the sprite from.</param>
+	/// <param name="pivot">The pivot point for the sprite. Defaults to the center.</param>
+	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
+	/// <returns>A new <see cref="Sprite"/> instance.</returns>
 	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f)
 	{
 		return Sprite.Create(

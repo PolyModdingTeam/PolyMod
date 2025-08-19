@@ -11,12 +11,12 @@ using UnityEngine;
 
 namespace PolyMod.Managers;
 
-public static class Main
+internal static class Main
 {
 	internal const int MAX_TECH_TIER = 100;
 	internal static readonly Stopwatch stopwatch = new();
 	internal static bool fullyInitialized;
-	internal static bool dependencyCycle = false; // that warning wasnt really my fault
+	internal static bool dependencyCycle;
 	internal static Dictionary<string, string> embarkNames = new();
 	internal static Dictionary<UnitData.Type, UnitData.Type> embarkOverrides = new();
 	internal static bool currentlyEmbarking = false;
@@ -330,76 +330,15 @@ public static class Main
 			Array.Empty<Mod.Dependency>()
 		);
 		Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
-		Loader.RegisterMods(Registry.mods);
-		Loader.LoadMods(Registry.mods);
+		dependencyCycle = Loader.RegisterMods(Registry.mods);
+		if (!dependencyCycle) Loader.LoadMods(Registry.mods);
 		stopwatch.Stop();
 	}
 
 	internal static void Load(JObject gameLogicdata)
 	{
 		stopwatch.Start();
-		Loc.BuildAndLoadLocalization(
-			JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
-				Plugin.GetResource("localization.json")
-			)!
-		);
-		if (dependencyCycle) return;
-
-		foreach (var (id, mod) in Registry.mods)
-		{
-			if (mod.status != Mod.Status.Success) continue;
-			foreach (var file in mod.files)
-			{
-				if (Path.GetFileName(file.name) == "localization.json")
-				{
-					Loader.LoadLocalizationFile(mod, file);
-					continue;
-				}
-				if (Regex.IsMatch(Path.GetFileName(file.name), @"^patch(_.*)?\.json$"))
-				{
-					var patchText = new StreamReader(new MemoryStream(file.bytes)).ReadToEnd();
-					var template = new GldConfigTemplate(patchText, mod.id);
-					var text = template.Render();
-					if (text is null)
-					{
-						mod.status = Mod.Status.Error;
-						continue;
-					}
-					Loader.LoadGameLogicDataPatch(
-						mod,
-						gameLogicdata,
-						JObject.Parse(text)
-					);
-					continue;
-				}
-				if (Regex.IsMatch(Path.GetFileName(file.name), @"^prefab(_.*)?\.json$"))
-				{
-					Loader.LoadPrefabInfoFile(
-						mod,
-						file
-					);
-					continue;
-				}
-
-				switch (Path.GetExtension(file.name))
-				{
-					case ".png":
-						Loader.LoadSpriteFile(mod, file);
-						break;
-					case ".wav":
-						Loader.LoadAudioFile(mod, file);
-						break;
-					case ".bundle":
-						Loader.LoadAssetBundle(mod, file);
-						break;
-				}
-			}
-		}
-		TechItem.techTierFirebaseId.Clear();
-		for (int i = 0; i <= MAX_TECH_TIER; i++)
-		{
-			TechItem.techTierFirebaseId.Add($"tech_research_{i}");
-		}
+		if (!dependencyCycle) Loader.PatchGLD(gameLogicdata, Registry.mods);
 		stopwatch.Stop();
 		Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
 	}

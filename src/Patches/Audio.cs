@@ -5,7 +5,7 @@ using UnityEngine.Networking;
 
 namespace PolyMod.Managers;
 
-public static class Audio
+internal static class Audio
 {
     [HarmonyPostfix]
     [HarmonyPatch(typeof(AudioManager), nameof(AudioManager.SetupData))]

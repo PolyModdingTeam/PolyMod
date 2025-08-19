@@ -148,7 +148,7 @@ public static class Loader
 			typeMappings.Add(typeId, type);
 	}
 
-	internal static void RegisterMods(Dictionary<string, Mod> mods)
+	internal static bool RegisterMods(Dictionary<string, Mod> mods)
 	{
 		Directory.CreateDirectory(Plugin.MODS_PATH);
 		string[] modContainers = Directory.GetDirectories(Plugin.MODS_PATH)
@@ -237,13 +237,11 @@ public static class Loader
 		}
 
 		CheckDependencies(mods);
+		var dependencyCycle = !SortMods(Registry.mods);
+		return dependencyCycle;
 	}
-
 	internal static void LoadMods(Dictionary<string, Mod> mods)
 	{
-		var dependencyCycle = !SortMods(Registry.mods);
-		if (dependencyCycle) return;
-
 		StringBuilder checksumString = new();
 		foreach (var (id, mod) in Registry.mods)
 		{
@@ -268,6 +266,69 @@ public static class Loader
 		}
 		Compatibility.HashSignatures(checksumString);
 
+	}
+	internal static void PatchGLD(JObject gameLogicdata, Dictionary<string, Mod> mods)
+	{
+		Loc.BuildAndLoadLocalization(
+			JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
+				Plugin.GetResource("localization.json")
+			)!
+		);
+		foreach (var (id, mod) in mods)
+		{
+			if (mod.status != Mod.Status.Success) continue;
+			foreach (var file in mod.files)
+			{
+				if (Path.GetFileName(file.name) == "localization.json")
+				{
+					Loader.LoadLocalizationFile(mod, file);
+					continue;
+				}
+				if (Regex.IsMatch(Path.GetFileName(file.name), @"^patch(_.*)?\.json$"))
+				{
+					var patchText = new StreamReader(new MemoryStream(file.bytes)).ReadToEnd();
+					var template = new GldConfigTemplate(patchText, mod.id);
+					var text = template.Render();
+					if (text is null)
+					{
+						mod.status = Mod.Status.Error;
+						continue;
+					}
+					Loader.LoadGameLogicDataPatch(
+						mod,
+						gameLogicdata,
+						JObject.Parse(text)
+					);
+					continue;
+				}
+				if (Regex.IsMatch(Path.GetFileName(file.name), @"^prefab(_.*)?\.json$"))
+				{
+					Loader.LoadPrefabInfoFile(
+						mod,
+						file
+					);
+					continue;
+				}
+
+				switch (Path.GetExtension(file.name))
+				{
+					case ".png":
+						Loader.LoadSpriteFile(mod, file);
+						break;
+					case ".wav":
+						Loader.LoadAudioFile(mod, file);
+						break;
+					case ".bundle":
+						Loader.LoadAssetBundle(mod, file);
+						break;
+				}
+			}
+		}
+		TechItem.techTierFirebaseId.Clear();
+		for (int i = 0; i <= Main.MAX_TECH_TIER; i++)
+		{
+			TechItem.techTierFirebaseId.Add($"tech_research_{i}");
+		}
 	}
 	private static void CheckDependencies(Dictionary<string, Mod> mods)
 	{

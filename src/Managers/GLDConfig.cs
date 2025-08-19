@@ -5,7 +5,7 @@ using Scriban.Runtime;
 
 namespace PolyMod.Managers;
 
-public class GldConfigTemplate
+internal class GldConfigTemplate
 {
     private static readonly string ConfigPath = Path.Combine(Plugin.BASE_PATH, "mods.json");
     
