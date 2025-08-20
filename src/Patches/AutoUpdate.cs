@@ -35,7 +35,7 @@ internal static class AutoUpdate
                 break;
             }
             string newVersion = latest?.GetProperty("tag_name").GetString()!.TrimStart('v')!;
-            if (newVersion.IsVersionOlderOrEqual(Plugin.VERSION)) return;
+            if (newVersion.IsVersionOlderOrEqual(Constants.POLYMOD_VERSION)) return;
             string os = Application.platform switch
             {
                 RuntimePlatform.WindowsPlayer => "win",

@@ -83,7 +83,7 @@ internal static class Compatibility
 
         Version incompatibilityWarningLastVersion = new(PlayerPrefs.GetString(
             Constants.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
-            Plugin.POLYTOPIA_VERSION.CutRevision().ToString()
+            Constants.POLYTOPIA_VERSION.CutRevision().ToString()
         ));
         if (VersionManager.SemanticVersion.Cast().CutRevision() > incompatibilityWarningLastVersion)
         {

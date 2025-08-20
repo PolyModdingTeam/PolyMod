@@ -25,7 +25,7 @@ public partial class Constants
 	/// </summary>
 	public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
 	/// <summary>
-	/// Filename of the dumped data
+	/// kFilename of the dumped data
 	/// </summary>
 	public static readonly string DUMPED_DATA_PATH = Path.Combine(BASE_PATH, "DumpedData");
 	internal static readonly string CHECKSUM_PATH

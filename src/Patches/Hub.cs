@@ -91,7 +91,7 @@ internal static class Hub
                 textComponent.fontSize = 18;
                 textComponent.alignment = TextAlignmentOptions.BottomLeft;
 
-                text.GetComponent<TMPLocalizer>().Text = $"PolyMod {Plugin.VERSION}";
+                text.GetComponent<TMPLocalizer>().Text = $"PolyMod {Constants.POLYMOD_VERSION}";
                 text.AddComponent<LayoutElement>().ignoreLayout = true;
             }
             else if (parentName == "NewsButton")

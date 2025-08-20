@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace PolyMod;
 
-[BepInPlugin("com.polymod", "PolyMod", VERSION)]
+[BepInPlugin("com.polymod", "PolyMod", Constants.POLYMOD_VERSION)]
 internal partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 {
 	internal record PolyConfig(
