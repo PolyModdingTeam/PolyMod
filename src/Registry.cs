@@ -14,31 +14,31 @@ public static class Registry
 	internal static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
 
 	/// <summary>The registry for custom sprites.</summary>
-	public static Dictionary<string, Sprite> sprites = new();
+	internal static Dictionary<string, Sprite> sprites = new();
 
 	/// <summary>The registry for custom audio clips.</summary>
-	public static Dictionary<string, AudioSource> audioClips = new();
+	internal static Dictionary<string, AudioSource> audioClips = new();
 
 	/// <summary>The registry for loaded mods.</summary>
 	public static Dictionary<string, Mod> mods = new();
 
 	/// <summary>The registry for custom tribe previews.</summary>
-	public static Dictionary<string, Visual.PreviewTile[]> tribePreviews = new();
+	internal static Dictionary<string, Visual.PreviewTile[]> tribePreviews = new();
 
 	/// <summary>The registry for custom sprite information.</summary>
-	public static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
+	internal static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
 
 	/// <summary>The registry for custom prefab names.</summary>
-	public static Dictionary<int, string> prefabNames = new();
+	internal static Dictionary<int, string> prefabNames = new();
 
 	/// <summary>The registry for custom unit prefabs.</summary>
-	public static Dictionary<Visual.PrefabInfo, Unit> unitPrefabs = new();
+	internal static Dictionary<Visual.PrefabInfo, Unit> unitPrefabs = new();
 
 	/// <summary>The registry for custom resource prefabs.</summary>
-	public static Dictionary<Visual.PrefabInfo, Resource> resourcePrefabs = new();
+	internal static Dictionary<Visual.PrefabInfo, Resource> resourcePrefabs = new();
 
 	/// <summary>The registry for custom improvement prefabs.</summary>
-	public static Dictionary<Visual.PrefabInfo, Building> improvementsPrefabs = new();
+	internal static Dictionary<Visual.PrefabInfo, Building> improvementsPrefabs = new();
 
 	/// <summary>The registry for loaded asset bundles.</summary>
 	public static Dictionary<string, AssetBundle> assetBundles = new();
@@ -47,7 +47,7 @@ public static class Registry
 	public static List<TribeData.Type> customTribes = new();
 
 	/// <summary>The registry for custom skin information.</summary>
-	public static List<Visual.SkinInfo> skinInfo = new();
+	internal static List<Visual.SkinInfo> skinInfo = new();
 
 	internal static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
 	internal static int gameModesAutoidx = Enum.GetValues(typeof(GameMode)).Length;

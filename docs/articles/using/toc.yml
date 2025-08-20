@@ -1,0 +1,6 @@
+- name: Installing
+  href: installing.md
+- name: Adding Mods
+  href: adding-mods.md
+- name: Configure
+  href: configure.md

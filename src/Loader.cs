@@ -133,20 +133,8 @@ public static class Loader
 	};
 
 	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
-
-	public static void AddGameModeButton(string id, UIButtonBase.ButtonAction action, Sprite? sprite)
-	{
-		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
-		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
-		gamemodes.Add(new GameModeButtonsInformation(Registry.gameModesAutoidx, action, null, sprite));
-		Registry.gameModesAutoidx++;
-	}
-
-	public static void AddPatchDataType(string typeId, Type type)
-	{
-		if (!typeMappings.ContainsKey(typeId))
-			typeMappings.Add(typeId, type);
-	}
+	
+	
 
 	internal static bool RegisterMods(Dictionary<string, Mod> mods)
 	{
@@ -428,7 +416,7 @@ public static class Loader
 		return true;
 	}
 
-	public static void LoadAssemblyFile(Mod mod, Mod.File file)
+	internal static void LoadAssemblyFile(Mod mod, Mod.File file)
 	{
 		try
 		{
@@ -472,7 +460,7 @@ public static class Loader
 		}
 	}
 
-	public static void LoadLocalizationFile(Mod mod, Mod.File file)
+	internal static void LoadLocalizationFile(Mod mod, Mod.File file)
 	{
 		try
 		{
@@ -486,7 +474,7 @@ public static class Loader
 		}
 	}
 
-	public static void LoadSpriteFile(Mod mod, Mod.File file)
+	internal static void LoadSpriteFile(Mod mod, Mod.File file)
 	{
 		string name = Path.GetFileNameWithoutExtension(file.name);
 		Vector2 pivot = name.Split("_")[0] switch
@@ -508,7 +496,7 @@ public static class Loader
 		Registry.sprites.Add(name, sprite);
 	}
 
-	public static void UpdateSprite(string name)
+	internal static void UpdateSprite(string name)
 	{
 		if (Registry.spriteInfos.ContainsKey(name) && Registry.sprites.ContainsKey(name))
 		{
@@ -523,7 +511,7 @@ public static class Loader
 		}
 	}
 
-	public static Dictionary<string, Visual.SpriteInfo>? LoadSpriteInfoFile(Mod mod, Mod.File file)
+	internal static Dictionary<string, Visual.SpriteInfo>? LoadSpriteInfoFile(Mod mod, Mod.File file)
 	{
 		try
 		{
@@ -553,7 +541,7 @@ public static class Loader
 		}
 	}
 
-	public static void LoadAudioFile(Mod mod, Mod.File file)
+	internal static void LoadAudioFile(Mod mod, Mod.File file)
 	{
 		// AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
 		// GameObject.DontDestroyOnLoad(audioSource);
@@ -562,7 +550,7 @@ public static class Loader
 		// TODO: issue #71
 	}
 
-	public static void LoadPrefabInfoFile(Mod mod, Mod.File file)
+	internal static void LoadPrefabInfoFile(Mod mod, Mod.File file)
 	{
 		try
 		{
@@ -675,7 +663,7 @@ public static class Loader
 		return visualPart;
 	}
 
-	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
+	internal static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
 	{
 		try
 		{
@@ -734,7 +722,7 @@ public static class Loader
 		}
 	}
 
-	public static void LoadAssetBundle(Mod mod, Mod.File file)
+	internal static void LoadAssetBundle(Mod mod, Mod.File file)
 	{
 		Registry.assetBundles.Add(
 			Path.GetFileNameWithoutExtension(file.name),
@@ -742,7 +730,7 @@ public static class Loader
 		);
 	}
 
-	public static void HandleSkins(JObject gld, JObject patch)
+	internal static void HandleSkins(JObject gld, JObject patch)
 	{
 		foreach (JToken jtoken in patch.SelectTokens("$.tribeData.*").ToArray())
 		{

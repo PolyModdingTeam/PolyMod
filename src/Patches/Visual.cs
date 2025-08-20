@@ -13,7 +13,7 @@ namespace PolyMod.Managers;
 /// <summary>
 /// Manages visual aspects of the game, including sprites, UI elements, and in-game object appearances.
 /// </summary>
-public static class Visual
+internal static class Visual
 {
 	/// <summary>
 	/// Represents a single tile in a tribe's world preview.

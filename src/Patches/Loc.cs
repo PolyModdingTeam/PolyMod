@@ -7,7 +7,7 @@ using Polytopia.Data;
 
 namespace PolyMod.Managers;
 
-public static class Loc
+internal static class Loc
 {
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(SelectTribePopup), nameof(SelectTribePopup.SetDescription))]
