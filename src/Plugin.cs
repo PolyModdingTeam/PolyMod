@@ -9,32 +9,13 @@ using UnityEngine;
 namespace PolyMod;
 
 [BepInPlugin("com.polymod", "PolyMod", VERSION)]
-public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
+internal partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 {
 	internal record PolyConfig(
 		bool debug = false,
 		bool autoUpdate = true,
 		bool updatePrerelease = false
 	);
-
-	internal const int AUTOIDX_STARTS_FROM = 1000;
-	internal const string INCOMPATIBILITY_WARNING_LAST_VERSION_KEY
-		= "INCOMPATIBILITY_WARNING_LAST_VERSION";
-	public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
-	public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
-	public static readonly string DUMPED_DATA_PATH = Path.Combine(BASE_PATH, "DumpedData");
-	internal static readonly string CONFIG_PATH = Path.Combine(BASE_PATH, "PolyMod.json");
-	internal static readonly string CHECKSUM_PATH
-		= Path.Combine(BASE_PATH, "CHECKSUM");
-	internal static readonly string DISCORD_LINK = "https://discord.gg/eWPdhWtfVy";
-	internal static readonly List<string> LOG_MESSAGES_IGNORE = new()
-	{
-		"Failed to find atlas",
-		"Could not find sprite",
-		"Couldn't find prefab for type",
-		"MARKET: id:",
-		"Missing name for value",
-	};
 
 
 #pragma warning disable CS8618
@@ -46,7 +27,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	{
 		try
 		{
-			config = JsonSerializer.Deserialize<PolyConfig>(File.ReadAllText(CONFIG_PATH))!;
+			config = JsonSerializer.Deserialize<PolyConfig>(File.ReadAllText(Constants.CONFIG_PATH))!;
 		}
 		catch
 		{
@@ -77,7 +58,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 
 	internal static void WriteConfig()
 	{
-		File.WriteAllText(CONFIG_PATH, JsonSerializer.Serialize(config));
+		File.WriteAllText(Constants.CONFIG_PATH, JsonSerializer.Serialize(config));
 	}
 
 	internal static void UpdateConsole()

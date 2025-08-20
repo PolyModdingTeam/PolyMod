@@ -143,7 +143,7 @@ internal static class Hub
                 new(
                     "polymod.hub.discord",
                     callback: (UIButtonBase.ButtonAction)((_, _) =>
-                        NativeHelpers.OpenURL(Plugin.DISCORD_LINK, false))
+                        NativeHelpers.OpenURL(Constants.DISCORD_LINK, false))
                 ),
                 new(
                     "polymod.hub.config",
@@ -159,18 +159,18 @@ internal static class Hub
                     "polymod.hub.dump",
                     callback: (UIButtonBase.ButtonAction)((_, _) =>
                     {
-                        Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
+                        Directory.CreateDirectory(Constants.DUMPED_DATA_PATH);
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, "gameLogicData.json"),
+                            Path.Combine(Constants.DUMPED_DATA_PATH, "gameLogicData.json"),
                             PolytopiaDataManager.provider.LoadGameLogicData(VersionManager.GameLogicDataVersion)
                         );
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, "avatarData.json"),
+                            Path.Combine(Constants.DUMPED_DATA_PATH, "avatarData.json"),
                             PolytopiaDataManager.provider.LoadAvatarData(1337)
                         );
                         foreach (var category in LocalizationManager.Sources[0].GetCategories())
                             File.WriteAllTextAsync(
-                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"localization_{category}.csv"),
+                                Path.Combine(Constants.DUMPED_DATA_PATH, $"localization_{category}.csv"),
                                 LocalizationManager.Sources[0].Export_CSV(category)
                             );
                         foreach (KeyValuePair<string, Mod> entry in Registry.mods)
@@ -179,7 +179,7 @@ internal static class Hub
                             {
                                 if (Path.GetFileName(file.name) == "sprites.json")
                                 {
-                                    File.WriteAllBytes(Path.Combine(Plugin.DUMPED_DATA_PATH, $"sprites_{entry.Key}.json"), file.bytes);
+                                    File.WriteAllBytes(Path.Combine(Constants.DUMPED_DATA_PATH, $"sprites_{entry.Key}.json"), file.bytes);
                                 }
                             }
                         }
@@ -208,7 +208,7 @@ internal static class Hub
                                 }
                             }
                             File.WriteAllTextAsync(
-                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"preview_{type}.json"),
+                                Path.Combine(Constants.DUMPED_DATA_PATH, $"preview_{type}.json"),
                                 JsonSerializer.Serialize(previewTiles, new JsonSerializerOptions { WriteIndented = true })
                             );
                         }
@@ -262,9 +262,9 @@ internal static class Hub
     internal static void UpdateSpriteInfos()
     {
         string message = string.Empty;
-        Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
+        Directory.CreateDirectory(Constants.DUMPED_DATA_PATH);
 
-        foreach (var file in Directory.GetFiles(Plugin.DUMPED_DATA_PATH))
+        foreach (var file in Directory.GetFiles(Constants.DUMPED_DATA_PATH))
         {
             string? name = Path.GetFileNameWithoutExtension(file);
             List<string> subnames = new();

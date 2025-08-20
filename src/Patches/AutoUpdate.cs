@@ -56,20 +56,20 @@ internal static class AutoUpdate
             {
                 Time.timeScale = 0;
                 File.WriteAllBytes(
-                    Path.Combine(Plugin.BASE_PATH, "PolyMod.new.dll"),
+                    Path.Combine(Constants.BASE_PATH, "PolyMod.new.dll"),
                     client.GetAsync(latest?.GetProperty("assets")[0].GetProperty("browser_download_url").GetString()!).UnwrapAsync()
                     .Content.ReadAsByteArrayAsync().UnwrapAsync()
                 );
                 using ZipArchive bepinex = new(client.GetAsync(bepinex_url).UnwrapAsync().Content.ReadAsStream());
-                bepinex.ExtractToDirectory(Path.Combine(Plugin.BASE_PATH, "New"), overwriteFiles: true);
+                bepinex.ExtractToDirectory(Path.Combine(Constants.BASE_PATH, "New"), overwriteFiles: true);
                 ProcessStartInfo info = new()
                 {
-                    WorkingDirectory = Path.Combine(Plugin.BASE_PATH),
+                    WorkingDirectory = Path.Combine(Constants.BASE_PATH),
                     CreateNoWindow = true,
                 };
                 if (Application.platform == RuntimePlatform.WindowsPlayer)
                 {
-                    string batchPath = Path.Combine(Plugin.BASE_PATH, "update.bat");
+                    string batchPath = Path.Combine(Constants.BASE_PATH, "update.bat");
                     File.WriteAllText(batchPath, $@"
                         @echo off
                         echo Waiting for Polytopia.exe to exit...
@@ -93,13 +93,13 @@ internal static class AutoUpdate
                     ");
                     info.FileName = "cmd.exe";
                     info.Arguments = $"/C start \"\" \"{batchPath}\"";
-                    info.WorkingDirectory = Plugin.BASE_PATH;
+                    info.WorkingDirectory = Constants.BASE_PATH;
                     info.CreateNoWindow = true;
                     info.UseShellExecute = false;
                 }
                 if (Application.platform == RuntimePlatform.LinuxPlayer || Application.platform == RuntimePlatform.OSXPlayer)
                 {
-                    string bashPath = Path.Combine(Plugin.BASE_PATH, "update.sh");
+                    string bashPath = Path.Combine(Constants.BASE_PATH, "update.sh");
                     File.WriteAllText(bashPath, $@"
                         #!/bin/bash
 
@@ -130,7 +130,7 @@ internal static class AutoUpdate
 
                     info.FileName = "/bin/bash";
                     info.Arguments = $"\"{bashPath}\"";
-                    info.WorkingDirectory = Plugin.BASE_PATH;
+                    info.WorkingDirectory = Constants.BASE_PATH;
                     info.CreateNoWindow = true;
                     info.UseShellExecute = false;
                 }

@@ -7,7 +7,7 @@ namespace PolyMod.Managers;
 
 internal class GldConfigTemplate
 {
-    private static readonly string ConfigPath = Path.Combine(Plugin.BASE_PATH, "mods.json");
+    private static readonly string ConfigPath = Path.Combine(Constants.BASE_PATH, "mods.json");
     
     private readonly string templateText;
     private JsonObject currentConfig = new();

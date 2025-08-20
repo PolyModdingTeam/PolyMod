@@ -19,7 +19,7 @@ using UnityEngine;
 
 namespace PolyMod;
 
-public static class Loader
+internal static class Loader
 {
 	internal static Dictionary<string, Type> typeMappings = new()
 	{
@@ -138,10 +138,10 @@ public static class Loader
 
 	internal static bool RegisterMods(Dictionary<string, Mod> mods)
 	{
-		Directory.CreateDirectory(Plugin.MODS_PATH);
-		string[] modContainers = Directory.GetDirectories(Plugin.MODS_PATH)
-			.Union(Directory.GetFiles(Plugin.MODS_PATH, "*.polymod"))
-			.Union(Directory.GetFiles(Plugin.MODS_PATH, "*.zip"))
+		Directory.CreateDirectory(Constants.MODS_PATH);
+		string[] modContainers = Directory.GetDirectories(Constants.MODS_PATH)
+			.Union(Directory.GetFiles(Constants.MODS_PATH, "*.polymod"))
+			.Union(Directory.GetFiles(Constants.MODS_PATH, "*.zip"))
 			.ToArray();
 		foreach (var modContainer in modContainers)
 		{

@@ -11,7 +11,7 @@ namespace PolyMod;
 /// </summary>
 public static class Registry
 {
-	internal static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
+	internal static int autoidx = Constants.AUTOIDX_STARTS_FROM;
 
 	/// <summary>The registry for custom sprites.</summary>
 	internal static Dictionary<string, Sprite> sprites = new();

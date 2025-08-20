@@ -110,7 +110,7 @@ internal static class Main
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlockedInternal))]
 	private static bool PurchaseManager_IsSkinUnlockedInternal(ref bool __result, SkinType skinType)
 	{
-		__result = (int)skinType >= Plugin.AUTOIDX_STARTS_FROM && skinType != SkinType.Test;
+		__result = (int)skinType >= Constants.AUTOIDX_STARTS_FROM && skinType != SkinType.Test;
 		return !__result;
 	}
 
@@ -118,7 +118,7 @@ internal static class Main
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsTribeUnlocked))]
 	private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeData.Type type)
 	{
-		__result = (int)type >= Plugin.AUTOIDX_STARTS_FROM || __result;
+		__result = (int)type >= Constants.AUTOIDX_STARTS_FROM || __result;
 	}
 
 	[HarmonyPostfix]
@@ -135,7 +135,7 @@ internal static class Main
 	[HarmonyPatch(typeof(IL2CPPUnityLogSource), nameof(IL2CPPUnityLogSource.UnityLogCallback))]
 	private static bool IL2CPPUnityLogSource_UnityLogCallback(string logLine, string exception, LogType type)
 	{
-		foreach (string stringToIgnore in Plugin.LOG_MESSAGES_IGNORE)
+		foreach (string stringToIgnore in Constants.LOG_MESSAGES_IGNORE)
 		{
 			if (logLine.Contains(stringToIgnore))
 				return false;
