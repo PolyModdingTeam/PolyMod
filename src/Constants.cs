@@ -6,6 +6,10 @@ namespace PolyMod;
 public partial class Constants
 {
 	/// <summary>
+	/// Path of the polytopia folder
+	/// </summary>
+	public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
+	/// <summary>
 	/// path of the mods folder
 	/// </summary>
 	public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
@@ -20,10 +24,6 @@ public partial class Constants
 		"MARKET: id:",
 		"Missing name for value",
 	};
-	/// <summary>
-	/// Path of the polytopia folder
-	/// </summary>
-	public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
 	/// <summary>
 	/// kFilename of the dumped data
 	/// </summary>
