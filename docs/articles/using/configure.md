@@ -1,0 +1,1 @@
+edit mods.json in ur polytopia folder

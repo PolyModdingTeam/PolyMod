@@ -68,12 +68,12 @@ internal static class Compatibility
         string lastChecksum = checksum;
         try
         {
-            lastChecksum = new(File.ReadAllText(Plugin.CHECKSUM_PATH));
+            lastChecksum = new(File.ReadAllText(Constants.CHECKSUM_PATH));
         }
         catch (FileNotFoundException) { }
 
         File.WriteAllText(
-            Plugin.CHECKSUM_PATH,
+            Constants.CHECKSUM_PATH,
             checksum
         );
         if (lastChecksum != checksum)
@@ -82,13 +82,13 @@ internal static class Compatibility
         }
 
         Version incompatibilityWarningLastVersion = new(PlayerPrefs.GetString(
-            Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
-            Plugin.POLYTOPIA_VERSION.CutRevision().ToString()
+            Constants.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
+            Constants.POLYTOPIA_VERSION.CutRevision().ToString()
         ));
         if (VersionManager.SemanticVersion.Cast().CutRevision() > incompatibilityWarningLastVersion)
         {
             PlayerPrefs.SetString(
-                Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
+                Constants.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
                 VersionManager.SemanticVersion.Cast().CutRevision().ToString()
             );
             PlayerPrefs.Save();

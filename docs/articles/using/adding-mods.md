@@ -1,0 +1,1 @@
+go to steam path and go into mods folder and add mod there

@@ -4,21 +4,21 @@ using System.Text.Json.Nodes;
 namespace PolyMod.Managers;
 
 /// <summary>
-/// allows mods to save config.
+/// Allows mods to save config.
 /// </summary>
 public class Config<T> where T : class
 {
     private T? currentConfig;
     private readonly string modName;
     private readonly ConfigTypes configType;
-    private static readonly string ExposedConfigPath = Path.Combine(Plugin.BASE_PATH, "mods.json");
+    private static readonly string ExposedConfigPath = Path.Combine(Constants.BASE_PATH, "mods.json");
     private readonly string perModConfigPath;
     private T? defaultConfig;
     public Config(string modName, ConfigTypes configType)
     {
         this.modName = modName;
         this.configType = configType;
-        perModConfigPath = Path.Combine(Plugin.MODS_PATH, $"{modName}.json");
+        perModConfigPath = Path.Combine(Constants.MODS_PATH, $"{modName}.json");
         Load();
     }
 
@@ -91,7 +91,7 @@ public class Config<T> where T : class
         return getter(currentConfig ?? throw new InvalidOperationException("Must set default before reading config."));
     }
     /// <summary>
-    /// writes the config to disk
+    /// Writes the config to disk
     /// </summary>
     public void SaveChanges()
     {

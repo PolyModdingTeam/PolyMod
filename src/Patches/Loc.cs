@@ -7,13 +7,13 @@ using Polytopia.Data;
 
 namespace PolyMod.Managers;
 
-public static class Loc
+internal static class Loc
 {
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(SelectTribePopup), nameof(SelectTribePopup.SetDescription))]
 	private static void SetDescription(SelectTribePopup __instance)
 	{
-		if ((int)__instance.SkinType >= Plugin.AUTOIDX_STARTS_FROM)
+		if ((int)__instance.SkinType >= Constants.AUTOIDX_STARTS_FROM)
 		{
 			string description = Localization.Get(__instance.SkinType.GetLocalizationDescriptionKey());
 			if (description == __instance.SkinType.GetLocalizationDescriptionKey())
@@ -42,7 +42,7 @@ public static class Loc
 		{
 			if (int.TryParse(item, out int parsedIdx))
 			{
-				if (parsedIdx >= Plugin.AUTOIDX_STARTS_FROM)
+				if (parsedIdx >= Constants.AUTOIDX_STARTS_FROM)
 				{
 					idx = parsedIdx;
 				}

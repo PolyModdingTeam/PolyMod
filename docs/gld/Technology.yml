@@ -1,0 +1,95 @@
+### YamlMime:ManagedReference
+items:
+- uid: GameData.TechData
+  id: TechData
+  name: Tech Data
+  fullName: Tech Data
+  type: Class
+  summary: |
+    Defines the properties for a technology in the tech tree. Each tech is an object within the `techData` section, keyed by its unique name.
+
+    To add a new tech, create a new entry with a unique key and define its properties. You must also link it from another tech's `techUnlocks` property to make it accessible.
+  syntax:
+    content: '"techData": { "your_tech_name": { ... } }'
+  children:
+  - GameData.TechData.techUnlocks
+  - GameData.TechData.unitUnlocks
+  - GameData.TechData.improvementUnlocks
+  - GameData.TechData.abilityUnlocks
+  - GameData.TechData.movementUnlocks
+  - GameData.TechData.defenceBonusUnlocks
+  - GameData.TechData.cost
+  - GameData.TechData.idx
+
+- uid: GameData.TechData.techUnlocks
+  id: techUnlocks
+  parent: GameData.TechData
+  name: techUnlocks
+  fullName: techUnlocks
+  type: Property
+  summary: An array of strings listing the tech IDs that become available after researching this one. This defines the tech tree's structure.
+  syntax:
+    content: '"techUnlocks": ["roads", "freespirit"]'
+- uid: GameData.TechData.unitUnlocks
+  id: unitUnlocks
+  parent: GameData.TechData
+  name: unitUnlocks
+  fullName: unitUnlocks
+  type: Property
+  summary: An array of strings listing the unit IDs that can be trained after researching this tech.
+  syntax:
+    content: '"unitUnlocks": ["rider"]'
+- uid: GameData.TechData.improvementUnlocks
+  id: improvementUnlocks
+  parent: GameData.TechData
+  name: improvementUnlocks
+  fullName: improvementUnlocks
+  type: Property
+  summary: An array of strings listing the improvement IDs that can be built after researching this tech.
+  syntax:
+    content: '"improvementUnlocks": ["road", "bridge"]'
+- uid: GameData.TechData.abilityUnlocks
+  id: abilityUnlocks
+  parent: GameData.TechData
+  name: abilityUnlocks
+  fullName: abilityUnlocks
+  type: Property
+  summary: An array of strings listing new player or unit actions unlocked by this tech (e.g., "disband", "destroy").
+  syntax:
+    content: '"abilityUnlocks": ["destroy"]'
+- uid: GameData.TechData.movementUnlocks
+  id: movementUnlocks
+  parent: GameData.TechData
+  name: movementUnlocks
+  fullName: movementUnlocks
+  type: Property
+  summary: An object where keys are terrain IDs and values are the new movement cost for that terrain.
+  syntax:
+    content: '"movementUnlocks": { "mountain": 2 }'
+- uid: GameData.TechData.defenceBonusUnlocks
+  id: defenceBonusUnlocks
+  parent: GameData.TechData
+  name: defenceBonusUnlocks
+  fullName: defenceBonusUnlocks
+  type: Property
+  summary: An object where keys are terrain IDs and values are the defense bonus percentage (e.g., 15 for +15%) for units on that terrain.
+  syntax:
+    content: '"defenceBonusUnlocks": { "mountain": 15 }'
+- uid: GameData.TechData.cost
+  id: cost
+  parent: GameData.TechData
+  name: cost
+  fullName: cost
+  type: Property
+  summary: An integer representing the base star cost to research this technology.
+  syntax:
+    content: '"cost": 1'
+- uid: GameData.TechData.idx
+  id: idx
+  parent: GameData.TechData
+  name: idx
+  fullName: idx
+  type: Property
+  summary: A unique integer index for the tech. Must be unique across all technologies. When adding a new entry, it is recommended to set this value to -1 to ensure uniqueness and prevent conflicts with game updates.
+  syntax:
+    content: '"idx": 1'

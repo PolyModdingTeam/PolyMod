@@ -1,0 +1,195 @@
+### YamlMime:ManagedReference
+items:
+- uid: GameData.TribeData
+  id: TribeData
+  name: Tribe Data
+  fullName: Tribe Data
+  type: Class
+  summary: |
+    Defines the properties for a tribe. Each tribe is an object within the `tribeData` section of the JSON file, keyed by its unique name (e.g., "aimo", "bardur").
+
+    To add a new tribe, create a new entry with a unique key and define its properties as described below.
+  syntax:
+    content: '"tribeData": { "your_tribe_name": { ... } }'
+  children:
+  - GameData.TribeData.color
+  - GameData.TribeData.style
+  - GameData.TribeData.climate
+  - GameData.TribeData.language
+  - GameData.TribeData.startingTech
+  - GameData.TribeData.startingResource
+  - GameData.TribeData.startingUnit
+  - GameData.TribeData.priceTier
+  - GameData.TribeData.category
+  - GameData.TribeData.bonus
+  - GameData.TribeData.terrainModifier
+  - GameData.TribeData.resourceModifier
+  - GameData.TribeData.unitOverrides
+  - GameData.TribeData.techOverrides
+  - GameData.TribeData.improvementOverrides
+  - GameData.TribeData.tribeAbilities
+  - GameData.TribeData.skins
+  - GameData.TribeData.idx
+
+- uid: GameData.TribeData.color
+  id: color
+  parent: GameData.TribeData
+  name: color
+  fullName: color
+  type: Property
+  summary: An integer representing the tribe's primary color. This is often a decimal representation of a hex color code.
+  syntax:
+    content: '"color": 3596970'
+- uid: GameData.TribeData.style
+  id: style
+  parent: GameData.TribeData
+  name: style
+  fullName: style
+  type: Property
+  summary: An integer ID that determines the visual style of the tribe's cities and units.
+  syntax:
+    content: '"style": 10'
+- uid: GameData.TribeData.climate
+  id: climate
+  parent: GameData.TribeData
+  name: climate
+  fullName: climate
+  type: Property
+  summary: An integer ID that determines the environmental look and feel, including terrain colors and vegetation.
+  syntax:
+    content: '"climate": 10'
+- uid: GameData.TribeData.language
+  id: language
+  parent: GameData.TribeData
+  name: language
+  fullName: language
+  type: Property
+  summary: A comma-separated string of syllables used to generate names and sounds for the tribe.
+  syntax:
+    content: '"language": "gu,rø,lak,bu,gru,tof,fla,ork,lin,ark,ur"'
+- uid: GameData.TribeData.startingTech
+  id: startingTech
+  parent: GameData.TribeData
+  name: startingTech
+  fullName: startingTech
+  type: Property
+  summary: An array of strings listing the tech IDs the tribe begins the game with. "basic" is required for all tribes.
+  syntax:
+    content: '"startingTech": ["basic", "meditation"]'
+- uid: GameData.TribeData.startingResource
+  id: startingResource
+  parent: GameData.TribeData
+  name: startingResource
+  fullName: startingResource
+  type: Property
+  summary: An array of strings listing the resource IDs guaranteed to spawn near the tribe's starting city.
+  syntax:
+    content: '"startingResource": ["game"]'
+- uid: GameData.TribeData.startingUnit
+  id: startingUnit
+  parent: GameData.TribeData
+  name: startingUnit
+  fullName: startingUnit
+  type: Property
+  summary: The string ID of the unit the tribe starts with (e.g., "warrior", "rider").
+  syntax:
+    content: '"startingUnit": "warrior"'
+- uid: GameData.TribeData.priceTier
+  id: priceTier
+  parent: GameData.TribeData
+  name: priceTier
+  fullName: priceTier
+  type: Property
+  summary: An integer (0-3) determining the tribe's cost in the selection screen. 0 is free, 1-3 correspond to increasing costs.
+  syntax:
+    content: '"priceTier": 1'
+- uid: GameData.TribeData.category
+  id: category
+  parent: GameData.TribeData
+  name: category
+  fullName: category
+  type: Property
+  summary: An integer ID for grouping tribes. (e.g., 1 for Normal, 2 for Special).
+  syntax:
+    content: '"category": 1'
+- uid: GameData.TribeData.bonus
+  id: bonus
+  parent: GameData.TribeData
+  name: bonus
+  fullName: bonus
+  type: Property
+  summary: An integer that determines the tribe's starting star bonus. 0 means no bonus, 1 gives a larger capital and more starting stars (e.g., Luxidoor).
+  syntax:
+    content: '"bonus": 0'
+- uid: GameData.TribeData.terrainModifier
+  id: terrainModifier
+  parent: GameData.TribeData
+  name: terrainModifier
+  fullName: terrainModifier
+  type: Property
+  summary: An object where keys are terrain IDs (e.g., "mountain") and values are numeric multipliers for their spawn rate. >1 increases spawn rate, <1 decreases it.
+  syntax:
+    content: '"terrainModifier": { "mountain": 1.5 }'
+- uid: GameData.TribeData.resourceModifier
+  id: resourceModifier
+  parent: GameData.TribeData
+  name: resourceModifier
+  fullName: resourceModifier
+  type: Property
+  summary: An object where keys are resource IDs (e.g., "crop") and values are numeric multipliers for their spawn rate. >1 increases spawn rate, <1 decreases it. A value of 0 prevents the resource from spawning.
+  syntax:
+    content: '"resourceModifier": { "crop": 0.1 }'
+- uid: GameData.TribeData.unitOverrides
+  id: unitOverrides
+  parent: GameData.TribeData
+  name: unitOverrides
+  fullName: unitOverrides
+  type: Property
+  summary: An object that replaces standard units with tribe-specific ones. The key is the base unit ID (e.g., "giant"), and the value is the replacement unit ID (e.g., "crab").
+  syntax:
+    content: '"unitOverrides": { "giant": "crab" }'
+- uid: GameData.TribeData.techOverrides
+  id: techOverrides
+  parent: GameData.TribeData
+  name: techOverrides
+  fullName: techOverrides
+  type: Property
+  summary: An object that replaces standard technologies with tribe-specific ones. The key is the base tech ID (e.g., "sailing"), and the value is the replacement tech ID (e.g., "marinelife").
+  syntax:
+    content: '"techOverrides": { "sailing": "marinelife" }'
+- uid: GameData.TribeData.improvementOverrides
+  id: improvementOverrides
+  parent: GameData.TribeData
+  name: improvementOverrides
+  fullName: improvementOverrides
+  type: Property
+  summary: An object that replaces standard improvements with tribe-specific ones. The key is the base improvement ID (e.g., "burnforest"), and the value is the replacement ID or "none" to disable it.
+  syntax:
+    content: '"improvementOverrides": { "burnforest": "none" }'
+- uid: GameData.TribeData.tribeAbilities
+  id: tribeAbilities
+  parent: GameData.TribeData
+  name: tribeAbilities
+  fullName: tribeAbilities
+  type: Property
+  summary: An array of strings representing special abilities unique to the tribe, such as "poisonresist" or "freeze".
+  syntax:
+    content: '"tribeAbilities": ["poisonresist"]'
+- uid: GameData.TribeData.skins
+  id: skins
+  parent: GameData.TribeData
+  name: skins
+  fullName: skins
+  type: Property
+  summary: An array of string IDs referencing skins from `skinData` that are available for this tribe.
+  syntax:
+    content: '"skins":["Aibo"]'
+- uid: GameData.TribeData.idx
+  id: idx
+  parent: GameData.TribeData
+  name: idx
+  fullName: idx
+  type: Property
+  summary: A unique integer index for the tribe. Must be unique across all tribes. When adding a new entry, it is recommended to set this value to -1 to ensure uniqueness and prevent conflicts with game updates.
+  syntax:
+    content: '"idx": 2'
