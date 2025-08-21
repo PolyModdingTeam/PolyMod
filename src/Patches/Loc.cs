@@ -1,11 +1,11 @@
+using System.Reflection;
 using HarmonyLib;
 using I2.Loc;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
-using System.Reflection;
 using LibCpp2IL;
 using Polytopia.Data;
 
-namespace PolyMod.Managers;
+namespace PolyMod.Patches;
 
 internal static class Loc
 {

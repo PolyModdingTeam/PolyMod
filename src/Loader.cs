@@ -4,7 +4,6 @@ using Il2CppSystem.Linq;
 using MonoMod.Utils;
 using Newtonsoft.Json.Linq;
 using PolyMod.Json;
-using PolyMod.Managers;
 using Polytopia.Data;
 using PolytopiaBackendBase.Game;
 using System.Data;
@@ -15,6 +14,8 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using PolyMod.modApi;
+using PolyMod.Patches;
 using UnityEngine;
 
 namespace PolyMod;
@@ -423,10 +424,10 @@ internal static class Loader
 			Assembly assembly = Assembly.Load(file.bytes);
 			if (assembly
 				    .GetTypes()
-				    .FirstOrDefault(t => t.IsSubclassOf(typeof(PolyScriptModBase)))
+				    .FirstOrDefault(t => t.IsSubclassOf(typeof(PolyScriptBase)))
 			    is { } modType)
 			{
-				var modInstance = (PolyScriptModBase) Activator.CreateInstance(modType)!;
+				var modInstance = (PolyScriptBase) Activator.CreateInstance(modType)!;
 				modInstance.Initialize(mod.id, BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.id}"));
 				modInstance.Load();
 				return;

@@ -1,14 +1,13 @@
 using System.Reflection;
+using System.Text.Json.Serialization;
 using HarmonyLib;
+using PolyMod.Json;
 using Polytopia.Data;
 using UnityEngine;
 using UnityEngine.U2D;
 using UnityEngine.UI;
-using Il2CppSystem.Linq;
-using PolyMod.Json;
-using System.Text.Json.Serialization;
 
-namespace PolyMod.Managers;
+namespace PolyMod.Patches;
 
 /// <summary>
 /// Manages visual aspects of the game, including sprites, UI elements, and in-game object appearances.

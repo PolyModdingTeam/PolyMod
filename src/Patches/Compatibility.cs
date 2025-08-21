@@ -1,9 +1,9 @@
-using HarmonyLib;
 using System.Text;
+using HarmonyLib;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace PolyMod.Managers;
+namespace PolyMod.Patches;
 
 internal static class Compatibility
 {

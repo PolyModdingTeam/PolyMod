@@ -1,8 +1,7 @@
 using BepInEx.Logging;
 using Newtonsoft.Json.Linq;
-using PolyMod.Managers;
 
-namespace PolyMod;
+namespace PolyMod.modApi;
 
 public abstract class PolyScriptBase
 {

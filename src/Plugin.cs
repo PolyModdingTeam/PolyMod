@@ -3,7 +3,7 @@ using System.Text.Json;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-using PolyMod.Managers;
+using PolyMod.Patches;
 using UnityEngine;
 
 namespace PolyMod;

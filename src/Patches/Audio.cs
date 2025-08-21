@@ -1,9 +1,8 @@
 using HarmonyLib;
 using Polytopia.Data;
 using UnityEngine;
-using UnityEngine.Networking;
 
-namespace PolyMod.Managers;
+namespace PolyMod.Patches;
 
 internal static class Audio
 {

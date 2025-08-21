@@ -1,15 +1,13 @@
+using System.Diagnostics;
 using BepInEx.Unity.IL2CPP.Logging;
 using HarmonyLib;
 using Newtonsoft.Json.Linq;
 using Polytopia.Data;
 using PolytopiaBackendBase.Game;
-using System.Diagnostics;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using UnityEngine;
+using Patch = PolyMod.modApi.Patch;
 
-namespace PolyMod.Managers;
+namespace PolyMod.Patches;
 
 internal static class Main
 {
@@ -24,11 +22,20 @@ internal static class Main
 	internal static Dictionary<string, string> attractsTerrainNames = new();
 	internal static Dictionary<ImprovementData.Type, ResourceData.Type> attractsResourceOverrides = new();
 	internal static Dictionary<ImprovementData.Type, Polytopia.Data.TerrainData.Type> attractsTerrainOverrides = new();
-
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(GameLogicData), nameof(GameLogicData.AddGameLogicPlaceholders))]
-	private static void GameLogicData_Parse(GameLogicData __instance, JObject rootObject)
+	static Main()
 	{
+		Patch.Wrap(GameLogicData.AddGameLogicPlaceholders, (orig, instance) =>
+		{
+			return (JObject rootObject) =>
+			{
+				GameLogicData_Parse(instance, rootObject);
+				orig();
+			};
+		});
+	}
+	private static void GameLogicData_Parse(GameLogicData instance, JObject rootObject)
+	{ 
+		
 		if (!fullyInitialized)
 		{
 			Load(rootObject);
@@ -57,7 +64,7 @@ internal static class Main
 			foreach (Visual.SkinInfo skin in Registry.skinInfo)
 			{
 				if (skin.skinData != null)
-					__instance.skinData[(SkinType)skin.idx] = skin.skinData;
+					instance.skinData[(SkinType)skin.idx] = skin.skinData;
 			}
 			foreach (KeyValuePair<string, string> entry in embarkNames)
 			{

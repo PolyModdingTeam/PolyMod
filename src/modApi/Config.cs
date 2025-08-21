@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace PolyMod.Managers;
+namespace PolyMod.modApi;
 
 /// <summary>
 /// Allows mods to save config.

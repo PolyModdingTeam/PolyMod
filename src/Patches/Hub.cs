@@ -10,7 +10,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using static PopupBase;
 
-namespace PolyMod.Managers;
+namespace PolyMod.Patches;
 
 internal static class Hub
 {

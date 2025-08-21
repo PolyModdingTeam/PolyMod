@@ -1,7 +1,7 @@
 using PolytopiaBackendBase.Game;
 using UnityEngine;
 
-namespace PolyMod.Managers;
+namespace PolyMod.modApi;
 
 public static class General
 {

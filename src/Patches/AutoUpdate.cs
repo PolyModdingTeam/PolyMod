@@ -4,7 +4,7 @@ using System.Text.Json;
 using HarmonyLib;
 using UnityEngine;
 
-namespace PolyMod.Managers;
+namespace PolyMod.Patches;
 
 internal static class AutoUpdate
 {
