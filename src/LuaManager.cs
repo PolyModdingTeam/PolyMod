@@ -1,0 +1,95 @@
+using System.Linq;
+using System.Text.Json.Nodes;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
+using MoonSharp.Interpreter;
+using Newtonsoft.Json.Linq;
+using PolyMod.modApi;
+using Polytopia.Data;
+using UnityEngine;
+
+namespace PolyMod;
+
+public class LuaManager
+{
+    private Script lua;
+
+    public LuaManager(string modName)
+    {
+        lua = new Script();
+
+        foreach (var type in typeof(GameLogicData).Assembly.GetTypes())
+        {
+            UserData.RegisterType(type);
+            lua.Globals[type.Name] = type;
+        }
+        foreach (var type in typeof(PopupButtonContainer).Assembly.GetTypes())
+        {
+            UserData.RegisterType(type);
+            lua.Globals[type.Name] = type;
+        }
+        #region PolyMod.*
+        UserData.RegisterType(typeof(Patch));
+        lua.Globals["Patch"] = typeof(Patch);
+
+        UserData.RegisterType(typeof(General));
+        lua.Globals["General"] = typeof(General);
+
+        UserData.RegisterType(typeof(Config<JsonNode>));
+        lua.Globals["Config"] = new Config<JsonNode>(modName, Config<JsonNode>.ConfigTypes.PerMod);
+        lua.Globals["ExposedConfig"] = new Config<JsonNode>(modName, Config<JsonNode>.ConfigTypes.Exposed);
+        #endregion
+        
+        #region Il2cppSystem.*
+        UserData.RegisterType(typeof(Il2CppReferenceArray<>));
+        #endregion
+        
+        #region UnityEngine.*
+        UserData.RegisterType<Vector2>();
+        UserData.RegisterType<Vector3>();
+        UserData.RegisterType<Quaternion>();
+        UserData.RegisterType<Color>();
+        UserData.RegisterType<Color32>();
+
+        UserData.RegisterType<GameObject>();
+        UserData.RegisterType<Component>();
+        UserData.RegisterType<Transform>();
+        UserData.RegisterType<RectTransform>();
+
+        UserData.RegisterType<Sprite>();
+        UserData.RegisterType<Texture2D>();
+
+        UserData.RegisterType<Canvas>();
+        
+        UserData.RegisterType<Mathf>();
+        UserData.RegisterType<Time>();
+        
+        lua.Globals["Vector2"] = typeof(Vector2);
+        lua.Globals["Vector3"] = typeof(Vector3);
+        lua.Globals["Quaternion"] = typeof(Quaternion);
+        lua.Globals["Color"] = typeof(Color);
+        lua.Globals["Color32"] = typeof(Color32);
+
+        lua.Globals["Mathf"] = typeof(Mathf);
+        lua.Globals["Time"] = typeof(Time);
+        #endregion
+    }
+    public LuaManager(Mod mod) : this(mod.id) { }
+    public void Execute(List<string> codes)
+    {
+        foreach (var code in codes)
+        {
+            lua.DoString(code);
+        }
+    }
+    public void Execute(string codes)
+    {
+        try
+        {
+            lua.DoString(codes);
+        }
+        catch (ScriptRuntimeException e)
+        {
+            Plugin.logger.LogError(e.DecoratedMessage);
+        }
+    }
+}

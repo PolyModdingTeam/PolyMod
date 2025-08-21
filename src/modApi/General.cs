@@ -1,8 +1,10 @@
+using MoonSharp.Interpreter;
 using PolytopiaBackendBase.Game;
 using UnityEngine;
 
 namespace PolyMod.modApi;
 
+[MoonSharpUserData]
 public static class General
 {
 	/// <summary>

@@ -7,6 +7,7 @@ using Polytopia.Data;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using static PopupBase;
 
@@ -30,21 +31,6 @@ internal static class Hub
         __instance.videoPlayer.url = path;
         __instance.videoPlayer.Play();
         return false;
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(PopupButtonContainer), nameof(PopupButtonContainer.SetButtonData))]
-    private static void PopupButtonContainer_SetButtonData(PopupButtonContainer __instance)
-    {
-        int num = __instance.buttons.Length;
-        for (int i = 0; i < num; i++)
-        {
-            UITextButton uitextButton = __instance.buttons[i];
-            Vector2 vector = new((num == 1) ? 0.5f : (i / (num - 1.0f)), 0.5f);
-            uitextButton.rectTransform.anchorMin = vector;
-            uitextButton.rectTransform.anchorMax = vector;
-            uitextButton.rectTransform.pivot = vector;
-        }
     }
 
     [HarmonyPrefix]
@@ -159,6 +145,23 @@ internal static class Hub
                     "polymod.hub.dump",
                     callback: (UIButtonBase.ButtonAction)((_, _) =>
                     {
+                        void DumpGameObject(GameObject transform, int depth)
+                        {
+                            string indent = new string(' ', depth * 2);
+                            Plugin.logger.LogInfo($"{indent}{transform.ToString()}");
+                            // foreach (GameObject child in transform.)
+                            // {
+                            //     DumpGameObject(child, depth + 1);
+                            // }
+                        }
+                        Plugin.logger.LogInfo("DUMPED SCENE TREE:");
+                        Scene scene = SceneManager.GetActiveScene();
+                        Plugin.logger.LogInfo($"Scene: {scene.name}");
+                        foreach (GameObject root in scene.GetRootGameObjects())
+                        {
+                            DumpGameObject(root, 1);
+                        }
+                        
                         Directory.CreateDirectory(Constants.DUMPED_DATA_PATH);
                         File.WriteAllTextAsync(
                             Path.Combine(Constants.DUMPED_DATA_PATH, "gameLogicData.json"),
@@ -211,6 +214,7 @@ internal static class Hub
                                 Path.Combine(Constants.DUMPED_DATA_PATH, $"preview_{type}.json"),
                                 JsonSerializer.Serialize(previewTiles, new JsonSerializerOptions { WriteIndented = true })
                             );
+                            
                         }
                         NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
                     }),
@@ -390,5 +394,29 @@ internal static class Hub
     internal static void Init()
     {
         Harmony.CreateAndPatchAll(typeof(Hub));
+        var luaText = @"
+print(""DEBUG Patch:"", Patch)
+print(""DEBUG Patch.Wrap:"", Patch and Patch.Wrap)
+print(""DEBUG PopupButtonContainer:"", PopupButtonContainer)
+print(""DEBUG SetButtonData:"", PopupButtonContainer and PopupButtonContainer.SetButtonData)
+
+Patch.Wrap(""PopupButtonContainer.SetButtonData"", function (original, instance, args)
+
+    original()
+    
+    local num = instance.buttons.Length
+
+    for i = 0, num - 1 do
+        local uitextButton = instance.buttons[i]
+        local x = (num == 1) and 0.5 or (i / (num - 1))
+        local vector = Vector2.__new(x, 0.5)
+        uitextButton.rectTransform.anchorMin = vector
+        uitextButton.rectTransform.anchorMax = vector
+        uitextButton.rectTransform.pivot = vector
+    end
+end)
+
+";
+        new LuaManager("jouke").Execute(luaText);
     }
 }

@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using BepInEx.Logging;
 using Newtonsoft.Json.Linq;
 
@@ -28,6 +29,6 @@ public abstract class PolyScript<TConfig, TExposedConfig> : PolyScriptBase where
     protected ManualLogSource Logger { get; private set; } = null!;
 }
 
-public abstract class PolyScript : PolyScript<JObject, JObject>
+public abstract class PolyScript : PolyScript<JsonNode, JsonNode>
 {
 }

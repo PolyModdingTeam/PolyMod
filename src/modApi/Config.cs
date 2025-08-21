@@ -1,11 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using MoonSharp.Interpreter;
 
 namespace PolyMod.modApi;
 
 /// <summary>
 /// Allows mods to save config.
 /// </summary>
+[MoonSharpUserData]
 public class Config<T> where T : class
 {
     private T? currentConfig;
@@ -83,12 +85,20 @@ public class Config<T> where T : class
     {
         editor(currentConfig ?? throw new InvalidOperationException("Must set default before reading config."));
     }
+    public void Edit(Closure editor)
+    {
+        editor.Call(currentConfig);
+    }
     /// <summary>
     /// Gets part of the config. Should only be called after setting a default
     /// </summary>
     public TResult Get<TResult>(Func<T, TResult> getter)
     {
         return getter(currentConfig ?? throw new InvalidOperationException("Must set default before reading config."));
+    }
+    public DynValue Get(Closure getter)
+    {
+        return getter.Call(currentConfig);
     }
     /// <summary>
     /// Writes the config to disk

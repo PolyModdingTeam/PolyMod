@@ -1,118 +1,121 @@
+
+using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using HarmonyLib;
-using MonoMod.Utils;
+using MoonSharp.Interpreter;
 using Polytopia.Data;
 using UnityEngine;
+using ScriptRuntimeException = MoonSharp.Interpreter.ScriptRuntimeException;
 
 namespace PolyMod.modApi;
 
+[MoonSharpUserData]
 public static class Patch
 {
-	private static readonly Harmony harmony = new Harmony("com.polymoddingteam.polymod");
-	private static readonly HarmonyMethod prefixMethod = new HarmonyMethod(typeof(Patch).GetMethod(nameof(Prefix),
-		BindingFlags.NonPublic | BindingFlags.Static));
-	private delegate object? WrapperDelegate(object? instance, object[] args);
-	private static Dictionary<MethodInfo, WrapperDelegate> patches = new();
-	
-	private static Dictionary<MethodInfo, Delegate> delegates = new();
-	public static void Wrap<TDelegate, TObject>(TDelegate originalMethod, Func<TDelegate, TObject, TDelegate> patch) where TDelegate : Delegate
-	{
-		patches[originalMethod.Method] = CreateWrapperDelegate(originalMethod, patch);
-		
-		harmony.Patch(originalMethod.Method, prefixMethod);
-	}
-	public static void Wrap<TDelegate, TObject>(MethodInfo originalMethod, Func<TDelegate, TObject, TDelegate> patch) where TDelegate : Delegate
-	{
-		patches[originalMethod] = CreateWrapperDelegate((TDelegate)originalMethod.CreateDelegate(typeof(TDelegate)), patch);
-		harmony.Patch(originalMethod, prefixMethod);
-	}
-	private static WrapperDelegate CreateWrapperDelegate<TDelegate, TObject>(TDelegate originalMethodDelegate, Func<TDelegate, TObject, TDelegate> patch) where TDelegate : Delegate
-	{
-		var instanceParam = Expression.Parameter(typeof(object));
-		var argsParam = Expression.Parameter(typeof(object[]));
+    private record class PatchTuple
+    {
+        public List<(Closure hook, Script script)> patches;
+        public bool isAlreadyBeingPatched;
+    }
+    private static readonly Harmony harmony = new Harmony("com.polymoddingteam.polymod");
+    private static readonly HarmonyMethod prefixMethod = new HarmonyMethod(typeof(Patch).GetMethod(nameof(Prefix), BindingFlags.NonPublic | BindingFlags.Static));
+    private static readonly HarmonyMethod prefixVoidMethod = new HarmonyMethod(typeof(Patch).GetMethod(nameof(PrefixVoid), BindingFlags.NonPublic | BindingFlags.Static));
 
-		var parameters = originalMethodDelegate.Method.GetParameters();
-		var argExpressions = new Expression[parameters.Length];
-		for (int i = 0; i < parameters.Length; i++)
-		{
-			var index = Expression.Constant(i);
-			var arrayAccess = Expression.ArrayIndex(argsParam, index);
-			var converted = Expression.Convert(arrayAccess, parameters[i].ParameterType);
-			argExpressions[i] = converted;
-		}
-		
-		var instanceCast = Expression.Convert(instanceParam, typeof(TObject));
+    private static readonly Dictionary<MethodBase, PatchTuple> patches = new ();
 
-		var patchCall = Expression.Invoke(Expression.Constant(patch), Expression.Constant(originalMethodDelegate), instanceCast);
-		var replacementVar = Expression.Variable(typeof(TDelegate));
-		var assignReplacement = Expression.Assign(replacementVar, patchCall);
+    private static readonly Dictionary<string, MethodBase> whiteList = new();
+    static Patch()
+    {
+        BuildWhiteList();
+    }
+    private static void BuildWhiteList()
+    {
+        var gameLogicAsm = typeof(GameLogicData).Assembly;
+        foreach (var type in gameLogicAsm.GetTypes())
+        {
+            foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+            {
+                whiteList[$"{type.FullName}.{method.Name}"] = method;
+            }
+        }
+        var uiAsm = typeof(PopupButtonContainer).Assembly;
+        foreach (var type in uiAsm.GetTypes())
+        {
+            foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+            {
+                whiteList[$"{type.FullName}.{method.Name}"] = method;
+            }
+        }
+    }
+    public static void Wrap(Script script, string targetMethod, Closure hook)
+    {
+        if (!whiteList.TryGetValue(targetMethod, out var methBase))
+            throw new ScriptRuntimeException("Tried to patch non-whitelisted method!");
+        Debug.Assert(methBase != null, "methBase != null");
+        if (patches.TryGetValue(methBase, out var tuple))
+        {
+            Debug.Assert(tuple.patches != null, "list != null");
+            tuple.patches.Add((hook, script));
+            return;
+        }
+        Debug.Assert(hook != null, "hook != null");
+        Debug.Assert(prefixMethod != null, "prefixMethod != null");
+        tuple = new()
+        {
+            patches = new ()
+            {
+                (hook, script) 
+            }
+        };
+        patches[methBase] = tuple;
+        harmony.Patch(methBase, 
+            (methBase is MethodInfo mi && mi.ReturnType != typeof(void))
+                ? prefixMethod : prefixVoidMethod);
+    }
+    private static bool Prefix(MethodBase __originalMethod, ref object __result, object[] __args, object __instance)
+    {
+        Plugin.logger.LogInfo("Patching method");
+        if (!patches.TryGetValue(__originalMethod, out var tuple)) throw new InvalidOperationException();
+        if (tuple.isAlreadyBeingPatched) return true;
+        tuple.isAlreadyBeingPatched = true;
+        try
+        {
+            DynValue ExecuteChain(int i)
+            {
+                Plugin.logger.LogInfo("Executing chain..." + i);
+                if (i >= tuple.patches.Count)
+                {
+                    var lastScript = tuple.patches[i - 1].script;
+                    var result = __originalMethod.Invoke(__instance, __args);
+                    return DynValue.FromObject(lastScript, result);
+                }
 
-		var replacementCall = Expression.Invoke(replacementVar, argExpressions);
-		var block = Expression.Block(
-			new[] { replacementVar },
-			assignReplacement,
-			replacementCall
-		);
+                var (currentHook, script) = tuple.patches[i];
+                var origForThisHook = DynValue.FromObject(
+                    script,
+                    () => ExecuteChain(i + 1)
+                );
 
-		var lambda = Expression.Lambda<WrapperDelegate>(block, instanceParam, argsParam);
-		return lambda.Compile();
-	}
-	
-	public static void Wrap<TDelegate>(TDelegate originalMethod, Func<TDelegate, TDelegate> patch) where TDelegate : Delegate
-	{
-		patches[originalMethod.Method] = CreateWrapperDelegate(originalMethod, patch);
-
-		harmony.Patch(originalMethod.Method, prefixMethod);
-	}
-	public static void Wrap<TDelegate>(MethodInfo originalMethod, Func<TDelegate, TDelegate> patch) where TDelegate : Delegate
-	{
-		patches[originalMethod] = CreateWrapperDelegate((TDelegate) originalMethod.CreateDelegate(typeof(TDelegate)), patch);
-
-		harmony.Patch(originalMethod, prefixMethod);
-	}
-	private static WrapperDelegate CreateWrapperDelegate<TDelegate>(TDelegate originalMethodDelegate, Func<TDelegate, TDelegate> patch) where TDelegate : Delegate
-	{
-		var instanceParam = Expression.Parameter(typeof(object));
-		var argsParam = Expression.Parameter(typeof(object[]));
-		
-		var patchCall = Expression.Invoke(Expression.Constant(patch), Expression.Constant(originalMethodDelegate));
-		var replacementVar = Expression.Variable(typeof(TDelegate));
-		var assignReplacement = Expression.Assign(replacementVar, patchCall);
-		
-		var parameters = originalMethodDelegate.Method.GetParameters();
-		var argExpressions = new Expression[parameters.Length];
-		for (int i = 0; i < parameters.Length; i++)
-		{
-			var index = Expression.Constant(i);
-			var arrayAccess = Expression.ArrayIndex(argsParam, index);
-			var converted = Expression.Convert(arrayAccess, parameters[i].ParameterType);
-			argExpressions[i] = converted;
-		}
-		var replacementCall = Expression.Invoke(replacementVar, argExpressions);
-		var block = Expression.Block(
-			new[] { replacementVar },
-			assignReplacement,
-			replacementCall
-		);
-
-		var lambda = Expression.Lambda<WrapperDelegate>(block, instanceParam, argsParam);
-		return lambda.Compile();
-	}
-	private static bool Prefix(MethodBase __originalMethod, ref object? __result, object[] __args, object? __instance)
-	{
-		var originalMethod = (MethodInfo)__originalMethod;
-		Debug.Assert(originalMethod.IsStatic ? __instance == null : __instance != null);
-		if (!patches.TryGetValue(originalMethod, out var wrapperDel))
-		{
-			// throw new MidjiateWTFException("WHO PATCHED A METHOD WITH THIS METHOD MANUALLY" + new string('?', 50))
-			Plugin.logger.LogError("[Patch.Prefix] WHO PATCHED A METHOD WITH THIS METHOD MANUALLY" + new string('?', 50));
-			return true; // run original
-		}
-		
-		__result = wrapperDel(__instance, __args);
-
-		return false; // dont run original
-	}
+                return __originalMethod.IsStatic ? currentHook.Call(origForThisHook, __args) : currentHook.Call(origForThisHook, __instance, __args);
+            }
+            __result = ExecuteChain(0).ToObject();
+            return false;
+        }
+        catch (ScriptRuntimeException e)
+        {
+            Plugin.logger.LogError(e.DecoratedMessage);
+            return true;
+        }
+        finally
+        {
+            tuple.isAlreadyBeingPatched = false;
+        }
+    }
+    private static bool PrefixVoid(MethodBase __originalMethod, object[] __args, object? __instance)
+    {
+        object? nothing = null;
+        return Prefix(__originalMethod, ref nothing, __args, __instance);
+    }
 }
-

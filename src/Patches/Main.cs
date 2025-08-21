@@ -54,7 +54,7 @@ internal static class Main
 			foreach (Visual.SkinInfo skin in Registry.skinInfo)
 			{
 				if (skin.skinData != null)
-					instance.skinData[(SkinType)skin.idx] = skin.skinData;
+					__instance.skinData[(SkinType)skin.idx] = skin.skinData;
 			}
 			foreach (KeyValuePair<string, string> entry in embarkNames)
 			{
