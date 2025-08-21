@@ -22,20 +22,10 @@ internal static class Main
 	internal static Dictionary<string, string> attractsTerrainNames = new();
 	internal static Dictionary<ImprovementData.Type, ResourceData.Type> attractsResourceOverrides = new();
 	internal static Dictionary<ImprovementData.Type, Polytopia.Data.TerrainData.Type> attractsTerrainOverrides = new();
-	static Main()
-	{
-		Patch.Wrap(GameLogicData.AddGameLogicPlaceholders, (orig, instance) =>
-		{
-			return (JObject rootObject) =>
-			{
-				GameLogicData_Parse(instance, rootObject);
-				orig();
-			};
-		});
-	}
-	private static void GameLogicData_Parse(GameLogicData instance, JObject rootObject)
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(GameLogicData), nameof(GameLogicData.AddGameLogicPlaceholders))]
+	private static void GameLogicData_Parse(GameLogicData __instance, JObject rootObject)
 	{ 
-		
 		if (!fullyInitialized)
 		{
 			Load(rootObject);

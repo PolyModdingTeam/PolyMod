@@ -116,32 +116,3 @@ public static class Patch
 	}
 }
 
-/*
-public class Example
-{
-	public static void Main()
-	{
-		// postfix example
-		Patch.Wrap(GameLogicData.CanBuild, (orig) =>
-		{
-			return (GameLogicData instance, GameState GameState, TileData tile, PlayerState playerState, ImprovementData improvement) =>
-			{
-				var originalResult = orig();
-				return DoSomething(originalResult);
-			};
-		});
-		// prefix example
-		Patch.Wrap(GameLogicData.CanBuild, (orig) =>
-		{
-			return (GameLogicData instance, GameState GameState, TileData tile, PlayerState playerState, ImprovementData improvement) =>
-			{
-				DoSomething();
-				if (someCondition)
-				{
-					return orig();
-				}
-				return false;
-			};
-		});
-}
-*/
