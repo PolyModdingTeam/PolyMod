@@ -235,6 +235,7 @@ internal static class Loader
 		foreach (var (id, mod) in Registry.mods)
 		{
 			if (mod.status != Mod.Status.Success) continue;
+			var luaFiles = new List<Mod.File>();
 			foreach (var file in mod.files)
 			{
 				checksumString.Append(JsonSerializer.Serialize(file));
@@ -246,6 +247,14 @@ internal static class Loader
 				{
 					LoadSpriteInfoFile(mod, file);
 				}
+				if (Path.GetExtension(file.name) == ".lua")
+				{
+					luaFiles.Add(file);
+				}
+			}
+			if (luaFiles.Any())
+			{
+				LoadLuaFiles(mod, luaFiles);
 			}
 			if (!mod.client && id != "polytopia")
 			{
@@ -255,6 +264,14 @@ internal static class Loader
 		}
 		Compatibility.HashSignatures(checksumString);
 
+	}
+	private static void LoadLuaFiles(Mod mod, List<Mod.File> files)
+	{
+		var manager = new LuaManager(mod);
+		foreach (var file in files)
+		{
+			manager.Execute(Encoding.UTF8.GetString(file.bytes), file.name);
+		}
 	}
 	internal static void PatchGLD(JObject gameLogicdata, Dictionary<string, Mod> mods)
 	{

@@ -43,9 +43,9 @@ public class LuaManager
         UserData.RegisterType(typeof(General));
         lua.Globals["General"] = typeof(General);
 
-        UserData.RegisterType(typeof(Config<JsonNode>));
-        lua.Globals["Config"] = new Config<JsonNode>(modName, Config<JsonNode>.ConfigTypes.PerMod);
-        lua.Globals["ExposedConfig"] = new Config<JsonNode>(modName, Config<JsonNode>.ConfigTypes.Exposed);
+        UserData.RegisterType<LuaConfig>();
+        lua.Globals["Config"] = new LuaConfig(modName, Config<JsonNode>.ConfigTypes.PerMod, lua);
+        lua.Globals["ExposedConfig"] = new LuaConfig(modName, Config<JsonNode>.ConfigTypes.Exposed, lua);
         
         UserData.RegisterType(typeof(Input));
         lua.Globals["Input"] = typeof(Input);
@@ -94,11 +94,11 @@ public class LuaManager
             lua.DoString(code);
         }
     }
-    public void Execute(string codes)
+    public void Execute(string code, string fileName)
     {
         try
         {
-            lua.DoString(codes);
+            lua.DoString(code, codeFriendlyName:fileName);
         }
         catch (ScriptRuntimeException e)
         {
