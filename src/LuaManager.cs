@@ -1,22 +1,31 @@
 using System.Linq;
 using System.Text.Json.Nodes;
+using BepInEx.Logging;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using MoonSharp.Interpreter;
 using Newtonsoft.Json.Linq;
 using PolyMod.modApi;
 using Polytopia.Data;
 using UnityEngine;
+using Input = PolyMod.modApi.Input;
 
 namespace PolyMod;
 
 public class LuaManager
 {
     private Script lua;
-
+    private ManualLogSource logger;
     public LuaManager(string modName)
     {
-        lua = new Script();
-
+        logger = BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{modName}");
+        
+        lua = new Script
+        {
+            Options =
+            {
+                DebugPrint = (message) => logger.LogInfo(message),
+            }
+        };
         foreach (var type in typeof(GameLogicData).Assembly.GetTypes())
         {
             UserData.RegisterType(type);
@@ -37,6 +46,9 @@ public class LuaManager
         UserData.RegisterType(typeof(Config<JsonNode>));
         lua.Globals["Config"] = new Config<JsonNode>(modName, Config<JsonNode>.ConfigTypes.PerMod);
         lua.Globals["ExposedConfig"] = new Config<JsonNode>(modName, Config<JsonNode>.ConfigTypes.Exposed);
+        
+        UserData.RegisterType(typeof(Input));
+        lua.Globals["Input"] = typeof(Input);
         #endregion
         
         #region Il2cppSystem.*
@@ -71,6 +83,7 @@ public class LuaManager
 
         lua.Globals["Mathf"] = typeof(Mathf);
         lua.Globals["Time"] = typeof(Time);
+        
         #endregion
     }
     public LuaManager(Mod mod) : this(mod.id) { }
@@ -89,7 +102,18 @@ public class LuaManager
         }
         catch (ScriptRuntimeException e)
         {
-            Plugin.logger.LogError(e.DecoratedMessage);
+            logger.LogError(e.DecoratedMessage);
+        }
+    }
+    public void ExecuteFile(string path)
+    {
+        try
+        {
+            lua.DoFile(path);
+        }
+        catch (ScriptRuntimeException e)
+        {
+            logger.LogError(e.DecoratedMessage);
         }
     }
 }

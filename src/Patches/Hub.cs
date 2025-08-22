@@ -19,7 +19,23 @@ internal static class Hub
     private const string HEADER_POSTFIX = "</b></size><align=\"left\">";
     private const int POPUP_WIDTH = 1400;
     public static bool isConfigPopupActive = false;
-
+    
+    
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PopupButtonContainer), nameof(PopupButtonContainer.SetButtonData))]
+    private static void PopupButtonContainer_SetButtonData(PopupButtonContainer __instance)
+    {
+        int num = __instance.buttons.Length;
+        for (int i = 0; i < num; i++)
+        {
+            UITextButton uitextButton = __instance.buttons[i];
+            Vector2 vector = new((num == 1) ? 0.5f : (i / (num - 1.0f)), 0.5f);
+            uitextButton.rectTransform.anchorMin = vector;
+            uitextButton.rectTransform.anchorMax = vector;
+            uitextButton.rectTransform.pivot = vector;
+        }
+    }
+    
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SplashController), nameof(SplashController.LoadAndPlayClip))]
     private static bool SplashController_LoadAndPlayClip(SplashController __instance)
@@ -32,13 +48,13 @@ internal static class Hub
         __instance.videoPlayer.Play();
         return false;
     }
-
+    
     [HarmonyPrefix]
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
     private static void StartScreen_Start()
     {
         Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<UnityEngine.Object> allLocalizers = GameObject.FindObjectsOfTypeAll(Il2CppType.From(typeof(TMPLocalizer)));
-
+    
         foreach (UnityEngine.Object item in allLocalizers)
         {
             TMPLocalizer? localizer = item.TryCast<TMPLocalizer>();
@@ -46,15 +62,15 @@ internal static class Hub
             {
                 continue;
             }
-
+    
             Transform? parent = localizer?.gameObject?.transform?.parent;
             if (parent == null)
             {
                 continue;
             }
-
+    
             string parentName = parent.name;
-
+    
             if (parentName == "SettingsButton")
             {
                 Transform? textTransform = parent.FindChild("DescriptionText");
@@ -62,21 +78,21 @@ internal static class Hub
                 {
                     return;
                 }
-
+    
                 GameObject originalText = textTransform.gameObject;
                 GameObject text = GameObject.Instantiate(originalText, originalText.transform.parent.parent.parent);
                 text.name = "PolyModVersion";
-
+    
                 RectTransform rect = text.GetComponent<RectTransform>();
                 rect.anchoredPosition = new Vector2(265, 40);
                 rect.sizeDelta = new Vector2(500, rect.sizeDelta.y);
                 rect.anchorMax = Vector2.zero;
                 rect.anchorMin = Vector2.zero;
-
+    
                 TextMeshProUGUI textComponent = text.GetComponent<TextMeshProUGUI>();
                 textComponent.fontSize = 18;
                 textComponent.alignment = TextAlignmentOptions.BottomLeft;
-
+    
                 text.GetComponent<TMPLocalizer>().Text = $"PolyMod {Constants.POLYMOD_VERSION}";
                 text.AddComponent<LayoutElement>().ignoreLayout = true;
             }
@@ -86,19 +102,19 @@ internal static class Hub
                 GameObject button = GameObject.Instantiate(originalButton, originalButton.transform.parent);
                 button.name = "PolyModHubButton";
                 button.transform.position = originalButton.transform.position - new Vector3(90, 0, 0);
-
+    
                 UIRoundButton buttonComponent = button.GetComponent<UIRoundButton>();
                 buttonComponent.bg.sprite = Visual.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
                 buttonComponent.bg.transform.localScale = new Vector3(1.2f, 1.2f, 0);
                 buttonComponent.bg.color = Color.white;
-
+    
                 GameObject.Destroy(buttonComponent.icon.gameObject);
                 GameObject.Destroy(buttonComponent.outline.gameObject);
-
+    
                 buttonComponent.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
             }
         }
-
+    
         static void PolyModHubButtonClicked(int buttonId, BaseEventData eventData)
         {
             BasicPopup popup = PopupManager.GetBasicPopup();
@@ -232,7 +248,7 @@ internal static class Hub
             popup.buttonData = popupButtons.ToArray();
             popup.ShowSetWidth(POPUP_WIDTH);
         }
-
+    
         if (Main.dependencyCycle)
         {
             var popup = PopupManager.GetBasicPopup(new(
@@ -252,7 +268,7 @@ internal static class Hub
             popup.Show();
         }
     }
-
+    
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
     private static void GameManager_Update()
@@ -262,12 +278,12 @@ internal static class Hub
             ShowConfigPopup();
         }
     }
-
+    
     internal static void UpdateSpriteInfos()
     {
         string message = string.Empty;
         Directory.CreateDirectory(Constants.DUMPED_DATA_PATH);
-
+    
         foreach (var file in Directory.GetFiles(Constants.DUMPED_DATA_PATH))
         {
             string? name = Path.GetFileNameWithoutExtension(file);
@@ -293,26 +309,26 @@ internal static class Hub
         }
         NotificationManager.Notify(message);
     }
-
+    
     internal static void ShowConfigPopup()
     {
         BasicPopup polymodPopup = PopupManager.GetBasicPopup();
-
+    
         polymodPopup.Header = Localization.Get("polymod.hub.config");
         polymodPopup.Description = "";
-
+    
         polymodPopup.buttonData = CreateConfigPopupButtonData();
         polymodPopup.ShowSetWidth(POPUP_WIDTH);
         polymodPopup.Show();
     }
-
+    
     internal static PopupButtonData[] CreateConfigPopupButtonData()
     {
         List<PopupButtonData> popupButtons = new()
         {
             new(Localization.Get("buttons.back"), PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnBackButtonClicked, -1, true, null)
         };
-
+    
         if (GameManager.Instance.isLevelLoaded)
         {
             popupButtons.Add(new PopupButtonData(Localization.Get("polymod.hub.spriteinfo.update"), PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnUpdateSpritesButtonClicked, -1, true, null));
@@ -339,7 +355,7 @@ internal static class Hub
             popupButtons.Add(new PopupButtonData(includeAlphasButtonName, Plugin.config.autoUpdate ? PopupButtonData.States.None : PopupButtonData.States.Disabled, (UIButtonBase.ButtonAction)OnIncludeAlphasButtonClicked, -1, true, null));
         }
         return popupButtons.ToArray();
-
+    
         void OnDebugButtonClicked(int buttonId, BaseEventData eventData)
         {
             Plugin.config = new(debug: !Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
@@ -352,7 +368,7 @@ internal static class Hub
             ));
             isConfigPopupActive = false;
         }
-
+    
         void OnAutoUpdateButtonClicked(int buttonId, BaseEventData eventData)
         {
             Plugin.config = new(debug: Plugin.config.debug, autoUpdate: !Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
@@ -365,7 +381,7 @@ internal static class Hub
             ));
             isConfigPopupActive = false;
         }
-
+    
         void OnIncludeAlphasButtonClicked(int buttonId, BaseEventData eventData)
         {
             Plugin.config = new(debug: Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: !Plugin.config.updatePrerelease);
@@ -378,13 +394,13 @@ internal static class Hub
             ));
             isConfigPopupActive = false;
         }
-
+    
         void OnUpdateSpritesButtonClicked(int buttonId, BaseEventData eventData)
         {
             UpdateSpriteInfos();
             isConfigPopupActive = false;
         }
-
+    
         void OnBackButtonClicked(int buttonId, BaseEventData eventData)
         {
             isConfigPopupActive = false;
@@ -394,29 +410,6 @@ internal static class Hub
     internal static void Init()
     {
         Harmony.CreateAndPatchAll(typeof(Hub));
-        var luaText = @"
-print(""DEBUG Patch:"", Patch)
-print(""DEBUG Patch.Wrap:"", Patch and Patch.Wrap)
-print(""DEBUG PopupButtonContainer:"", PopupButtonContainer)
-print(""DEBUG SetButtonData:"", PopupButtonContainer and PopupButtonContainer.SetButtonData)
-
-Patch.Wrap(""PopupButtonContainer.SetButtonData"", function (original, instance, args)
-
-    original()
-    
-    local num = instance.buttons.Length
-
-    for i = 0, num - 1 do
-        local uitextButton = instance.buttons[i]
-        local x = (num == 1) and 0.5 or (i / (num - 1))
-        local vector = Vector2.__new(x, 0.5)
-        uitextButton.rectTransform.anchorMin = vector
-        uitextButton.rectTransform.anchorMax = vector
-        uitextButton.rectTransform.pivot = vector
-    end
-end)
-
-";
-        new LuaManager("jouke").Execute(luaText);
+        new LuaManager("jouke").Execute(File.ReadAllText("/home/jouke/src/mine/PolyMod/src/Patches/Hub.lua"));
     }
 }

@@ -76,7 +76,6 @@ public static class Patch
     }
     private static bool Prefix(MethodBase __originalMethod, ref object __result, object[] __args, object __instance)
     {
-        Plugin.logger.LogInfo("Patching method");
         if (!patches.TryGetValue(__originalMethod, out var tuple)) throw new InvalidOperationException();
         if (tuple.isAlreadyBeingPatched) return true;
         tuple.isAlreadyBeingPatched = true;
@@ -84,7 +83,6 @@ public static class Patch
         {
             DynValue ExecuteChain(int i)
             {
-                Plugin.logger.LogInfo("Executing chain..." + i);
                 if (i >= tuple.patches.Count)
                 {
                     var lastScript = tuple.patches[i - 1].script;
@@ -105,6 +103,7 @@ public static class Patch
         }
         catch (ScriptRuntimeException e)
         {
+            Plugin.logger.LogError($"IN METHOD {__originalMethod.DeclaringType.FullName}.{__originalMethod.Name}({__originalMethod.GetParameters()})");
             Plugin.logger.LogError(e.DecoratedMessage);
             return true;
         }
