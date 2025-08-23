@@ -102,6 +102,7 @@ public static class Patch
                     var result = __originalMethod.Invoke(__instance, __args);
                     return DynValue.FromObject(lastScript, result);
                 }
+                
 
                 var (currentHook, script) = tuple.patches[i];
                 var origForThisHook = DynValue.FromObject(
@@ -116,7 +117,7 @@ public static class Patch
         }
         catch (ScriptRuntimeException e)
         {
-            Plugin.logger.LogError($"IN METHOD {__originalMethod.DeclaringType.FullName}.{__originalMethod.Name}({__originalMethod.GetParameters()})");
+            Plugin.logger.LogError($"IN METHOD {__originalMethod.DeclaringType.FullName}.{__originalMethod.Name}({string.Join(", ", __originalMethod.GetParameters().Select(p => p.ParameterType))})");
             Plugin.logger.LogError(e.DecoratedMessage);
             return true;
         }

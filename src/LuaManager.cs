@@ -28,8 +28,12 @@ public class LuaManager
         };
         foreach (var type in typeof(GameLogicData).Assembly.GetTypes())
         {
-            UserData.RegisterType(type);
-            lua.Globals[type.Name] = type;
+            if (type is { IsSealed: true, IsAbstract: true }) UserData.RegisterExtensionType(type);
+            else
+            {
+                UserData.RegisterType(type);
+                lua.Globals[type.Name] = type;
+            }
         }
         foreach (var type in typeof(PopupButtonContainer).Assembly.GetTypes())
         {

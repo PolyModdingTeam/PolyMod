@@ -392,8 +392,17 @@ internal static class Hub
         {
             UpdateSpriteInfos();
             Loader.UnloadMods(Registry.mods);
-            Loader.RegisterMods(Registry.mods);
-            Loader.LoadMods(Registry.mods, true);
+            Mod.Manifest polytopia = new(
+                "polytopia",
+                "The Battle of Polytopia",
+                null,
+                new(Application.version.ToString()),
+                new string[] { "Midjiwan AB" },
+                Array.Empty<Mod.Dependency>()
+            );
+            Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
+            var dependencyCycle = Loader.RegisterMods(Registry.mods);
+            if (!dependencyCycle) Loader.LoadMods(Registry.mods);
             isConfigPopupActive = false;
         }
     
