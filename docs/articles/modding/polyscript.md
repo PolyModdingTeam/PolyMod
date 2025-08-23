@@ -96,7 +96,6 @@ end
 
 You can create multiple polyscripts in a mod. These will all share the same globals and config, but not the same locals.
 
-
 ## Core APIs
 
 PolyScript exposes several global objects to interact with the game.
@@ -110,26 +109,32 @@ The `Patch` API allows you to hook into existing C# methods in the game, effecti
 This function "wraps" a target method with your own Lua function.
 
 *   `methodName`: A string representing the full name of the method to patch, in the format `"Namespace.TypeName.MethodName"`.
+> [!NOTE]
+> A suprising number of Polytopian types have no namespace.
 *   `hookFunction`: A Lua function that will be executed instead of the original method.
 
 Your hook function receives a special function, `orig`, as its first argument. Calling `orig()` will execute the original method's code (or the next patch in the chain).
 
 **Hook Function Signatures:**
 
-*   For instance methods: `function(orig, self, ...)`
-*   For static methods: `function(orig, ...)`
+*   For instance methods: `function(orig, self, args)`
+*   For static methods: `function(orig, ..args.)`
 
-Where `...` represents the original arguments passed to the method.
+Where `args` is a table containing a list of the args(e.g. args[1] is the first argument, args[2] the second, etc.)
 
+`orig()` will automatically be passed the args table. If you want to modify the args, you can modify said table.
 **Example: Logging when a turn starts**
 
 ```lua
-Patch.Wrap("Polytopia.Game.GameManager.startTurn", function(orig, self, tribe)
-    print("A new turn has started for tribe: " .. tribe.Name)
+Patch.Wrap("Polytopia.Game.GameManager.startTurn", function(orig, self, args)
+    print("A new turn has started for tribe: " .. args[1].Name)
     -- It's crucial to call the original function!
-    orig(self, tribe)
+    orig()
 end)
 ```
+
+**Multiple patches:**
+The first patch will be called first. When the first patch calls orig(), it will execute the second patch, etc.
 
 ### `Input`
 

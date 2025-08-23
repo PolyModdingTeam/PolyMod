@@ -63,7 +63,14 @@ namespace PolyMod.modApi
         {
             On(new List<KeyCode> { key }, action);
         }
-        
+        /// <summary>
+        /// Clears all registered keybinds.
+        /// </summary>
+        internal static void Clear()
+        {
+            keybinds.Clear();
+        }
+
         /// <summary>
         /// Registers an action to be called when a key combination is pressed.
         /// The last key is the main action key (triggers on KeyDown),

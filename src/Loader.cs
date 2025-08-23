@@ -17,6 +17,8 @@ using System.Text.RegularExpressions;
 using PolyMod.modApi;
 using PolyMod.Patches;
 using UnityEngine;
+using Console = Il2CppSystem.Console;
+using Input = PolyMod.modApi.Input;
 
 namespace PolyMod;
 
@@ -226,26 +228,30 @@ internal static class Loader
 		}
 
 		CheckDependencies(mods);
-		var dependencyCycle = !SortMods(Registry.mods);
-		return dependencyCycle;
+		// var dependencyCycle = !SortMods(Registry.mods);
+		// return dependencyCycle;
+		return false;
 	}
-	internal static void LoadMods(Dictionary<string, Mod> mods)
+	internal static void LoadMods(Dictionary<string, Mod> mods, bool onlyUnloaded=false)
 	{
 		StringBuilder checksumString = new();
-		foreach (var (id, mod) in Registry.mods)
+		foreach (var (id, mod) in mods)
 		{
 			if (mod.status != Mod.Status.Success) continue;
+			Plugin.logger.LogInfo($"loading mod: {id}");
 			var luaFiles = new List<Mod.File>();
 			foreach (var file in mod.files)
 			{
 				checksumString.Append(JsonSerializer.Serialize(file));
 				if (Path.GetExtension(file.name) == ".dll")
 				{
-					LoadAssemblyFile(mod, file);
+					if (!onlyUnloaded)
+						LoadAssemblyFile(mod, file);
 				}
 				if (Path.GetFileName(file.name) == "sprites.json")
 				{
-					LoadSpriteInfoFile(mod, file);
+					if (!onlyUnloaded)
+						LoadSpriteInfoFile(mod, file);
 				}
 				if (Path.GetExtension(file.name) == ".lua")
 				{
@@ -268,6 +274,7 @@ internal static class Loader
 	private static void LoadLuaFiles(Mod mod, List<Mod.File> files)
 	{
 		var manager = new LuaManager(mod);
+		Plugin.logger.LogInfo($"loading lua files for mod {mod.id}");
 		foreach (var file in files)
 		{
 			manager.Execute(Encoding.UTF8.GetString(file.bytes), file.name);
@@ -815,5 +822,15 @@ internal static class Loader
 			}
 		}
 		patch.Remove("skinData");
+	}
+	public static void UnloadMods(Dictionary<string,Mod> mods)
+	{
+		Patch.Clear();
+		Input.Clear();
+		// TODO GLD
+		// TODO asm
+		// TODO sprites
+		
+		mods.Clear();
 	}
 }

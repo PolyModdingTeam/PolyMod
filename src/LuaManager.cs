@@ -53,6 +53,8 @@ public class LuaManager
         
         #region Il2cppSystem.*
         UserData.RegisterType(typeof(Il2CppReferenceArray<>));
+        UserData.RegisterType(typeof(Il2CppSystem.Collections.Generic.Dictionary<,>));
+        UserData.RegisterType(typeof(Il2CppSystem.Collections.Generic.List<>));
         #endregion
         
         #region UnityEngine.*

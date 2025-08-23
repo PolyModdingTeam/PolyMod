@@ -13,7 +13,7 @@ public class Config<T> where T : class
     private T? currentConfig;
     private readonly string modName;
     private readonly ConfigTypes configType;
-    private static readonly string ExposedConfigPath = Path.Combine(Constants.BASE_PATH, "mods.json");
+    public static readonly string ExposedConfigPath = Path.Combine(Constants.BASE_PATH, "mods.json");
     private readonly string perModConfigPath;
     private T? defaultConfig;
     public Config(string modName, ConfigTypes configType)

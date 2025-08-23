@@ -49,10 +49,23 @@ public static class Patch
             }
         }
     }
+    public static void Clear()
+    {
+        foreach (var (method, tuple) in patches)
+        {
+            harmony.Unpatch(method, HarmonyPatchType.All);
+            tuple.patches.Clear();
+        }
+        patches.Clear();
+    }
+
     public static void Wrap(Script script, string targetMethod, Closure hook)
     {
         if (!whiteList.TryGetValue(targetMethod, out var methBase))
+        {
             throw new ScriptRuntimeException("Tried to patch non-whitelisted method!");
+        }
+
         Debug.Assert(methBase != null, "methBase != null");
         if (patches.TryGetValue(methBase, out var tuple))
         {

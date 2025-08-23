@@ -241,6 +241,9 @@ internal static class Hub
                     callback: (UIButtonBase.ButtonAction)((_, _) =>
                     {
                         UpdateSpriteInfos();
+                        Loader.UnloadMods(Registry.mods);
+                        Loader.RegisterMods(Registry.mods);
+                        Loader.LoadMods(Registry.mods);
                     }),
                     closesPopup: false
                 ));
@@ -266,16 +269,6 @@ internal static class Hub
             ));
             popup.IsUnskippable = true;
             popup.Show();
-        }
-    }
-    
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
-    private static void GameManager_Update()
-    {
-        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.Tab) && !isConfigPopupActive)
-        {
-            ShowConfigPopup();
         }
     }
     
@@ -398,6 +391,9 @@ internal static class Hub
         void OnUpdateSpritesButtonClicked(int buttonId, BaseEventData eventData)
         {
             UpdateSpriteInfos();
+            Loader.UnloadMods(Registry.mods);
+            Loader.RegisterMods(Registry.mods);
+            Loader.LoadMods(Registry.mods, true);
             isConfigPopupActive = false;
         }
     
@@ -409,7 +405,7 @@ internal static class Hub
 
     internal static void Init()
     {
+        modApi.Input.On(ShowConfigPopup, KeyCode.LeftControl, KeyCode.Tab);
         Harmony.CreateAndPatchAll(typeof(Hub));
-        new LuaManager("jouke").Execute(File.ReadAllText("/home/jouke/src/mine/PolyMod/src/Patches/Hub.lua"));
     }
 }

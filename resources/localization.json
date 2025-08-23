@@ -198,7 +198,7 @@
 		"Russian": "{0} задан на {1}!"
 	},
 	"polymod_hub_spriteinfo_update": {
-		"English": "UPDATE SPRITES",
+		"English": "RELOAD SPRITES&LUA",
 		"Russian": "ОБНОВИТЬ СПРАЙТЫ"
 	},
 	"polymod_spriteinfo_updated": {
