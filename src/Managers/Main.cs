@@ -1,9 +1,11 @@
 using BepInEx.Unity.IL2CPP.Logging;
 using HarmonyLib;
+using Il2CppSystem.Linq;
 using Newtonsoft.Json.Linq;
 using Polytopia.Data;
 using PolytopiaBackendBase.Game;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -32,6 +34,51 @@ public static class Main
 		if (!fullyInitialized)
 		{
 			Load(rootObject);
+			foreach (JToken jtoken in rootObject.SelectTokens("$.*.*").ToArray())
+			{
+				JObject? token = jtoken.TryCast<JObject>();
+				if (token != null)
+				{
+					string dataType = Util.GetJTokenName(token, 2);
+					if (Loader.typeMappings.TryGetValue(dataType, out Loader.TypeMapping? typeMapping))
+					{
+						if (token["idx"] != null && (int)token["idx"] == -1 && typeMapping.shouldCreateCache)
+						{
+							Type targetType = typeMapping.type;
+							string id = Util.GetJTokenName(token);
+							token["idx"] = Registry.autoidx;
+							MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
+							if (methodInfo != null)
+							{
+								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
+								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
+
+								if (Loader.typeHandlers.TryGetValue(targetType, out var handler))
+								{
+									handler(token, true, rootObject);
+								}
+								Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + Registry.autoidx);
+								Registry.autoidx++;
+							}
+						}
+					}
+				}
+			}
+			foreach (JToken jtoken in rootObject.SelectTokens("$.*.*").ToArray())
+			{
+				JObject? token = jtoken.TryCast<JObject>();
+				if (token != null)
+				{
+					string dataType = Util.GetJTokenName(token, 2);
+					if (Loader.typeMappings.TryGetValue(dataType, out Loader.TypeMapping? typeMapping))
+					{
+						if (Loader.typeHandlers.TryGetValue(typeMapping.type, out var handler))
+						{
+							handler(token, false, rootObject);
+						}
+					}
+				}
+			}
 			foreach (System.Collections.Generic.KeyValuePair<int, string> item in Registry.prefabNames)
 			{
 				UnitData.Type unitPrefabType = UnitData.Type.Scout;
@@ -57,8 +104,11 @@ public static class Main
 			foreach (Visual.SkinInfo skin in Registry.skinInfo)
 			{
 				if (skin.skinData != null)
+				{
 					__instance.skinData[(SkinType)skin.idx] = skin.skinData;
+				}
 			}
+			rootObject.Remove("skinData");
 			foreach (KeyValuePair<string, string> entry in embarkNames)
 			{
 				try
@@ -102,6 +152,9 @@ public static class Main
 				}
 			}
 			fullyInitialized = true;
+			string formattedJson = rootObject.ToString(Newtonsoft.Json.Formatting.Indented);
+			File.WriteAllText(Path.Combine(Plugin.BASE_PATH, "output.json"), formattedJson);
+			Console.Write("Saved");
 		}
 	}
 
