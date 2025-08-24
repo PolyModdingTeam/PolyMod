@@ -6,11 +6,11 @@
   - [Tables](#tables)
   - [Functions](#functions)
   - [Control Flow](#control-flow)
-- [Core APIs](#core-apis)
-  - [Patch](#patch)
-  - [Input](#input)
-  - [Config and ExposedConfig](#config-and-exposedconfig)
-  - [Game and Unity Globals](#game-and-unity-globals)
+  - [Core APIs](#core-apis)
+    - [Patch](#patch)
+    - [Input](#input)
+    - [Config and ExposedConfig](#config-and-exposedconfig)
+    - [Game and Unity Globals](#game-and-unity-globals)
 
 PolyScript is a powerful scripting system that allows you to create mods for Polytopia using the Lua programming language. You can modify game logic, respond to player input, and interact with a wide range of game and engine components.
 
@@ -73,6 +73,24 @@ end
 print(greet("PolyModder"))
 ```
 
+**Functions on tables:**
+Tables can also have functions. These can be called with table:function or table.function.
+
+```lua
+local person = { name = "Bob", age = 30 }
+function person:greet()
+    print("Hi, I'm " .. self.name .. " and I'm " .. self.age .. " years old.")
+end
+
+person:greet() -- Calls person.greet(person)
+person.greet(person) -- Equivalent to the above
+```
+
+Note: when C# objects are passed:
+```lua
+local myVector = Vector3.__new(10, 20, 0)
+print(myVector.Distance()) -- doesn't require passing self
+```
 ### Control Flow
 
 ```lua
@@ -118,7 +136,7 @@ Your hook function receives a special function, `orig`, as its first argument. C
 **Hook Function Signatures:**
 
 *   For instance methods: `function(orig, self, args)`
-*   For static methods: `function(orig, ..args.)`
+  *   For static methods: `function(orig, ..args.)`
 
 Where `args` is a table containing a list of the args(e.g. args[1] is the first argument, args[2] the second, etc.)
 
@@ -143,7 +161,7 @@ The `Input` API lets you listen for keyboard events and execute code when keys a
 **`Input.On(keys, callback)`**
 
 *   `keys`: A Lua table containing one or more `KeyCode` values. The last key in the table is the main action key, and any preceding keys are treated as modifiers that must be held down.
-*   `callback`: A Lua function to execute when the key combination is pressed.
+  *   `callback`: A Lua function to execute when the key combination is pressed.
 
 **Example: Binding an action to `Ctrl + R`**
 
@@ -167,7 +185,7 @@ end)
 PolyScript provides two global objects for saving and loading data:
 
 *   `Config`: A key-value store private to your mod. Use this for internal data that should persist across game restarts.
-*   `ExposedConfig`: A key-value store for settings that the **user can configure**. This data is typically exposed in a settings menu or a user-editable file.
+  *   `ExposedConfig`: A key-value store for settings that the **user can configure**. This data is typically exposed in a settings menu or a user-editable file.
 
 These objects behave like standard Lua tables. **Important:** After changing a value, you must call `SaveChanges()` to write the data to disk.
 

@@ -2,12 +2,16 @@ using System.Linq;
 using System.Text.Json.Nodes;
 using BepInEx.Logging;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
+using Il2CppSystem.Collections;
 using MoonSharp.Interpreter;
+using MoonSharp.Interpreter.Interop;
 using Newtonsoft.Json.Linq;
 using PolyMod.modApi;
 using Polytopia.Data;
 using UnityEngine;
+using IDisposable = Il2CppSystem.IDisposable;
 using Input = PolyMod.modApi.Input;
+using Object = Il2CppSystem.Object;
 
 namespace PolyMod;
 
@@ -15,6 +19,27 @@ public class LuaManager
 {
     private Script lua;
     private ManualLogSource logger;
+    static LuaManager()
+    {
+        Script.GlobalOptions.CustomConverters.SetClrToScriptCustomConversion(typeof(IEnumerable<>), (_, enumerable) =>
+        {
+            IEnumerator enumerator =  ((IEnumerable) enumerable).GetEnumerator();
+            return DynValue.NewCallback((context, args) =>
+            {
+                if (enumerator.MoveNext())
+                {
+                    // Return the current item as a single value tuple
+                    return DynValue.NewTuple(DynValue.FromObject(context.GetScript(), enumerator.Current));
+                }
+                else
+                {
+                    // Iterator is finished
+                    ((object)enumerator as IDisposable).Dispose();
+                    return DynValue.Nil;
+                }
+            });
+        });
+    }
     public LuaManager(string modName)
     {
         logger = BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{modName}");
@@ -26,20 +51,25 @@ public class LuaManager
                 DebugPrint = (message) => logger.LogInfo(message),
             }
         };
-        foreach (var type in typeof(GameLogicData).Assembly.GetTypes())
+
+        void RegisterTypesAndExtensions(IEnumerable<Type> types)
         {
-            if (type is { IsSealed: true, IsAbstract: true }) UserData.RegisterExtensionType(type);
-            else
+            foreach (var type in types)
             {
-                UserData.RegisterType(type);
-                lua.Globals[type.Name] = type;
+                if (type is not { IsPublic: true }) continue;
+                if (type is { IsSealed: true, IsAbstract: true }) UserData.RegisterExtensionType(type);
+                else
+                {
+                    UserData.RegisterType(type);
+                    lua.Globals[type.Name] = type;
+                }
             }
         }
-        foreach (var type in typeof(PopupButtonContainer).Assembly.GetTypes())
-        {
-            UserData.RegisterType(type);
-            lua.Globals[type.Name] = type;
-        }
+        
+        RegisterTypesAndExtensions(typeof(GameLogicData).Assembly.GetTypes());
+        RegisterTypesAndExtensions(typeof(PopupButtonContainer).Assembly.GetTypes());
+        RegisterTypesAndExtensions(typeof(Enumerable).Assembly.GetTypes()); // linq
+
         #region PolyMod.*
         UserData.RegisterType(typeof(Patch));
         lua.Globals["Patch"] = typeof(Patch);
@@ -59,6 +89,15 @@ public class LuaManager
         UserData.RegisterType(typeof(Il2CppReferenceArray<>));
         UserData.RegisterType(typeof(Il2CppSystem.Collections.Generic.Dictionary<,>));
         UserData.RegisterType(typeof(Il2CppSystem.Collections.Generic.List<>));
+        UserData.RegisterType(typeof(Il2CppSystem.Collections.Generic.IEnumerable<>));
+        
+        UserData.RegisterType<JToken>();
+        UserData.RegisterType<JObject>();
+        UserData.RegisterType<JArray>();
+        
+        lua.Globals["JToken"] = typeof(JToken);
+        lua.Globals["JObject"] = typeof(JObject);
+        lua.Globals["JArray"] = typeof(JArray);
         #endregion
         
         #region UnityEngine.*

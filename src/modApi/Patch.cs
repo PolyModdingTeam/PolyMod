@@ -92,6 +92,10 @@ public static class Patch
         if (!patches.TryGetValue(__originalMethod, out var tuple)) throw new InvalidOperationException();
         if (tuple.isAlreadyBeingPatched) return true;
         tuple.isAlreadyBeingPatched = true;
+        if (Plugin.config.debug)
+        {
+            Plugin.logger.LogMessage($"Entering patched method ${__originalMethod.DeclaringType.FullName}.{__originalMethod.Name}({string.Join(", ", __originalMethod.GetParameters().Select(p => p.ParameterType))})");
+        }
         try
         {
             DynValue ExecuteChain(int i)
@@ -99,10 +103,34 @@ public static class Patch
                 if (i >= tuple.patches.Count)
                 {
                     var lastScript = tuple.patches[i - 1].script;
-                    var result = __originalMethod.Invoke(__instance, __args);
+                    var parameters = __originalMethod.GetParameters();
+                    var normalizedArgs = new object[__args.Length];
+
+                    for (int idx = 0; idx < __args.Length; idx++)
+                    {
+                        var expectedType = parameters[idx].ParameterType;
+                        var arg = __args[idx];
+
+                        if (arg == null || expectedType.IsInstanceOfType(arg))
+                        {
+                            normalizedArgs[idx] = arg;
+                        }
+                        else
+                        {
+                            try
+                            {
+                                normalizedArgs[idx] = Convert.ChangeType(arg, expectedType);
+                            }
+                            catch
+                            {
+                                normalizedArgs[idx] = arg;
+                            }
+                        }
+                    }
+                    var result = __originalMethod.Invoke(__instance, normalizedArgs);
                     return DynValue.FromObject(lastScript, result);
                 }
-                
+
 
                 var (currentHook, script) = tuple.patches[i];
                 var origForThisHook = DynValue.FromObject(
@@ -113,12 +141,27 @@ public static class Patch
                 return __originalMethod.IsStatic ? currentHook.Call(origForThisHook, __args) : currentHook.Call(origForThisHook, __instance, __args);
             }
             __result = ExecuteChain(0).ToObject();
+            if (__result != null)
+            {
+                var returnType = ((MethodInfo)__originalMethod).ReturnType;
+                if (!returnType.IsInstanceOfType(__result))
+                {
+                    __result = Convert.ChangeType(__result, returnType);
+                }
+            }
             return false;
         }
         catch (ScriptRuntimeException e)
         {
-            Plugin.logger.LogError($"IN METHOD {__originalMethod.DeclaringType.FullName}.{__originalMethod.Name}({string.Join(", ", __originalMethod.GetParameters().Select(p => p.ParameterType))})");
-            Plugin.logger.LogError(e.DecoratedMessage);
+            Plugin.logger.LogError($"IN METHOD {__originalMethod.DeclaringType.FullName}.{__originalMethod.Name}({string.Join(", ", __originalMethod.GetParameters().Select(p => p.ParameterType))}):");
+            Plugin.logger.LogError(e.DecoratedMessage ?? e.Message);
+            Plugin.logger.LogError(e.InnerException);
+            return true;
+        }
+        catch (Exception e)
+        {
+            Plugin.logger.LogError($"Unexpected error IN METHOD {__originalMethod.DeclaringType.FullName}.{__originalMethod.Name}({string.Join(", ", __originalMethod.GetParameters().Select(p => p.ParameterType))}:");
+            Plugin.logger.LogError(e);
             return true;
         }
         finally
