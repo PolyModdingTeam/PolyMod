@@ -11,20 +11,69 @@ using UnityEngine;
 
 namespace PolyMod.Managers;
 
+/// <summary>
+/// The main manager for PolyMod, responsible for initializing the mod and patching game logic.
+/// </summary>
 public static class Main
 {
+	/// <summary>
+	/// The maximum tier for technology, used to extend the tech tree.
+	/// </summary>
 	internal const int MAX_TECH_TIER = 100;
+
+	/// <summary>
+	/// A stopwatch to measure the time taken to load mods.
+	/// </summary>
 	internal static readonly Stopwatch stopwatch = new();
+
+	/// <summary>
+	/// Whether the mod has been fully initialized.
+	/// </summary>
 	internal static bool fullyInitialized;
+
+	/// <summary>
+	/// Whether a dependency cycle was detected among the loaded mods.
+	/// </summary>
 	internal static bool dependencyCycle;
+
+	/// <summary>
+	/// A dictionary mapping unit IDs to the IDs of the units they embark into.
+	/// </summary>
 	internal static Dictionary<string, string> embarkNames = new();
+
+	/// <summary>
+	/// A dictionary mapping unit types to the types of the units they embark into.
+	/// </summary>
 	internal static Dictionary<UnitData.Type, UnitData.Type> embarkOverrides = new();
+
+	/// <summary>
+	/// Whether an embark action is currently being executed.
+	/// </summary>
 	internal static bool currentlyEmbarking = false;
+
+	/// <summary>
+	/// A dictionary mapping improvement IDs to the IDs of the resources they attract.
+	/// </summary>
 	internal static Dictionary<string, string> attractsResourceNames = new();
+
+	/// <summary>
+	/// A dictionary mapping improvement IDs to the IDs of the terrain types they attract resources on.
+	/// </summary>
 	internal static Dictionary<string, string> attractsTerrainNames = new();
+
+	/// <summary>
+	/// A dictionary mapping improvement types to the types of the resources they attract.
+	/// </summary>
 	internal static Dictionary<ImprovementData.Type, ResourceData.Type> attractsResourceOverrides = new();
+
+	/// <summary>
+	/// A dictionary mapping improvement types to the types of the terrain they attract resources on.
+	/// </summary>
 	internal static Dictionary<ImprovementData.Type, Polytopia.Data.TerrainData.Type> attractsTerrainOverrides = new();
 
+	/// <summary>
+	/// Patches the game logic data parsing to load PolyMod content.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(GameLogicData), nameof(GameLogicData.AddGameLogicPlaceholders))]
 	private static void GameLogicData_Parse(GameLogicData __instance, JObject rootObject)
@@ -105,6 +154,9 @@ public static class Main
 		}
 	}
 
+	/// <summary>
+	/// Patches the purchase manager to unlock custom skins.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlocked))]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlockedInternal))]
@@ -114,6 +166,9 @@ public static class Main
 		return !__result;
 	}
 
+	/// <summary>
+	/// Patches the purchase manager to unlock custom tribes.
+	/// </summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsTribeUnlocked))]
 	private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeData.Type type)
@@ -121,6 +176,9 @@ public static class Main
 		__result = (int)type >= Plugin.AUTOIDX_STARTS_FROM || __result;
 	}
 
+	/// <summary>
+	/// Patches the purchase manager to add custom tribes to the list of unlocked tribes.
+	/// </summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.GetUnlockedTribes))]
 	private static void PurchaseManager_GetUnlockedTribes(
@@ -131,6 +189,9 @@ public static class Main
 		foreach (var tribe in Registry.customTribes) __result.Add(tribe);
 	}
 
+	/// <summary>
+	/// Patches the Unity log callback to filter out spammy messages.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(IL2CPPUnityLogSource), nameof(IL2CPPUnityLogSource.UnityLogCallback))]
 	private static bool IL2CPPUnityLogSource_UnityLogCallback(string logLine, string exception, LogType type)
@@ -143,6 +204,9 @@ public static class Main
 		return true;
 	}
 
+	/// <summary>
+	/// Patches the game mode screen to add custom game modes.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(GameModeScreen), nameof(GameModeScreen.Init))]
 	private static void GameModeScreen_Init(GameModeScreen __instance)
@@ -200,10 +264,15 @@ public static class Main
 		}
 	}
 
+	/// <summary>
+	/// Patches the tech view to correctly display the tech tree with custom technologies.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(TechView), nameof(TechView.CreateNode))]
 	public static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle)
 	{
+		// This patch is a reimplementation of the original CreateNode method to fix layout issues with custom techs.
+		// It recalculates the angles for each node to ensure they are displayed correctly.
 		GameLogicData gameLogicData = GameManager.GameState.GameLogicData;
 		TribeData tribeData = gameLogicData.GetTribeData(GameManager.LocalPlayer.tribe);
 		float baseAngle = 360 / gameLogicData.GetOverride(gameLogicData.GetTechData(TechData.Type.Basic), tribeData).techUnlocks.Count;
@@ -231,6 +300,9 @@ public static class Main
 		return false;
 	}
 
+	/// <summary>
+	/// Patches the embark action to set a flag indicating that an embark is in progress.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(EmbarkAction), nameof(EmbarkAction.Execute))]
 	private static bool EmbarkAction_Execute_Prefix(EmbarkAction __instance, GameState gameState)
@@ -239,18 +311,18 @@ public static class Main
 		return true;
 	}
 
+	/// <summary>
+	/// Patches the unit training method to handle custom embark units.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(ActionUtils), nameof(ActionUtils.TrainUnit))]
 	private static bool ActionUtils_TrainUnit(ref UnitState __result, GameState gameState, PlayerState playerState, TileData tile, ref UnitData unitData)
 	{
-		if (tile == null)
+		if (tile == null || tile.unit == null)
 		{
 			return true;
 		}
-		if (tile.unit == null)
-		{
-			return true;
-		}
+
 		if (currentlyEmbarking)
 		{
 			if (embarkOverrides.TryGetValue(tile.unit.type, out UnitData.Type newType))
@@ -262,10 +334,14 @@ public static class Main
 		return true;
 	}
 
+	/// <summary>
+	/// Patches the start turn action to handle the 'Attract' ability for custom improvements.
+	/// </summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(StartTurnAction), nameof(StartTurnAction.Execute))]
 	private static void StartTurnAction_Execute(StartTurnAction __instance, GameState state)
 	{
+		// Clear any existing CreateResource actions to prevent duplicates.
 		for (int i = state.ActionStack.Count - 1; i >= 0; i--)
 		{
 			if (state.ActionStack[i].GetActionType() == ActionType.CreateResource)
@@ -273,6 +349,8 @@ public static class Main
 				state.ActionStack.RemoveAt(i);
 			}
 		}
+
+		// Iterate through all tiles owned by the current player.
 		for (int i = 0; i < state.Map.Tiles.Length; i++)
 		{
 			TileData tileData = state.Map.Tiles[i];
@@ -282,6 +360,7 @@ public static class Main
 				state.GameLogicData.TryGetData(tileData.improvement.type, out improvementData);
 				if (improvementData != null)
 				{
+					// If the improvement has the 'Attract' ability and is ready to spawn a resource.
 					if (improvementData.HasAbility(ImprovementAbility.Type.Attract) && tileData.improvement.GetAge(state) % improvementData.growthRate == 0)
 					{
 						ResourceData.Type resourceType = ResourceData.Type.Game;
@@ -294,6 +373,8 @@ public static class Main
 						{
 							targetTerrain = newTerrain;
 						}
+
+						// Find a valid tile to spawn the resource on.
 						foreach (TileData tileData2 in state.Map.GetArea(tileData.coordinates, 1, true, false))
 						{
 							if (tileData2.owner == __instance.PlayerId && tileData2.improvement == null && tileData2.resource == null && tileData2.terrain == targetTerrain)
@@ -308,6 +389,9 @@ public static class Main
 		}
 	}
 
+	/// <summary>
+	/// Patches the unit creation method to handle custom unit prefabs.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(Unit), nameof(Unit.CreateUnit))]
 	private static bool Unit_CreateUnit(Unit __instance, UnitData unitData, TribeData.Type tribe, SkinType unitSkin)
@@ -317,6 +401,9 @@ public static class Main
 		return true;
 	}
 
+	/// <summary>
+	/// Initializes the Main manager.
+	/// </summary>
 	internal static void Init()
 	{
 		stopwatch.Start();
@@ -361,6 +448,10 @@ public static class Main
 		stopwatch.Stop();
 	}
 
+	/// <summary>
+	/// Loads all mod content.
+	/// </summary>
+	/// <param name="gameLogicdata">The game logic data to patch.</param>
 	internal static void Load(JObject gameLogicdata)
 	{
 		stopwatch.Start();

@@ -5,17 +5,35 @@ using UnityEngine.EventSystems;
 
 namespace PolyMod.Managers;
 
+/// <summary>
+/// Manages compatibility checks for mods, including checksum verification and version warnings.
+/// </summary>
 internal static class Compatibility
 {
+    /// <summary>
+    /// The checksum of all loaded mods.
+    /// </summary>
     internal static string checksum = string.Empty;
+
+    /// <summary>
+    /// Whether the game settings should be reset due to a change in mods.
+    /// </summary>
     internal static bool shouldResetSettings = false;
     private static bool sawSignatureWarning;
 
+    /// <summary>
+    /// Hashes the signatures of all loaded mods to create a checksum.
+    /// </summary>
+    /// <param name="checksumString">A string builder containing the signatures to hash.</param>
     public static void HashSignatures(StringBuilder checksumString)
     {
         checksum = Util.Hash(checksumString);
     }
 
+    /// <summary>
+    /// Checks the signature of a saved game to ensure it is compatible with the current mods.
+    /// </summary>
+    /// <returns>True if the signatures match or if the check is ignored, false otherwise.</returns>
     private static bool CheckSignatures(Action<int, BaseEventData> action, int id, BaseEventData eventData, Il2CppSystem.Guid gameId)
     {
         if (sawSignatureWarning)
@@ -61,6 +79,9 @@ internal static class Compatibility
         return true;
     }
 
+    /// <summary>
+    /// Performs compatibility checks when the start screen is shown.
+    /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
     private static void StartScreen_Start()
@@ -108,6 +129,9 @@ internal static class Compatibility
         }
     }
 
+    /// <summary>
+    /// Checks the signature of a pass-and-play game before loading it.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.OnMainButtonClicked))]
     private static bool GameInfoPopup_OnMainButtonClicked(GameInfoPopup __instance, int id, BaseEventData eventData)
@@ -115,6 +139,9 @@ internal static class Compatibility
         return CheckSignatures(__instance.OnMainButtonClicked, id, eventData, __instance.gameId);
     }
 
+    /// <summary>
+    /// Checks the signature of a single-player game before resuming it.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnResumeButtonClick))]
     private static bool StartScreen_OnResumeButtonClick(StartScreen __instance, int id, BaseEventData eventData)
@@ -122,6 +149,9 @@ internal static class Compatibility
         return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, ClientBase.GetSinglePlayerSessions()[0]);
     }
 
+    /// <summary>
+    /// Deletes the signature file of a pass-and-play game when it is deleted.
+    /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.DeletePaPGame))]
     private static void ClientBase_DeletePassAndPlayGame(GameInfoPopup __instance)
@@ -129,6 +159,9 @@ internal static class Compatibility
         File.Delete(Path.Combine(Application.persistentDataPath, $"{__instance.gameId}.signatures"));
     }
 
+    /// <summary>
+    /// Deletes the signature files of all single-player games when they are deleted.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(ClientBase), nameof(ClientBase.DeleteSinglePlayerGames))]
     private static void ClientBase_DeleteSinglePlayerGames()
@@ -139,6 +172,9 @@ internal static class Compatibility
         }
     }
 
+    /// <summary>
+    /// Deletes the signature file of a game when the match ends.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.MatchEnded))]
     private static void GameManager_MatchEnded(bool localPlayerIsWinner, ScoreDetails scoreDetails, byte winnerId)
@@ -146,6 +182,9 @@ internal static class Compatibility
         File.Delete(Path.Combine(Application.persistentDataPath, $"{GameManager.Client.gameId}.signatures"));
     }
 
+    /// <summary>
+    /// Creates a signature file when a new game session is created.
+    /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(ClientBase), nameof(ClientBase.CreateSession), typeof(GameSettings), typeof(Il2CppSystem.Guid))]
     private static void ClientBase_CreateSession(GameSettings settings, Il2CppSystem.Guid gameId)
@@ -156,6 +195,9 @@ internal static class Compatibility
         );
     }
 
+    /// <summary>
+    /// Resets game settings if necessary when the tribe selector screen is shown.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(TribeSelectorScreen), nameof(TribeSelectorScreen.Show))]
     private static bool TribeSelectorScreen_Show(bool instant = false)
@@ -168,6 +210,9 @@ internal static class Compatibility
         return true;
     }
 
+    /// <summary>
+    /// Restores the preliminary game settings to their default values.
+    /// </summary>
     internal static void RestorePreliminaryGameSettings()
     {
         GameManager.PreliminaryGameSettings.disabledTribes.Clear();
@@ -175,6 +220,9 @@ internal static class Compatibility
         GameManager.PreliminaryGameSettings.SaveToDisk();
     }
 
+    /// <summary>
+    /// Initializes the Compatibility manager by patching the necessary methods.
+    /// </summary>
     internal static void Init()
     {
         Harmony.CreateAndPatchAll(typeof(Compatibility));

@@ -12,13 +12,23 @@ using static PopupBase;
 
 namespace PolyMod.Managers;
 
+/// <summary>
+/// Manages the PolyMod hub, including UI elements and popups.
+/// </summary>
 internal static class Hub
 {
     private const string HEADER_PREFIX = "<align=\"center\"><size=150%><b>";
     private const string HEADER_POSTFIX = "</b></size><align=\"left\">";
     private const int POPUP_WIDTH = 1400;
+
+    /// <summary>
+    /// Whether the configuration popup is currently active.
+    /// </summary>
     public static bool isConfigPopupActive = false;
 
+    /// <summary>
+    /// Patches the splash screen to play a custom intro video.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SplashController), nameof(SplashController.LoadAndPlayClip))]
     private static bool SplashController_LoadAndPlayClip(SplashController __instance)
@@ -32,6 +42,9 @@ internal static class Hub
         return false;
     }
 
+    /// <summary>
+    /// Patches the popup button container to correctly anchor buttons.
+    /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PopupButtonContainer), nameof(PopupButtonContainer.SetButtonData))]
     private static void PopupButtonContainer_SetButtonData(PopupButtonContainer __instance)
@@ -47,6 +60,9 @@ internal static class Hub
         }
     }
 
+    /// <summary>
+    /// Patches the start screen to add the PolyMod hub button and version text.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
     private static void StartScreen_Start()
@@ -249,6 +265,9 @@ internal static class Hub
         }
     }
 
+    /// <summary>
+    /// Patches the game manager to handle key presses for the config popup.
+    /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
     private static void GameManager_Update()
@@ -259,6 +278,9 @@ internal static class Hub
         }
     }
 
+    /// <summary>
+    /// Updates sprite information from dumped files.
+    /// </summary>
     internal static void UpdateSpriteInfos()
     {
         string message = string.Empty;
@@ -290,6 +312,9 @@ internal static class Hub
         NotificationManager.Notify(message);
     }
 
+    /// <summary>
+    /// Shows the configuration popup.
+    /// </summary>
     internal static void ShowConfigPopup()
     {
         BasicPopup polymodPopup = PopupManager.GetBasicPopup();
@@ -302,6 +327,10 @@ internal static class Hub
         polymodPopup.Show();
     }
 
+    /// <summary>
+    /// Creates the button data for the configuration popup.
+    /// </summary>
+    /// <returns>An array of popup button data.</returns>
     internal static PopupButtonData[] CreateConfigPopupButtonData()
     {
         List<PopupButtonData> popupButtons = new()
@@ -387,6 +416,9 @@ internal static class Hub
         }
     }
 
+    /// <summary>
+    /// Initializes the Hub manager by patching the necessary methods.
+    /// </summary>
     internal static void Init()
     {
         Harmony.CreateAndPatchAll(typeof(Hub));
