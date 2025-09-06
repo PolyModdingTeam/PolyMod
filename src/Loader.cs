@@ -18,8 +18,14 @@ using UnityEngine;
 
 namespace PolyMod;
 
+/// <summary>
+/// Handles loading of mods and their assets.
+/// </summary>
 public static class Loader
 {
+	/// <summary>
+	/// Mappings from JSON data types to their corresponding C# types.
+	/// </summary>
 	internal static Dictionary<string, Type> typeMappings = new()
 	{
 		{ "tribeData", typeof(TribeData.Type) },
@@ -35,7 +41,15 @@ public static class Loader
 		{ "playerAbility", typeof(PlayerAbility.Type) },
 		{ "weaponData", typeof(UnitData.WeaponEnum) }
 	};
+
+	/// <summary>
+	/// List of custom game modes to be added.
+	/// </summary>
 	internal static List<GameModeButtonsInformation> gamemodes = new();
+
+	/// <summary>
+	/// Handlers for processing specific data types during mod loading.
+	/// </summary>
 	private static readonly Dictionary<Type, Action<JObject, bool>> typeHandlers = new()
 	{
 		[typeof(TribeData.Type)] = new((token, duringEnumCacheCreation) =>
@@ -131,8 +145,21 @@ public static class Loader
 		})
 	};
 
+	/// <summary>
+	/// Represents information for a custom game mode button.
+	/// </summary>
+	/// <param name="gameModeIndex">The index of the game mode.</param>
+	/// <param name="action">The action to perform when the button is clicked.</param>
+	/// <param name="buttonIndex">The index of the button in the UI.</param>
+	/// <param name="sprite">The sprite for the button.</param>
 	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
 
+	/// <summary>
+	/// Adds a new game mode button.
+	/// </summary>
+	/// <param name="id">The unique identifier for the game mode.</param>
+	/// <param name="action">The action to perform when the button is clicked.</param>
+	/// <param name="sprite">The sprite for the button.</param>
 	public static void AddGameModeButton(string id, UIButtonBase.ButtonAction action, Sprite? sprite)
 	{
 		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
@@ -141,12 +168,21 @@ public static class Loader
 		Registry.gameModesAutoidx++;
 	}
 
+	/// <summary>
+	/// Adds a new data type for patching.
+	/// </summary>
+	/// <param name="typeId">The identifier for the data type in JSON.</param>
+	/// <param name="type">The C# type corresponding to the identifier.</param>
 	public static void AddPatchDataType(string typeId, Type type)
 	{
 		if (!typeMappings.ContainsKey(typeId))
 			typeMappings.Add(typeId, type);
 	}
 
+	/// <summary>
+	/// Loads all mods from the mods directory.
+	/// </summary>
+	/// <param name="mods">A dictionary to populate with the loaded mods.</param>
 	internal static void LoadMods(Dictionary<string, Mod> mods)
 	{
 		Directory.CreateDirectory(Plugin.MODS_PATH);
@@ -159,6 +195,7 @@ public static class Loader
 			Mod.Manifest? manifest = null;
 			List<Mod.File> files = new();
 
+			// Load mod from directory or zip archive
 			if (Directory.Exists(modContainer))
 			{
 				foreach (var file in Directory.GetFiles(modContainer))
@@ -196,6 +233,7 @@ public static class Loader
 				}
 			}
 
+			// Validate manifest
 			if (manifest == null)
 			{
 				Plugin.logger.LogError($"Mod manifest not found in {modContainer}");
@@ -234,6 +272,7 @@ public static class Loader
 			Plugin.logger.LogInfo($"Registered mod {manifest.id}");
 		}
 
+		// Check dependencies
 		foreach (var (id, mod) in mods)
 		{
 			foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
@@ -271,6 +310,11 @@ public static class Loader
 		}
 	}
 
+	/// <summary>
+	/// Sorts mods based on their dependencies using a topological sort.
+	/// </summary>
+	/// <param name="mods">The dictionary of mods to sort.</param>
+	/// <returns>True if the mods could be sorted (no circular dependencies), false otherwise.</returns>
 	internal static bool SortMods(Dictionary<string, Mod> mods)
 	{
 		Stopwatch s = new();
@@ -330,6 +374,11 @@ public static class Loader
 		return true;
 	}
 
+	/// <summary>
+	/// Loads an assembly file from a mod.
+	/// </summary>
+	/// <param name="mod">The mod the assembly belongs to.</param>
+	/// <param name="file">The assembly file to load.</param>
 	public static void LoadAssemblyFile(Mod mod, Mod.File file)
 	{
 		try
@@ -364,6 +413,11 @@ public static class Loader
 		}
 	}
 
+	/// <summary>
+	/// Loads a localization file from a mod.
+	/// </summary>
+	/// <param name="mod">The mod the localization file belongs to.</param>
+	/// <param name="file">The localization file to load.</param>
 	public static void LoadLocalizationFile(Mod mod, Mod.File file)
 	{
 		try
@@ -378,6 +432,11 @@ public static class Loader
 		}
 	}
 
+	/// <summary>
+	/// Loads a sprite file from a mod.
+	/// </summary>
+	/// <param name="mod">The mod the sprite file belongs to.</param>
+	/// <param name="file">The sprite file to load.</param>
 	public static void LoadSpriteFile(Mod mod, Mod.File file)
 	{
 		string name = Path.GetFileNameWithoutExtension(file.name);
@@ -400,6 +459,10 @@ public static class Loader
 		Registry.sprites.Add(name, sprite);
 	}
 
+	/// <summary>
+	/// Updates a sprite with new information.
+	/// </summary>
+	/// <param name="name">The name of the sprite to update.</param>
 	public static void UpdateSprite(string name)
 	{
 		if (Registry.spriteInfos.ContainsKey(name) && Registry.sprites.ContainsKey(name))
@@ -415,6 +478,12 @@ public static class Loader
 		}
 	}
 
+	/// <summary>
+	/// Loads a sprite info file from a mod.
+	/// </summary>
+	/// <param name="mod">The mod the sprite info file belongs to.</param>
+	/// <param name="file">The sprite info file to load.</param>
+	/// <returns>A dictionary of sprite information, or null if an error occurred.</returns>
 	public static Dictionary<string, Visual.SpriteInfo>? LoadSpriteInfoFile(Mod mod, Mod.File file)
 	{
 		try
@@ -445,6 +514,11 @@ public static class Loader
 		}
 	}
 
+	/// <summary>
+	/// Loads an audio file from a mod.
+	/// </summary>
+	/// <param name="mod">The mod the audio file belongs to.</param>
+	/// <param name="file">The audio file to load.</param>
 	public static void LoadAudioFile(Mod mod, Mod.File file)
 	{
 		// AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
@@ -454,6 +528,11 @@ public static class Loader
 		// TODO: issue #71
 	}
 
+	/// <summary>
+	/// Loads a prefab info file from a mod and creates a new unit prefab.
+	/// </summary>
+	/// <param name="mod">The mod the prefab info file belongs to.</param>
+	/// <param name="file">The prefab info file to load.</param>
 	public static void LoadPrefabInfoFile(Mod mod, Mod.File file)
 	{
 		try
@@ -493,6 +572,11 @@ public static class Loader
 		}
 	}
 
+	/// <summary>
+	/// Clears existing visual parts from a prefab and extracts the material.
+	/// </summary>
+	/// <param name="spriteContainer">The transform containing the sprite parts.</param>
+	/// <returns>The material of the original sprite parts.</returns>
 	private static Material? ClearExistingPartsAndExtractMaterial(Transform spriteContainer)
 	{
 		Material? material = null;
@@ -510,6 +594,13 @@ public static class Loader
 		return material;
 	}
 
+	/// <summary>
+	/// Applies new visual parts to a prefab.
+	/// </summary>
+	/// <param name="partInfos">A list of visual part information.</param>
+	/// <param name="spriteContainer">The transform to add the parts to.</param>
+	/// <param name="material">The material to use for the parts.</param>
+	/// <returns>A list of the created visual parts.</returns>
 	private static List<SkinVisualsReference.VisualPart> ApplyVisualParts(
 		List<Visual.VisualPartInfo> partInfos,
 		Transform spriteContainer,
@@ -525,6 +616,13 @@ public static class Loader
 		return parts;
 	}
 
+	/// <summary>
+	/// Creates a single visual part for a prefab.
+	/// </summary>
+	/// <param name="info">The information for the visual part.</param>
+	/// <param name="parent">The parent transform for the part.</param>
+	/// <param name="material">The material to use for the part.</param>
+	/// <returns>The created visual part.</returns>
 	private static SkinVisualsReference.VisualPart CreateVisualPart(
 		Visual.VisualPartInfo info,
 		Transform parent,
@@ -567,11 +665,18 @@ public static class Loader
 		return visualPart;
 	}
 
+	/// <summary>
+	/// Loads and applies a game logic data patch from a mod.
+	/// </summary>
+	/// <param name="mod">The mod the patch belongs to.</param>
+	/// <param name="gld">The original game logic data.</param>
+	/// <param name="patch">The patch to apply.</param>
 	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
 	{
 		try
 		{
 			HandleSkins(gld, patch);
+			// First pass: add new enum values and create mappings
 			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
 			{
 				JObject? token = jtoken.TryCast<JObject>();
@@ -601,6 +706,7 @@ public static class Loader
 					}
 				}
 			}
+			// Second pass: apply special handling
 			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
 			{
 				JObject? token = jtoken.TryCast<JObject>();
@@ -616,6 +722,7 @@ public static class Loader
 					}
 				}
 			}
+			// Final pass: merge the patch into the game logic data
 			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
 			Plugin.logger.LogInfo($"Registered patch from {mod.id} mod");
 		}
@@ -626,6 +733,11 @@ public static class Loader
 		}
 	}
 
+	/// <summary>
+	/// Loads an asset bundle from a mod.
+	/// </summary>
+	/// <param name="mod">The mod the asset bundle belongs to.</param>
+	/// <param name="file">The asset bundle file to load.</param>
 	public static void LoadAssetBundle(Mod mod, Mod.File file)
 	{
 		Registry.assetBundles.Add(
@@ -634,6 +746,11 @@ public static class Loader
 		);
 	}
 
+	/// <summary>
+	/// Handles skin data from a patch.
+	/// </summary>
+	/// <param name="gld">The original game logic data.</param>
+	/// <param name="patch">The patch to apply.</param>
 	public static void HandleSkins(JObject gld, JObject patch)
 	{
 		foreach (JToken jtoken in patch.SelectTokens("$.tribeData.*").ToArray())
