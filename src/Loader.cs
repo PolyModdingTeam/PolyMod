@@ -51,7 +51,7 @@ public static class Loader
 			}
 			else
 			{
-				if (token["skins"] != null) // Doesnt work, and I do not know why! Good luck.
+				if (token["skins"] != null)
 				{
 					JArray skins = token["skins"].Cast<JArray>();
 					List<JToken> skinValues = skins._values.ToArray().ToList();
@@ -67,14 +67,21 @@ public static class Loader
 							Registry.autoidx++;
 						}
 					}
+					Il2CppSystem.Collections.Generic.List<JToken> modifiedSkins = skins._values;
 					foreach (var skin in Registry.skinInfo)
 					{
-						if (skins._values.Contains(skin.id))
+						if (modifiedSkins.Contains(skin.id))
 						{
-							skins._values.Remove(skin.id);
-							skins._values.Add(skin.idx);
+							modifiedSkins.Remove(skin.id);
+							modifiedSkins.Add(skin.idx.ToString());
 						}
 					}
+					JArray newSkins = new JArray();
+					foreach (var item in modifiedSkins)
+					{
+						newSkins.Add(item);
+					}
+					token["skins"] = newSkins;
 				}
 				if (token["preview"] != null)
 				{

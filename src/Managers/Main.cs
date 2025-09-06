@@ -149,9 +149,6 @@ public static class Main
 				}
 			}
 			fullyInitialized = true;
-			string formattedJson = rootObject.ToString(Newtonsoft.Json.Formatting.Indented);
-			File.WriteAllText(Path.Combine(Plugin.BASE_PATH, "output.json"), formattedJson);
-			Console.Write("Saved");
 		}
 	}
 
