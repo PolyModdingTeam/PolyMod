@@ -647,4 +647,129 @@ public static class Loader
 			AssetBundle.LoadFromMemory(file.bytes)
 		);
 	}
+
+	internal static void ProcessGameLogicData(GameLogicData gameLogicData, JObject rootObject)
+	{
+		try
+		{
+			foreach (JToken jtoken in rootObject.SelectTokens("$.*.*").ToArray())
+			{
+				JObject? token = jtoken.TryCast<JObject>();
+				if (token != null)
+				{
+					string dataType = Util.GetJTokenName(token, 2);
+					if (Loader.typeMappings.TryGetValue(dataType, out Loader.TypeMapping? typeMapping))
+					{
+						if (token["idx"] != null && (int)token["idx"] == -1 && typeMapping.shouldCreateCache)
+						{
+							Type targetType = typeMapping.type;
+							string id = Util.GetJTokenName(token);
+							token["idx"] = Registry.autoidx;
+							MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
+							if (methodInfo != null)
+							{
+								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
+								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
+
+								if (Loader.typeHandlers.TryGetValue(targetType, out var handler))
+								{
+									handler(token, true);
+								}
+								Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + Registry.autoidx);
+								Registry.autoidx++;
+							}
+						}
+					}
+				}
+			}
+			foreach (JToken jtoken in rootObject.SelectTokens("$.*.*").ToArray())
+			{
+				JObject? token = jtoken.TryCast<JObject>();
+				if (token != null)
+				{
+					string dataType = Util.GetJTokenName(token, 2);
+					if (Loader.typeMappings.TryGetValue(dataType, out Loader.TypeMapping? typeMapping))
+					{
+						if (Loader.typeHandlers.TryGetValue(typeMapping.type, out var handler))
+						{
+							handler(token, false);
+						}
+					}
+				}
+			}
+			foreach (System.Collections.Generic.KeyValuePair<int, string> item in Registry.prefabNames)
+			{
+				UnitData.Type unitPrefabType = UnitData.Type.Scout;
+				string prefabId = item.Value;
+				if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
+				{
+					unitPrefabType = parsedType;
+					PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
+				}
+				else
+				{
+					KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(kv => kv.Key.name == prefabId);
+					if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
+					{
+						PrefabManager.units.TryAdd(item.Key, prefabInfo.Value);
+					}
+					else
+					{
+						PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
+					}
+				}
+			}
+			foreach (Visual.SkinInfo skin in Registry.skinInfo)
+			{
+				if (skin.skinData != null)
+					gameLogicData.skinData[(SkinType)skin.idx] = skin.skinData;
+			}
+			foreach (KeyValuePair<string, string> entry in Main.embarkNames)
+			{
+				try
+				{
+					UnitData.Type unit = EnumCache<UnitData.Type>.GetType(entry.Key);
+					UnitData.Type newUnit = EnumCache<UnitData.Type>.GetType(entry.Value);
+					Main.embarkOverrides[unit] = newUnit;
+					Plugin.logger.LogInfo($"Embark unit type for {entry.Key} is now {entry.Value}");
+				}
+				catch
+				{
+					Plugin.logger.LogError($"Embark unit type for {entry.Key} is not valid: {entry.Value}");
+				}
+			}
+			foreach (KeyValuePair<string, string> entry in Main.attractsResourceNames)
+			{
+				try
+				{
+					ImprovementData.Type improvement = EnumCache<ImprovementData.Type>.GetType(entry.Key);
+					ResourceData.Type resource = EnumCache<ResourceData.Type>.GetType(entry.Value);
+					Main.attractsResourceOverrides[improvement] = resource;
+					Plugin.logger.LogInfo($"Improvement {entry.Key} now attracts {entry.Value}");
+				}
+				catch
+				{
+					Plugin.logger.LogError($"Improvement {entry.Key} resource type is not valid: {entry.Value}");
+				}
+			}
+			foreach (KeyValuePair<string, string> entry in Main.attractsTerrainNames)
+			{
+				try
+				{
+					ImprovementData.Type improvement = EnumCache<ImprovementData.Type>.GetType(entry.Key);
+					Polytopia.Data.TerrainData.Type terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetType(entry.Value);
+					Main.attractsTerrainOverrides[improvement] = terrain;
+					Plugin.logger.LogInfo($"Improvement {entry.Key} now attracts on {entry.Value}");
+				}
+				catch
+				{
+					Plugin.logger.LogError($"Improvement {entry.Key} terrain type is not valid: {entry.Value}");
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on processing modified game logic data : {e.Message}");
+		}
+	}
 }
