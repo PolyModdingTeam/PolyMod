@@ -2,8 +2,18 @@ using Il2CppSystem.IO;
 using Newtonsoft.Json.Linq;
 
 namespace PolyMod.Json;
+
+/// <summary>
+/// Provides functionality to merge JSON objects, with special handling for arrays.
+/// </summary>
 public static class JsonMerger
 {
+    /// <summary>
+    /// Merges a patch JObject into an original JObject.
+    /// </summary>
+    /// <param name="original">The original JObject.</param>
+    /// <param name="patch">The patch JObject to merge.</param>
+    /// <returns>The merged JObject.</returns>
     public static JObject Merge(JObject original, JObject patch)
     {
         foreach (var property in patch.Properties().ToArray().ToList())
@@ -44,6 +54,13 @@ public static class JsonMerger
         return original;
     }
 
+    /// <summary>
+    /// Merges two JArrays, with special handling for adding and removing elements.
+    /// </summary>
+    /// <param name="original">The original JArray.</param>
+    /// <param name="patch">The patch JArray to merge.</param>
+    /// <param name="isSkins">A flag to indicate if the array is a 'skins' array, which has special merging logic.</param>
+    /// <returns>The merged JArray.</returns>
     private static JArray MergeArrays(JArray original, JArray patch, bool isSkins)
     {
         var result = new JArray(original);

@@ -759,6 +759,11 @@ public static class Loader
 		);
 	}
 
+	/// <summary>
+	/// Processes the merged game logic data after all mods have been loaded and patched.
+	/// </summary>
+	/// <param name="gameLogicData">The game logic data object to populate.</param>
+	/// <param name="rootObject">The root JObject of the merged game logic data.</param>
 	internal static void ProcessGameLogicData(GameLogicData gameLogicData, JObject rootObject)
 	{
 		try

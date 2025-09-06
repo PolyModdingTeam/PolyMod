@@ -385,6 +385,7 @@ public static class Main
 	/// Loads all mod content.
 	/// </summary>
 	/// <param name="gameLogicdata">The game logic data to patch.</param>
+	/// <param name="json">The JSON object representing the game logic data.</param>
 	internal static void Load(GameLogicData gameLogicData, JObject json)
 	{
 		stopwatch.Start();
