@@ -20,23 +20,25 @@ namespace PolyMod;
 
 public static class Loader
 {
-	internal static Dictionary<string, Type> typeMappings = new()
+	internal record TypeMapping(Type type, bool shouldCreateCache = true);
+	internal static Dictionary<string, TypeMapping> typeMappings = new()
 	{
-		{ "tribeData", typeof(TribeData.Type) },
-		{ "techData", typeof(TechData.Type) },
-		{ "unitData", typeof(UnitData.Type) },
-		{ "improvementData", typeof(ImprovementData.Type) },
-		{ "terrainData", typeof(Polytopia.Data.TerrainData.Type) },
-		{ "resourceData", typeof(ResourceData.Type) },
-		{ "taskData", typeof(TaskData.Type) },
-		{ "tribeAbility", typeof(TribeAbility.Type) },
-		{ "unitAbility", typeof(UnitAbility.Type) },
-		{ "improvementAbility", typeof(ImprovementAbility.Type) },
-		{ "playerAbility", typeof(PlayerAbility.Type) },
-		{ "weaponData", typeof(UnitData.WeaponEnum) }
+		{ "tribeData", new TypeMapping(typeof(TribeData.Type)) },
+		{ "techData", new TypeMapping(typeof(TechData.Type)) },
+		{ "unitData", new TypeMapping(typeof(UnitData.Type)) },
+		{ "improvementData", new TypeMapping(typeof(ImprovementData.Type)) },
+		{ "terrainData", new TypeMapping(typeof(Polytopia.Data.TerrainData.Type)) },
+		{ "resourceData", new TypeMapping(typeof(ResourceData.Type)) },
+		{ "taskData", new TypeMapping(typeof(TaskData.Type)) },
+		{ "tribeAbility", new TypeMapping(typeof(TribeAbility.Type)) },
+		{ "unitAbility", new TypeMapping(typeof(UnitAbility.Type)) },
+		{ "improvementAbility", new TypeMapping(typeof(ImprovementAbility.Type)) },
+		{ "playerAbility", new TypeMapping(typeof(PlayerAbility.Type)) },
+		{ "weaponData", new TypeMapping(typeof(UnitData.WeaponEnum)) },
+		{ "skinData", new TypeMapping(typeof(SkinData), false) }
 	};
 	internal static List<GameModeButtonsInformation> gamemodes = new();
-	private static readonly Dictionary<Type, Action<JObject, bool>> typeHandlers = new()
+	internal static readonly Dictionary<Type, Action<JObject, bool>> typeHandlers = new()
 	{
 		[typeof(TribeData.Type)] = new((token, duringEnumCacheCreation) =>
 		{
@@ -49,6 +51,31 @@ public static class Loader
 			}
 			else
 			{
+				if (token["skins"] != null) // Doesnt work, and I do not know why! Good luck.
+				{
+					JArray skins = token["skins"].Cast<JArray>();
+					List<JToken> skinValues = skins._values.ToArray().ToList();
+					foreach (var skin in skinValues)
+					{
+						string skinValue = skin.ToString();
+						if (!Enum.TryParse<SkinType>(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(skinValue), out _))
+						{
+							EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
+							EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
+							Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
+							Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
+							Registry.autoidx++;
+						}
+					}
+					foreach (var skin in Registry.skinInfo)
+					{
+						if (skins._values.Contains(skin.id))
+						{
+							skins._values.Remove(skin.id);
+							skins._values.Add(skin.idx);
+						}
+					}
+				}
 				if (token["preview"] != null)
 				{
 					Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
@@ -128,7 +155,26 @@ public static class Loader
 				}
 				PrefabManager.resources.TryAdd((ResourceData.Type)Registry.autoidx, PrefabManager.resources[resourcePrefabType]);
 			}
-		})
+		}),
+
+		[typeof(SkinData)] = new((token, duringEnumCacheCreation) =>
+		{
+			string id = Util.GetJTokenName(token);
+			int index = Registry.skinInfo.FindIndex(t => t.id == id);
+			if (Registry.skinInfo.ElementAtOrDefault(index) != null)
+			{
+				SkinData skinData = new();
+				if (token["color"] != null)
+				{
+					skinData.color = (int)token["color"];
+				}
+				if (token["language"] != null)
+				{
+					skinData.language = token["language"].ToString();
+				}
+				Registry.skinInfo[index] = new Visual.SkinInfo(Registry.skinInfo[index].idx, Registry.skinInfo[index].id, skinData);
+			}
+		}),
 	};
 
 	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
@@ -144,7 +190,13 @@ public static class Loader
 	public static void AddPatchDataType(string typeId, Type type)
 	{
 		if (!typeMappings.ContainsKey(typeId))
-			typeMappings.Add(typeId, type);
+			typeMappings.Add(typeId, new TypeMapping(type));
+	}
+
+	public static void AddPatchDataType(string typeId, Type type, bool shouldCreateCache)
+	{
+		if (!typeMappings.ContainsKey(typeId))
+			typeMappings.Add(typeId, new TypeMapping(type, shouldCreateCache));
 	}
 
 	internal static void LoadMods(Dictionary<string, Mod> mods)
@@ -571,50 +623,6 @@ public static class Loader
 	{
 		try
 		{
-			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
-			{
-				JObject? token = jtoken.TryCast<JObject>();
-				if (token != null)
-				{
-					string dataType = Util.GetJTokenName(token, 2);
-					if (typeMappings.TryGetValue(dataType, out Type? targetType))
-					{
-						if (token["idx"] != null && (int)token["idx"] == -1)
-						{
-							string id = Util.GetJTokenName(token);
-							token["idx"] = Registry.autoidx;
-							MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
-							if (methodInfo != null)
-							{
-								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
-								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
-
-								if (typeHandlers.TryGetValue(targetType, out var handler))
-								{
-									handler(token, true);
-								}
-								Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + Registry.autoidx);
-								Registry.autoidx++;
-							}
-						}
-					}
-				}
-			}
-			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
-			{
-				JObject? token = jtoken.TryCast<JObject>();
-				if (token != null)
-				{
-					string dataType = Util.GetJTokenName(token, 2);
-					if (typeMappings.TryGetValue(dataType, out Type? targetType))
-					{
-						if (typeHandlers.TryGetValue(targetType, out var handler))
-						{
-							handler(token, false);
-						}
-					}
-				}
-			}
 			gld = JsonMerger.Merge(gld, patch);
 			Plugin.logger.LogInfo($"Registered patch from {mod.id} mod");
 		}
