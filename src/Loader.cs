@@ -571,7 +571,6 @@ public static class Loader
 	{
 		try
 		{
-			HandleSkins(gld, patch);
 			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
 			{
 				JObject? token = jtoken.TryCast<JObject>();
@@ -616,7 +615,7 @@ public static class Loader
 					}
 				}
 			}
-			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
+			gld = JsonMerger.Merge(gld, patch);
 			Plugin.logger.LogInfo($"Registered patch from {mod.id} mod");
 		}
 		catch (Exception e)
@@ -632,74 +631,5 @@ public static class Loader
 			Path.GetFileNameWithoutExtension(file.name),
 			AssetBundle.LoadFromMemory(file.bytes)
 		);
-	}
-
-	public static void HandleSkins(JObject gld, JObject patch)
-	{
-		foreach (JToken jtoken in patch.SelectTokens("$.tribeData.*").ToArray())
-		{
-			JObject token = jtoken.Cast<JObject>();
-
-			if (token["skins"] != null)
-			{
-				JArray skins = token["skins"].Cast<JArray>();
-				List<string> skinsToRemove = new();
-				List<JToken> skinValues = skins._values.ToArray().ToList();
-				foreach (var skin in skinValues)
-				{
-					string skinValue = skin.ToString();
-					if (skinValue.StartsWith('-') && Enum.TryParse<SkinType>(skinValue.Substring(1), out _))
-					{
-						skinsToRemove.Add(skinValue.Substring(1));
-					}
-					else if (!Enum.TryParse<SkinType>(skinValue, out _))
-					{
-						EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
-						EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
-						Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
-						Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
-						Registry.autoidx++;
-					}
-				}
-				foreach (var skin in Registry.skinInfo)
-				{
-					if (skins._values.Contains(skin.id))
-					{
-						skins._values.Remove(skin.id);
-						skins._values.Add(skin.idx);
-					}
-				}
-				JToken originalSkins = gld.SelectToken(skins.Path, false);
-				if (originalSkins != null)
-				{
-					skins.Merge(originalSkins);
-					foreach (var skin in skinsToRemove)
-					{
-						skins._values.Remove(skin);
-						skins._values.Remove("-" + skin);
-					}
-				}
-			}
-		}
-		foreach (JToken jtoken in patch.SelectTokens("$.skinData.*").ToArray())
-		{
-			JObject token = jtoken.Cast<JObject>();
-			string id = Util.GetJTokenName(token);
-			int index = Registry.skinInfo.FindIndex(t => t.id == id);
-			if (Registry.skinInfo.ElementAtOrDefault(index) != null)
-			{
-				SkinData skinData = new();
-				if (token["color"] != null)
-				{
-					skinData.color = (int)token["color"];
-				}
-				if (token["language"] != null)
-				{
-					skinData.language = token["language"].ToString();
-				}
-				Registry.skinInfo[index] = new Visual.SkinInfo(Registry.skinInfo[index].idx, Registry.skinInfo[index].id, skinData);
-			}
-		}
-		patch.Remove("skinData");
 	}
 }

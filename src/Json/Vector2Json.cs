@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace PolyMod.Json;
 
-internal class Vector2Json : JsonConverter<Vector2>
+public class Vector2Json : JsonConverter<Vector2>
 {
     public override Vector2 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

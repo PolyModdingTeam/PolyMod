@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace PolyMod.Json;
 
-internal class VersionJson : JsonConverter<Version>
+public class VersionJson : JsonConverter<Version>
 {
     public override Version? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
