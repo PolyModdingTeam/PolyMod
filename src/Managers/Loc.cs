@@ -12,6 +12,9 @@ namespace PolyMod.Managers;
 /// </summary>
 public static class Loc
 {
+	public record TermInfo(string term, string localizedString);
+	internal static Dictionary<int, string> languagesToAdd = new();
+
 	/// <summary>
 	/// Patches the tribe selection popup to correctly display descriptions for custom skins.
 	/// </summary>
@@ -110,6 +113,62 @@ public static class Loc
 			}
 			term.Languages = new Il2CppStringArray(strings.ToArray());
 		}
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(SettingsScreen), nameof(SettingsScreen.LanguageChangedCallback))]
+	public static bool LanguageChangedCallback(SettingsScreen __instance, int index)
+	{
+		Console.Write("LanguageChangedCallback");
+		Console.Write(index);
+		Il2CppSystem.Nullable<int> il2cppNullable = __instance.languageSelector.GetIdForIndex(index);
+		Console.Write(il2cppNullable.HasValue);
+		if (!il2cppNullable.HasValue)
+		{
+			var allLanguages = LocalizationManager.GetAllLanguages();
+			string languageName = allLanguages[index];
+			string languageCode = LocalizationManager.GetLanguageCode(languageName);
+			Console.Write(languageCode);
+			SettingsUtils.Language = languageCode;
+			LocalizationManager.CurrentLanguage = languageName;
+			UINavigationManager.Select(__instance.languageSelector.GetCurrentSelectable());
+		}
+		else
+		{
+			Console.Write(il2cppNullable.Value);
+		}
+		return il2cppNullable.HasValue;
+	}
+	public static void BuildAndLoadCustomLanguage(string name, Dictionary<string, string> terms)
+	{
+		LanguageSourceData source = LocalizationManager.Sources[0];
+		int languageIndex = source.GetLanguageIndex(name);
+		string languageName = terms["language"];
+		if (languageIndex == -1)
+		{
+			source.AddLanguage(terms["language"], name);
+			languageIndex = source.GetLanguageIndex(languageName);
+			languagesToAdd[languageIndex] = terms["language"];
+			Console.Write($"{name} language added.");
+		}
+
+		foreach (var kvp in terms)
+		{
+			TermData term = source.GetTermData(kvp.Key);
+			if (term == null)
+			{
+				source.AddTerm(kvp.Key);
+				term = source.GetTermData(kvp.Key);
+			}
+
+			term.Languages[languageIndex] = kvp.Value;
+		}
+
+		LocalizationManager.UpdateSources();
+
+		// LocalizationManager.CurrentLanguage = name;
+
+		Console.Write($"{name} strings added and language activated!");
 	}
 
 	/// <summary>

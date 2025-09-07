@@ -415,11 +415,24 @@ public static class Main
 					);
 					continue;
 				}
-				if (Regex.IsMatch(Path.GetFileName(file.name), @"^prefab(_.*)?\.json$"))
+				Match prefabMatch = Regex.Match(Path.GetFileName(file.name), @"^prefab(?:_(.*))?\.json$");
+				if (prefabMatch.Success)
 				{
 					Loader.LoadPrefabInfoFile(
 						mod,
 						file
+					);
+					continue;
+				}
+				Match languageMatch = Regex.Match(Path.GetFileName(file.name), @"^language(?:_(.*))?\.json$");
+				if (languageMatch.Success)
+				{
+					string languageName = languageMatch.Groups[1].Value;
+					Console.WriteLine(languageName); 
+					Loader.LoadLanguageFile(
+						mod,
+						file,
+						languageName
 					);
 					continue;
 				}

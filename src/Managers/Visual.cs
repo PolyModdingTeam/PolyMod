@@ -617,6 +617,23 @@ public static class Visual
 		basicPopupWidths.Remove(__instance.GetInstanceID());
 	}
 
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SettingsScreen), nameof(SettingsScreen.CreateLanguageList))]
+	private static void CreateLanguageList(SettingsScreen __instance, Transform parent)
+	{
+		foreach (KeyValuePair<int, string> language in Loc.languagesToAdd)
+		{
+			List<string> keys = __instance.languageSelector.data.ToList();
+			List<int> ids = __instance.languageSelector.ids.ToList();
+			keys.Add(language.Value);
+			ids.Add(language.Key);
+			__instance.languageSelector.SetData(keys.ToArray(), ids.ToArray(), 0, false);
+			Console.Write("CreateLanguageList");
+			Console.Write(language.Key);
+			Console.Write(__instance.languageSelector.ids.Length);
+		}
+	}
+
 	/// <summary>Shows a basic popup with a custom width.</summary>
 	public static void ShowSetWidth(this BasicPopup self, int width)
 	{

@@ -86,6 +86,7 @@ public static class Registry
 	/// </summary>
 	public static int gameModesAutoidx = Enum.GetValues(typeof(GameMode)).Length;
 
+	public static List<Loc.TermInfo> languageInfo = new();
 	/// <summary>
 	/// Gets a sprite from the registry, trying to find the best match.
 	/// </summary>

@@ -746,6 +746,12 @@ public static class Loader
 		);
 	}
 
+	public static void LoadLanguageFile(Mod mod, Mod.File file, string languageName)
+	{
+		var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(file.bytes);
+		Loc.BuildAndLoadCustomLanguage(languageName, dict);
+	}
+
 	/// <summary>
 	/// Processes the merged game logic data after all mods have been loaded and patched.
 	/// </summary>
