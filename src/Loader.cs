@@ -757,14 +757,19 @@ public static class Loader
 		{
 			CreateMappings(rootObject);
 			ProcessPrefabs();
-			ProcessEmbark();
-			ProcessAttract();
+			ProcessEmbarkOverrides();
+			ProcessAttractOverrides();
 		}
 		catch (Exception e)
 		{
 			Plugin.logger.LogError($"Error on processing modified game logic data : {e.StackTrace}");
 		}
 	}
+
+	/// <summary>
+	/// Creates EnumCache mappings for custom enum values and invokes type handlers.
+	/// </summary>
+	/// <param name="rootObject"></param>
 	internal static void CreateMappings(JObject rootObject)
 	{
 		foreach (JToken jtoken in rootObject.SelectTokens("$.*.*").ToArray())
@@ -813,6 +818,10 @@ public static class Loader
 			}
 		}
 	}
+
+	/// <summary>
+	/// Processes the prefab registry and populates the PrefabManager with custom prefabs.
+	/// </summary>
 	internal static void ProcessPrefabs()
 	{
 		foreach (System.Collections.Generic.KeyValuePair<int, string> item in Registry.prefabNames)
@@ -838,7 +847,11 @@ public static class Loader
 			}
 		}
 	}
-	internal static void ProcessEmbark()
+
+	/// <summary>
+	/// Processes embark overrides by mapping original embark unit types to configured overrides.
+	/// </summary>
+	internal static void ProcessEmbarkOverrides()
 	{
 		foreach (KeyValuePair<string, string> entry in Main.embarkNames)
 		{
@@ -855,7 +868,11 @@ public static class Loader
 			}
 		}
 	}
-	internal static void ProcessAttract()
+
+	/// <summary>
+	/// Processes attract overrides by mapping improvements to resources and terrain types based on configured overrides.
+	/// </summary>
+	internal static void ProcessAttractOverrides()
 	{
 		foreach (KeyValuePair<string, string> entry in Main.attractsResourceNames)
 		{

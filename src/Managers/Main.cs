@@ -78,7 +78,7 @@ public static class Main
 	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(GameLogicData), nameof(GameLogicData.AddGameLogicPlaceholders))]
-	private static void GameLogicData_Parse(GameLogicData __instance, ref JObject rootObject)
+	private static void GameLogicData_AddGameLogicPlaceholders(GameLogicData __instance, ref JObject rootObject)
 	{
 		if (!fullyInitialized)
 		{
