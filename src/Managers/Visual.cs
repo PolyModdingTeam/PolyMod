@@ -643,7 +643,7 @@ public static class Visual
 		{
 			if (visualPart.outlineRenderer.spriteRenderer != null)
 				visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
-			else if (visualpart.outlineRenderer.polytopiaSpriteRenderer != null)
+			else if (visualPart.outlineRenderer.polytopiaSpriteRenderer != null)
 				visualPart.outlineRenderer.polytopiaSpriteRenderer.sprite = outlineSprite;
 		}
 	}
