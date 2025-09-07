@@ -6,7 +6,7 @@ namespace PolyMod.Json;
 /// <summary>
 /// Converts a <see cref="Version"/> to and from a JSON string.
 /// </summary>
-internal class VersionJson : JsonConverter<Version>
+public class VersionJson : JsonConverter<Version>
 {
     /// <summary>
     /// Reads and converts the JSON to a <see cref="Version"/>.

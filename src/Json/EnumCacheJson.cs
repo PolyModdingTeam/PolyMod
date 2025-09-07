@@ -7,7 +7,7 @@ namespace PolyMod.Json;
 /// Converts an <see cref="Enum"/> to and from a JSON string using the <see cref="EnumCache{T}"/>.
 /// </summary>
 /// <typeparam name="T">The type of the enum.</typeparam>
-internal class EnumCacheJson<T> : JsonConverter<T> where T : struct, Enum
+public class EnumCacheJson<T> : JsonConverter<T> where T : struct, Enum
 {
     /// <summary>
     /// Reads and converts the JSON to an enum value.

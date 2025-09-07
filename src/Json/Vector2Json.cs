@@ -7,7 +7,7 @@ namespace PolyMod.Json;
 /// <summary>
 /// Converts a <see cref="Vector2"/> to and from a JSON array of two numbers.
 /// </summary>
-internal class Vector2Json : JsonConverter<Vector2>
+public class Vector2Json : JsonConverter<Vector2>
 {
     /// <summary>
     /// Reads and converts the JSON to a <see cref="Vector2"/>.

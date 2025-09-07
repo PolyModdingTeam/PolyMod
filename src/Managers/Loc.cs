@@ -63,9 +63,9 @@ public static class Loc
 		// If a custom enum index is found, try to resolve its name
 		if (idx != null)
 		{
-			foreach (var targetType in Loader.typeMappings.Values)
+			foreach (var typeMapping in Loader.typeMappings.Values)
 			{
-				MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("TryGetName");
+				MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(typeMapping.type).GetMethod("TryGetName");
 				if (methodInfo != null)
 				{
 					object?[] parameters = { idx, null };

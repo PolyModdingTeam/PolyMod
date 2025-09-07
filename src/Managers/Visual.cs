@@ -649,6 +649,10 @@ public static class Visual
 	}
 
 	/// <summary>Builds a sprite from raw byte data.</summary>
+	/// <param name="data">The raw byte data of the image.</param>
+	/// <param name="pivot">The pivot point of the sprite.</param>
+	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
+	/// <returns>The created sprite.</returns>
 	public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
 	{
 		Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
@@ -665,6 +669,10 @@ public static class Visual
 	}
 
 	/// <summary>Builds a sprite from a texture.</summary>
+	/// <param name="texture">The texture to create the sprite from.</param>
+	/// <param name="pivot">The pivot point of the sprite.</param>
+	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
+	/// <returns>The created sprite.</returns>
 	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f)
 	{
 		return Sprite.Create(
