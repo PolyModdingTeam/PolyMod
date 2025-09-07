@@ -73,7 +73,7 @@ public static class Loader
 					foreach (var skin in skinValues)
 					{
 						string skinValue = skin.ToString();
-						if (!Enum.TryParse<SkinType>(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(skinValue), out _))
+						if (!Enum.TryParse<SkinType>(skinValue, ignoreCase: true, out _))
 						{
 							EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
 							EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
