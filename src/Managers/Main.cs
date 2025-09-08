@@ -32,12 +32,7 @@ public static class Main
 	/// Whether the mod has been fully initialized.
 	/// </summary>
 	internal static bool fullyInitialized;
-
-	/// <summary>
-	/// Whether a dependency cycle was detected among the loaded mods.
-	/// </summary>
-	internal static bool dependencyCycle;
-
+	
 	/// <summary>
 	/// A dictionary mapping unit IDs to the IDs of the units they embark into.
 	/// </summary>
