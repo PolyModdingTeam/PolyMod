@@ -18,6 +18,8 @@ namespace PolyMod.Managers;
 /// </summary>
 public static class Main
 {
+	internal static bool dependencyCycle;
+
 	/// <summary>
 	/// The maximum tier for technology, used to extend the tech tree.
 	/// </summary>
@@ -32,12 +34,7 @@ public static class Main
 	/// Whether the mod has been fully initialized.
 	/// </summary>
 	internal static bool fullyInitialized;
-
-	/// <summary>
-	/// Whether a dependency cycle was detected among the loaded mods.
-	/// </summary>
-	internal static bool dependencyCycle;
-
+	
 	/// <summary>
 	/// A dictionary mapping unit IDs to the IDs of the units they embark into.
 	/// </summary>
@@ -350,34 +347,9 @@ public static class Main
 			Array.Empty<Mod.Dependency>()
 		);
 		Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
-		Loader.LoadMods(Registry.mods);
-		dependencyCycle = !Loader.SortMods(Registry.mods);
-		if (dependencyCycle) return;
-
-		StringBuilder checksumString = new();
-		foreach (var (id, mod) in Registry.mods)
-		{
-			if (mod.status != Mod.Status.Success) continue;
-			foreach (var file in mod.files)
-			{
-				checksumString.Append(JsonSerializer.Serialize(file));
-				if (Path.GetExtension(file.name) == ".dll")
-				{
-					Loader.LoadAssemblyFile(mod, file);
-				}
-				if (Path.GetFileName(file.name) == "sprites.json")
-				{
-					Loader.LoadSpriteInfoFile(mod, file);
-				}
-			}
-			if (!mod.client && id != "polytopia")
-			{
-				checksumString.Append(id);
-				checksumString.Append(mod.version.ToString());
-			}
-		}
-		Compatibility.HashSignatures(checksumString);
-
+		Loader.RegisterMods(Registry.mods);
+		Loader.LoadMods(Registry.mods, out var cycle);
+		dependencyCycle = cycle;
 		stopwatch.Stop();
 	}
 
@@ -408,10 +380,18 @@ public static class Main
 				}
 				if (Regex.IsMatch(Path.GetFileName(file.name), @"^patch(_.*)?\.json$"))
 				{
+					var patchText = new StreamReader(new MemoryStream(file.bytes)).ReadToEnd();
+					var template = new GldConfigTemplate(patchText, mod.id);
+					var text = template.Render();
+					if (text is null)
+					{
+						mod.status = Mod.Status.Error;
+						continue;
+					}
 					Loader.LoadGameLogicDataPatch(
 						mod,
 						json,
-						JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd())
+						JObject.Parse(text)
 					);
 					continue;
 				}

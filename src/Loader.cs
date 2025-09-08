@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -230,7 +231,7 @@ public static class Loader
 	/// Loads all mods from the mods directory.
 	/// </summary>
 	/// <param name="mods">A dictionary to populate with the loaded mods.</param>
-	internal static void LoadMods(Dictionary<string, Mod> mods)
+	internal static void RegisterMods(Dictionary<string, Mod> mods)
 	{
 		Directory.CreateDirectory(Plugin.MODS_PATH);
 		string[] modContainers = Directory.GetDirectories(Plugin.MODS_PATH)
@@ -279,8 +280,7 @@ public static class Loader
 					files.Add(new(entry.FullName, entry.ReadBytes()));
 				}
 			}
-
-			// Validate manifest
+			#region ValidateManifest()
 			if (manifest == null)
 			{
 				Plugin.logger.LogError($"Mod manifest not found in {modContainer}");
@@ -311,6 +311,7 @@ public static class Loader
 				Plugin.logger.LogError($"Mod {manifest.id} already exists");
 				continue;
 			}
+			#endregion
 			mods.Add(manifest.id, new(
 				manifest,
 				Mod.Status.Success,
@@ -319,7 +320,41 @@ public static class Loader
 			Plugin.logger.LogInfo($"Registered mod {manifest.id}");
 		}
 
-		// Check dependencies
+		CheckDependencies(mods);
+	}
+
+	internal static void LoadMods(Dictionary<string, Mod> mods, out bool dependencyCycle)
+	{
+		dependencyCycle = !SortMods(Registry.mods);
+		if (dependencyCycle) return;
+
+		StringBuilder checksumString = new();
+		foreach (var (id, mod) in Registry.mods)
+		{
+			if (mod.status != Mod.Status.Success) continue;
+			foreach (var file in mod.files)
+			{
+				checksumString.Append(JsonSerializer.Serialize(file));
+				if (Path.GetExtension(file.name) == ".dll")
+				{
+					LoadAssemblyFile(mod, file);
+				}
+				if (Path.GetFileName(file.name) == "sprites.json")
+				{
+					LoadSpriteInfoFile(mod, file);
+				}
+			}
+			if (!mod.client && id != "polytopia")
+			{
+				checksumString.Append(id);
+				checksumString.Append(mod.version.ToString());
+			}
+		}
+		Compatibility.HashSignatures(checksumString);
+
+	}
+	private static void CheckDependencies(Dictionary<string, Mod> mods)
+	{
 		foreach (var (id, mod) in mods)
 		{
 			foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
@@ -362,7 +397,7 @@ public static class Loader
 	/// </summary>
 	/// <param name="mods">The dictionary of mods to sort.</param>
 	/// <returns>True if the mods could be sorted (no circular dependencies), false otherwise.</returns>
-	internal static bool SortMods(Dictionary<string, Mod> mods)
+	private static bool SortMods(Dictionary<string, Mod> mods)
 	{
 		Stopwatch s = new();
 		Dictionary<string, List<string>> graph = new();
@@ -431,6 +466,16 @@ public static class Loader
 		try
 		{
 			Assembly assembly = Assembly.Load(file.bytes);
+			if (assembly
+				    .GetTypes()
+				    .FirstOrDefault(t => t.IsSubclassOf(typeof(PolyScriptBase)))
+			    is { } modType)
+			{
+				var modInstance = (PolyScriptBase) Activator.CreateInstance(modType)!;
+				modInstance.Initialize(mod.id, BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.id}"));
+				modInstance.Load();
+				return;
+			}
 			foreach (Type type in assembly.GetTypes())
 			{
 				MethodInfo? loadWithLogger = type.GetMethod("Load", new Type[] { typeof(ManualLogSource) });
