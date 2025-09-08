@@ -4,10 +4,12 @@ using BepInEx.Logging;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppSystem.Collections;
 using MoonSharp.Interpreter;
+using MoonSharp.Interpreter.Debugging;
 using MoonSharp.Interpreter.Interop;
 using Newtonsoft.Json.Linq;
 using PolyMod.modApi;
 using Polytopia.Data;
+using PolytopiaBackendBase.Game;
 using UnityEngine;
 using IDisposable = Il2CppSystem.IDisposable;
 using Input = PolyMod.modApi.Input;
@@ -21,24 +23,7 @@ public class LuaManager
     private ManualLogSource logger;
     static LuaManager()
     {
-        Script.GlobalOptions.CustomConverters.SetClrToScriptCustomConversion(typeof(IEnumerable<>), (_, enumerable) =>
-        {
-            IEnumerator enumerator =  ((IEnumerable) enumerable).GetEnumerator();
-            return DynValue.NewCallback((context, args) =>
-            {
-                if (enumerator.MoveNext())
-                {
-                    // Return the current item as a single value tuple
-                    return DynValue.NewTuple(DynValue.FromObject(context.GetScript(), enumerator.Current));
-                }
-                else
-                {
-                    // Iterator is finished
-                    ((object)enumerator as IDisposable).Dispose();
-                    return DynValue.Nil;
-                }
-            });
-        });
+        
     }
     public LuaManager(string modName)
     {
@@ -71,11 +56,35 @@ public class LuaManager
         RegisterTypesAndExtensions(typeof(Enumerable).Assembly.GetTypes()); // linq
 
         #region PolyMod.*
+
+        UserData.RegisterType(typeof(Registry));
+        lua.Globals["Registry"] = typeof(Registry);
+        
         UserData.RegisterType(typeof(Patch));
         lua.Globals["Patch"] = typeof(Patch);
 
         UserData.RegisterType(typeof(General));
         lua.Globals["General"] = typeof(General);
+
+        UserData.RegisterType(typeof(LuaEnumCache));
+        lua.Globals["EnumCache"] = typeof(LuaEnumCache);
+        
+        LuaEnumCache.RegisterEnum<GameMode>("GameMode");
+        LuaEnumCache.RegisterEnum<TribeData.Type>("TribeType");
+        LuaEnumCache.RegisterEnum<TechData.Type>("TechType");
+        LuaEnumCache.RegisterEnum<UnitData.Type>("UnitType");
+        LuaEnumCache.RegisterEnum<ImprovementData.Type>("ImprovementType");
+        LuaEnumCache.RegisterEnum<Polytopia.Data.TerrainData.Type>("TerrainType");
+        LuaEnumCache.RegisterEnum<ResourceData.Type>("ResourceType");
+        LuaEnumCache.RegisterEnum<TaskData.Type>("TaskType");
+        LuaEnumCache.RegisterEnum<TribeAbility.Type>("TribeAbilityType");
+        LuaEnumCache.RegisterEnum<UnitAbility.Type>("UnitAbilityType");
+        LuaEnumCache.RegisterEnum<ImprovementAbility.Type>("ImprovementAbilityType");
+        LuaEnumCache.RegisterEnum<PlayerAbility.Type>("PlayerAbilityType");
+        LuaEnumCache.RegisterEnum<UnitData.WeaponEnum>("WeaponType");
+        LuaEnumCache.RegisterEnum<KeyCode>("KeyCode");
+        LuaEnumCache.RegisterEnum<SkinType>("SkinType");
+        
 
         UserData.RegisterType<LuaConfig>();
         lua.Globals["Config"] = new LuaConfig(modName, Config<JsonNode>.ConfigTypes.PerMod, lua);
@@ -83,6 +92,10 @@ public class LuaManager
         
         UserData.RegisterType(typeof(Input));
         lua.Globals["Input"] = typeof(Input);
+        
+        UserData.RegisterExtensionType(typeof(Il2cppEnumerableExtensions));
+        
+        lua.Globals["clrTypeOf"] = DynValue.NewCallback((_, args) => DynValue.NewString(args[0].ToObject().GetType().FullName));
         #endregion
         
         #region Il2cppSystem.*
@@ -147,7 +160,11 @@ public class LuaManager
         }
         catch (ScriptRuntimeException e)
         {
-            logger.LogError(e.DecoratedMessage);
+            logger.LogError(e.DecoratedMessage ?? e.Message);
+            foreach (var item in e.CallStack)
+            {
+                logger.LogError($"AT {item.Location}");
+            }
         }
     }
     public void ExecuteFile(string path)
@@ -159,6 +176,18 @@ public class LuaManager
         catch (ScriptRuntimeException e)
         {
             logger.LogError(e.DecoratedMessage);
+        }
+    }
+}
+
+public static class Il2cppEnumerableExtensions
+{
+    public static System.Collections.IEnumerable ToMono<T>(this Il2CppSystem.Collections.Generic.IEnumerable<T> enumerable)
+    {
+        var list = Il2CppSystem.Linq.Enumerable.ToList(enumerable);
+        foreach (T v in list)
+        {
+            yield return v;
         }
     }
 }

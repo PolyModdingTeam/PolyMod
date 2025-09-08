@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using HarmonyLib;
@@ -119,7 +120,15 @@ public static class Patch
                         {
                             try
                             {
-                                normalizedArgs[idx] = Convert.ChangeType(arg, expectedType);
+                                if (expectedType.IsEnum)
+                                {
+                                    var underlyingValue = Convert.ChangeType(arg, Enum.GetUnderlyingType(expectedType));
+                                    normalizedArgs[idx] = Enum.ToObject(expectedType, underlyingValue);
+                                }
+                                else
+                                {
+                                    normalizedArgs[idx] = Convert.ChangeType(arg, expectedType);
+                                }
                             }
                             catch
                             {
@@ -155,7 +164,10 @@ public static class Patch
         {
             Plugin.logger.LogError($"IN METHOD {__originalMethod.DeclaringType.FullName}.{__originalMethod.Name}({string.Join(", ", __originalMethod.GetParameters().Select(p => p.ParameterType))}):");
             Plugin.logger.LogError(e.DecoratedMessage ?? e.Message);
-            Plugin.logger.LogError(e.InnerException);
+            foreach (var item in e.CallStack)
+            {
+                Plugin.logger.LogError($"AT {item.Location}");
+            }
             return true;
         }
         catch (Exception e)

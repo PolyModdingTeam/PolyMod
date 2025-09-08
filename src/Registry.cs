@@ -11,7 +11,7 @@ namespace PolyMod;
 /// </summary>
 public static class Registry
 {
-	internal static int autoidx = Constants.AUTOIDX_STARTS_FROM;
+	public static int autoidx = Constants.AUTOIDX_STARTS_FROM;
 
 	/// <summary>The registry for custom sprites.</summary>
 	internal static Dictionary<string, Sprite> sprites = new();
@@ -49,8 +49,8 @@ public static class Registry
 	/// <summary>The registry for custom skin information.</summary>
 	internal static List<Visual.SkinInfo> skinInfo = new();
 
-	internal static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
-	internal static int gameModesAutoidx = Enum.GetValues(typeof(GameMode)).Length;
+	public static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
+	public static int gameModesAutoidx = Enum.GetValues(typeof(GameMode)).Length;
 
 	/// <summary>
 	/// Retrieves a sprite from the registry based on its name, style, and level.
