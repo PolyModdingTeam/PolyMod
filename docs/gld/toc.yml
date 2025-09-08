@@ -1,0 +1,12 @@
+- name: Game Data Reference
+  href: index.md
+- name: Tribe Data
+  href: Tribe.yml
+- name: Unit Data
+  href: Unit.yml
+- name: Technology Data
+  href: Technology.yml
+- name: Improvement Data
+  href: Improvement.yml
+- name: Minor Data Structures
+  href: MinorDatas.md

@@ -33,9 +33,9 @@
             <GeneratedText><![CDATA[
 namespace PolyMod
 {
-    public partial class Plugin
+    public partial class Constants
     {
-        internal const string VERSION = "$(Version)"%3B
+        internal const string POLYMOD_VERSION = "$(Version)"%3B
         internal static readonly Version POLYTOPIA_VERSION = new("$(PolytopiaVersion)")%3B
     }
 }

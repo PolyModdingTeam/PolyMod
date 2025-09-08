@@ -1,0 +1,109 @@
+### YamlMime:ManagedReference
+items:
+- uid: GameData.ImprovementData
+  id: ImprovementData
+  name: Improvement Data
+  fullName: Improvement Data
+  type: Class
+  summary: |
+    Defines the properties for a tile improvement. Each improvement is an object within the `improvementData` section, keyed by its unique name.
+  syntax:
+    content: '"improvementData": { "your_improvement_name": { ... } }'
+  children:
+  - GameData.ImprovementData.cost
+  - GameData.ImprovementData.rewards
+  - GameData.ImprovementData.terrainRequirements
+  - GameData.ImprovementData.adjacencyRequirements
+  - GameData.ImprovementData.improvementAbilities
+  - GameData.ImprovementData.creates
+  - GameData.ImprovementData.maxLevel
+  - GameData.ImprovementData.growthRewards
+  - GameData.ImprovementData.idx
+
+- uid: GameData.ImprovementData.cost
+  id: cost
+  parent: GameData.ImprovementData
+  name: cost
+  fullName: cost
+  type: Property
+  summary: An integer for the star cost to build the improvement.
+  syntax:
+    content: '"cost": 5'
+- uid: GameData.ImprovementData.rewards
+  id: rewards
+  parent: GameData.ImprovementData
+  name: rewards
+  fullName: rewards
+  type: Property
+  summary: An array of objects defining the immediate rewards for building the improvement (e.g., population or currency).
+  syntax:
+    content: '"rewards": [{ "population": 2 }]'
+- uid: GameData.ImprovementData.terrainRequirements
+  id: terrainRequirements
+  parent: GameData.ImprovementData
+  name: terrainRequirements
+  fullName: terrainRequirements
+  type: Property
+  summary: An array of objects specifying where the improvement can be built. Can require a specific `terrain` or `resource`.
+  syntax:
+    content: '"terrainRequirements": [{ "resource": "crop" }]'
+- uid: GameData.ImprovementData.adjacencyRequirements
+  id: adjacencyRequirements
+  parent: GameData.ImprovementData
+  name: adjacencyRequirements
+  fullName: adjacencyRequirements
+  type: Property
+  summary: An array of objects specifying what must be adjacent for this improvement to be built (e.g., a Forge requires a Mine).
+  syntax:
+    content: '"adjacencyRequirements": [{ "improvement": "mine" }]'
+- uid: GameData.ImprovementData.improvementAbilities
+  id: improvementAbilities
+  parent: GameData.ImprovementData
+  name: improvementAbilities
+  fullName: improvementAbilities
+  type: Property
+  summary: |
+    An array of strings for special properties. Possible values include:
+    - `consumed` - The improvement action can only be done once and removes the resource (e.g., `harvestfruit`).
+    - `limited` - Only one can be built per city.
+    - `unique` - Only one can be built per player.
+    - `patina` - The improvement levels up over time.
+    - `network` - Connects to other network improvements.
+  syntax:
+    content: '"improvementAbilities": ["consumed"]'
+- uid: GameData.ImprovementData.creates
+  id: creates
+  parent: GameData.ImprovementData
+  name: creates
+  fullName: creates
+  type: Property
+  summary: An array of objects defining what is created after the action is complete. Can create a `terrain`, `resource`, or `unit`.
+  syntax:
+    content: '"creates": [{ "terrain": "field" }]'
+- uid: GameData.ImprovementData.maxLevel
+  id: maxLevel
+  parent: GameData.ImprovementData
+  name: maxLevel
+  fullName: maxLevel
+  type: Property
+  summary: An integer for the maximum level the improvement can reach. 0 means it does not level up.
+  syntax:
+    content: '"maxLevel": 4'
+- uid: GameData.ImprovementData.growthRewards
+  id: growthRewards
+  parent: GameData.ImprovementData
+  name: growthRewards
+  fullName: growthRewards
+  type: Property
+  summary: An array of objects defining the rewards gained each time the improvement levels up (e.g., population or score).
+  syntax:
+    content: '"growthRewards": [{ "score": 50, "population": 0 }]'
+- uid: GameData.ImprovementData.idx
+  id: idx
+  parent: GameData.ImprovementData
+  name: idx
+  fullName: idx
+  type: Property
+  summary: A unique integer index for the improvement. Must be unique across all improvements. When adding a new entry, it is recommended to set this value to -1 to ensure uniqueness and prevent conflicts with game updates.
+  syntax:
+    content: '"idx": 5'

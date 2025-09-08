@@ -19,7 +19,7 @@ using UnityEngine;
 
 namespace PolyMod;
 
-public static class Loader
+internal static class Loader
 {
 	internal static Dictionary<string, Type> typeMappings = new()
 	{
@@ -133,27 +133,15 @@ public static class Loader
 	};
 
 	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
+	
+	
 
-	public static void AddGameModeButton(string id, UIButtonBase.ButtonAction action, Sprite? sprite)
+	internal static bool RegisterMods(Dictionary<string, Mod> mods)
 	{
-		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
-		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
-		gamemodes.Add(new GameModeButtonsInformation(Registry.gameModesAutoidx, action, null, sprite));
-		Registry.gameModesAutoidx++;
-	}
-
-	public static void AddPatchDataType(string typeId, Type type)
-	{
-		if (!typeMappings.ContainsKey(typeId))
-			typeMappings.Add(typeId, type);
-	}
-
-	internal static void RegisterMods(Dictionary<string, Mod> mods)
-	{
-		Directory.CreateDirectory(Plugin.MODS_PATH);
-		string[] modContainers = Directory.GetDirectories(Plugin.MODS_PATH)
-			.Union(Directory.GetFiles(Plugin.MODS_PATH, "*.polymod"))
-			.Union(Directory.GetFiles(Plugin.MODS_PATH, "*.zip"))
+		Directory.CreateDirectory(Constants.MODS_PATH);
+		string[] modContainers = Directory.GetDirectories(Constants.MODS_PATH)
+			.Union(Directory.GetFiles(Constants.MODS_PATH, "*.polymod"))
+			.Union(Directory.GetFiles(Constants.MODS_PATH, "*.zip"))
 			.ToArray();
 		foreach (var modContainer in modContainers)
 		{
@@ -237,13 +225,11 @@ public static class Loader
 		}
 
 		CheckDependencies(mods);
+		var dependencyCycle = !SortMods(Registry.mods);
+		return dependencyCycle;
 	}
-
 	internal static void LoadMods(Dictionary<string, Mod> mods)
 	{
-		var dependencyCycle = !SortMods(Registry.mods);
-		if (dependencyCycle) return;
-
 		StringBuilder checksumString = new();
 		foreach (var (id, mod) in Registry.mods)
 		{
@@ -268,6 +254,69 @@ public static class Loader
 		}
 		Compatibility.HashSignatures(checksumString);
 
+	}
+	internal static void PatchGLD(JObject gameLogicdata, Dictionary<string, Mod> mods)
+	{
+		Loc.BuildAndLoadLocalization(
+			JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(
+				Plugin.GetResource("localization.json")
+			)!
+		);
+		foreach (var (id, mod) in mods)
+		{
+			if (mod.status != Mod.Status.Success) continue;
+			foreach (var file in mod.files)
+			{
+				if (Path.GetFileName(file.name) == "localization.json")
+				{
+					Loader.LoadLocalizationFile(mod, file);
+					continue;
+				}
+				if (Regex.IsMatch(Path.GetFileName(file.name), @"^patch(_.*)?\.json$"))
+				{
+					var patchText = new StreamReader(new MemoryStream(file.bytes)).ReadToEnd();
+					var template = new GldConfigTemplate(patchText, mod.id);
+					var text = template.Render();
+					if (text is null)
+					{
+						mod.status = Mod.Status.Error;
+						continue;
+					}
+					Loader.LoadGameLogicDataPatch(
+						mod,
+						gameLogicdata,
+						JObject.Parse(text)
+					);
+					continue;
+				}
+				if (Regex.IsMatch(Path.GetFileName(file.name), @"^prefab(_.*)?\.json$"))
+				{
+					Loader.LoadPrefabInfoFile(
+						mod,
+						file
+					);
+					continue;
+				}
+
+				switch (Path.GetExtension(file.name))
+				{
+					case ".png":
+						Loader.LoadSpriteFile(mod, file);
+						break;
+					case ".wav":
+						Loader.LoadAudioFile(mod, file);
+						break;
+					case ".bundle":
+						Loader.LoadAssetBundle(mod, file);
+						break;
+				}
+			}
+		}
+		TechItem.techTierFirebaseId.Clear();
+		for (int i = 0; i <= Main.MAX_TECH_TIER; i++)
+		{
+			TechItem.techTierFirebaseId.Add($"tech_research_{i}");
+		}
 	}
 	private static void CheckDependencies(Dictionary<string, Mod> mods)
 	{
@@ -367,7 +416,7 @@ public static class Loader
 		return true;
 	}
 
-	public static void LoadAssemblyFile(Mod mod, Mod.File file)
+	internal static void LoadAssemblyFile(Mod mod, Mod.File file)
 	{
 		try
 		{
@@ -411,7 +460,7 @@ public static class Loader
 		}
 	}
 
-	public static void LoadLocalizationFile(Mod mod, Mod.File file)
+	internal static void LoadLocalizationFile(Mod mod, Mod.File file)
 	{
 		try
 		{
@@ -425,7 +474,7 @@ public static class Loader
 		}
 	}
 
-	public static void LoadSpriteFile(Mod mod, Mod.File file)
+	internal static void LoadSpriteFile(Mod mod, Mod.File file)
 	{
 		string name = Path.GetFileNameWithoutExtension(file.name);
 		Vector2 pivot = name.Split("_")[0] switch
@@ -447,7 +496,7 @@ public static class Loader
 		Registry.sprites.Add(name, sprite);
 	}
 
-	public static void UpdateSprite(string name)
+	internal static void UpdateSprite(string name)
 	{
 		if (Registry.spriteInfos.ContainsKey(name) && Registry.sprites.ContainsKey(name))
 		{
@@ -462,7 +511,7 @@ public static class Loader
 		}
 	}
 
-	public static Dictionary<string, Visual.SpriteInfo>? LoadSpriteInfoFile(Mod mod, Mod.File file)
+	internal static Dictionary<string, Visual.SpriteInfo>? LoadSpriteInfoFile(Mod mod, Mod.File file)
 	{
 		try
 		{
@@ -492,7 +541,7 @@ public static class Loader
 		}
 	}
 
-	public static void LoadAudioFile(Mod mod, Mod.File file)
+	internal static void LoadAudioFile(Mod mod, Mod.File file)
 	{
 		// AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
 		// GameObject.DontDestroyOnLoad(audioSource);
@@ -501,7 +550,7 @@ public static class Loader
 		// TODO: issue #71
 	}
 
-	public static void LoadPrefabInfoFile(Mod mod, Mod.File file)
+	internal static void LoadPrefabInfoFile(Mod mod, Mod.File file)
 	{
 		try
 		{
@@ -614,7 +663,7 @@ public static class Loader
 		return visualPart;
 	}
 
-	public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
+	internal static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
 	{
 		try
 		{
@@ -673,7 +722,7 @@ public static class Loader
 		}
 	}
 
-	public static void LoadAssetBundle(Mod mod, Mod.File file)
+	internal static void LoadAssetBundle(Mod mod, Mod.File file)
 	{
 		Registry.assetBundles.Add(
 			Path.GetFileNameWithoutExtension(file.name),
@@ -681,7 +730,7 @@ public static class Loader
 		);
 	}
 
-	public static void HandleSkins(JObject gld, JObject patch)
+	internal static void HandleSkins(JObject gld, JObject patch)
 	{
 		foreach (JToken jtoken in patch.SelectTokens("$.tribeData.*").ToArray())
 		{

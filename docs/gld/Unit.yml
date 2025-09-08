@@ -1,0 +1,138 @@
+### YamlMime:ManagedReference
+items:
+- uid: GameData.UnitData
+  id: UnitData
+  name: Unit Data
+  fullName: Unit Data
+  type: Class
+  summary: |
+    Defines the properties for a unit. Each unit is an object within the `unitData` section of the JSON file, keyed by its unique name (e.g., "warrior", "knight").
+
+    To add a new unit, create a new entry with a unique key and define its properties as described below.
+  syntax:
+    content: '"unitData": { "your_unit_name": { ... } }'
+  children:
+  - GameData.UnitData.health
+  - GameData.UnitData.defence
+  - GameData.UnitData.attack
+  - GameData.UnitData.movement
+  - GameData.UnitData.range
+  - GameData.UnitData.cost
+  - GameData.UnitData.unitAbilities
+  - GameData.UnitData.hidden
+  - GameData.UnitData.upgradesFrom
+  - GameData.UnitData.promotionLimit
+  - GameData.UnitData.idx
+
+- uid: GameData.UnitData.health
+  id: health
+  parent: GameData.UnitData
+  name: health
+  fullName: health
+  type: Property
+  summary: An integer representing the unit's maximum health points.
+  syntax:
+    content: '"health": 100'
+- uid: GameData.UnitData.defence
+  id: defence
+  parent: GameData.UnitData
+  name: defence
+  fullName: defence
+  type: Property
+  summary: An integer representing the unit's defense stat.
+  syntax:
+    content: '"defence": 20'
+- uid: GameData.UnitData.attack
+  id: attack
+  parent: GameData.UnitData
+  name: attack
+  fullName: attack
+  type: Property
+  summary: An integer representing the unit's attack stat.
+  syntax:
+    content: '"attack": 20'
+- uid: GameData.UnitData.movement
+  id: movement
+  parent: GameData.UnitData
+  name: movement
+  fullName: movement
+  type: Property
+  summary: An integer for the number of tiles the unit can move per turn.
+  syntax:
+    content: '"movement": 1'
+- uid: GameData.UnitData.range
+  id: range
+  parent: GameData.UnitData
+  name: range
+  fullName: range
+  type: Property
+  summary: An integer for the unit's attack range in tiles. A value of 1 means melee.
+  syntax:
+    content: '"range": 1'
+- uid: GameData.UnitData.cost
+  id: cost
+  parent: GameData.UnitData
+  name: cost
+  fullName: cost
+  type: Property
+  summary: The number of stars required to train this unit. A cost of 0 often means the unit cannot be trained directly.
+  syntax:
+    content: '"cost": 2'
+- uid: GameData.UnitData.unitAbilities
+  id: unitAbilities
+  parent: GameData.UnitData
+  name: unitAbilities
+  fullName: unitAbilities
+  type: Property
+  summary: |
+    An array of strings listing the special abilities of the unit. Possible values include:
+    - `dash` - Can attack after moving.
+    - `fortify` - Can gain a defensive bonus by not moving.
+    - `escape` - Can move after attacking.
+    - `persist` - Can attack multiple enemies in one turn if the first is destroyed.
+    - `fly` - Can move over any terrain.
+    - `swim` - Can move on water tiles.
+    - `amphibious` - Can move on both land and water tiles.
+    - `skate` - Can move on ice tiles.
+    - `creep` - Can ignore enemy zone of control.
+    - `convert` - Can convert enemy units.
+    - `heal` - Can heal nearby friendly units.
+    - `poison` - Applies a damage-over-time effect on attack.
+  syntax:
+    content: '"unitAbilities": ["dash", "fortify", "land"]'
+- uid: GameData.UnitData.hidden
+  id: hidden
+  parent: GameData.UnitData
+  name: hidden
+  fullName: hidden
+  type: Property
+  summary: A boolean (`true`/`false`) indicating if the unit should be hidden from standard training menus. Often used for summoned units or Giants.
+  syntax:
+    content: '"hidden": true'
+- uid: GameData.UnitData.upgradesFrom
+  id: upgradesFrom
+  parent: GameData.UnitData
+  name: upgradesFrom
+  fullName: upgradesFrom
+  type: Property
+  summary: A string ID of the unit that this unit upgrades from (e.g., "firedragon" upgrades from "babydragon").
+  syntax:
+    content: '"upgradesFrom": "babydragon"'
+- uid: GameData.UnitData.promotionLimit
+  id: promotionLimit
+  parent: GameData.UnitData
+  name: promotionLimit
+  fullName: promotionLimit
+  type: Property
+  summary: An integer for the maximum number of promotions this unit can receive. 0 means it cannot be promoted.
+  syntax:
+    content: '"promotionLimit": 3'
+- uid: GameData.UnitData.idx
+  id: idx
+  parent: GameData.UnitData
+  name: idx
+  fullName: idx
+  type: Property
+  summary: A unique integer index for the unit. Must be unique across all units. When adding a new entry, it is recommended to set this value to -1 to ensure uniqueness and prevent conflicts with game updates.
+  syntax:
+    content: '"idx": 2'
