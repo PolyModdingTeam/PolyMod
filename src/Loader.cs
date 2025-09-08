@@ -374,10 +374,10 @@ public static class Loader
 			Assembly assembly = Assembly.Load(file.bytes);
 			if (assembly
 				    .GetTypes()
-				    .FirstOrDefault(t => t.IsSubclassOf(typeof(PolyScriptModBase)))
+				    .FirstOrDefault(t => t.IsSubclassOf(typeof(PolyScriptBase)))
 			    is { } modType)
 			{
-				var modInstance = (PolyScriptModBase) Activator.CreateInstance(modType)!;
+				var modInstance = (PolyScriptBase) Activator.CreateInstance(modType)!;
 				modInstance.Initialize(mod.id, BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.id}"));
 				modInstance.Load();
 				return;

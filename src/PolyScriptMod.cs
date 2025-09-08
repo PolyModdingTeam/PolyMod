@@ -4,16 +4,16 @@ using PolyMod.Managers;
 
 namespace PolyMod;
 
-public abstract class PolyScriptModBase
+public abstract class PolyScriptBase
 {
     internal abstract void Initialize(string name, ManualLogSource logger);
     public abstract void Load();
     public abstract void UnLoad();
-    internal PolyScriptModBase()
+    internal PolyScriptBase()
     {
     }
 }
-public abstract class PolyScriptMod<TConfig, TExposedConfig> : PolyScriptModBase where TConfig : class where TExposedConfig : class
+public abstract class PolyScript<TConfig, TExposedConfig> : PolyScriptBase where TConfig : class where TExposedConfig : class
 {
     internal override void Initialize(string name, ManualLogSource logger)
     {
@@ -29,6 +29,6 @@ public abstract class PolyScriptMod<TConfig, TExposedConfig> : PolyScriptModBase
     protected ManualLogSource Logger { get; private set; } = null!;
 }
 
-public abstract class PolyScriptMod : PolyScriptMod<JObject, JObject>
+public abstract class PolyScript : PolyScript<JObject, JObject>
 {
 }
