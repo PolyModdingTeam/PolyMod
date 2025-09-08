@@ -323,9 +323,9 @@ public static class Loader
 		CheckDependencies(mods);
 	}
 
-	internal static void LoadMods(Dictionary<string, Mod> mods)
+	internal static void LoadMods(Dictionary<string, Mod> mods, out bool dependencyCycle)
 	{
-		var dependencyCycle = !SortMods(Registry.mods);
+		dependencyCycle = !SortMods(Registry.mods);
 		if (dependencyCycle) return;
 
 		StringBuilder checksumString = new();
