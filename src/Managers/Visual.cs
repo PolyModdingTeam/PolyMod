@@ -264,7 +264,7 @@ public static class Visual
 		SkinType skinType = tile.data.Skin;
 
 		string flood = "";
-		if (tile.data.effects.Contains(TileData.EffectType.Flooded))
+		if (tile.data.effects.Contains(TileData.EffectType.Flooded) || (tribe == TribeData.Type.Aquarion && tile.data.terrain == Polytopia.Data.TerrainData.Type.Mountain))
 		{
 			Il2CppSystem.Collections.Generic.List<CommandBase> newStack = new Il2CppSystem.Collections.Generic.List<CommandBase>();
 			foreach (CommandBase command in GameManager.GameState.CommandStack)
