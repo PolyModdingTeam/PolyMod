@@ -10,8 +10,8 @@
             https://polymod.dev/nuget/v3/index.json;
         </RestoreAdditionalProjectSources>
         <Configurations>IL2CPP</Configurations>
-        <Version>1.2.0-pre</Version>
-        <PolytopiaVersion>2.13.0.14218</PolytopiaVersion>
+        <Version>1.2.0-pre.1</Version>
+        <PolytopiaVersion>2.14.0.14524</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
         <NoWarn>IDE0130</NoWarn>
@@ -24,7 +24,7 @@
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Scriban" Version="6.2.1" />
-        <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)-738" />
+        <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)" />
         <EmbeddedResource Include="resources\*.*" />
     </ItemGroup>
 

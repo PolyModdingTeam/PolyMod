@@ -1,4 +1,5 @@
 using HarmonyLib;
+using Polytopia.IO;
 using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -80,6 +81,32 @@ internal static class Compatibility
     }
 
     /// <summary>
+    /// Restores removed polytopia method which lets you get all guids of single player sessions.
+    /// </summary>
+    private static Il2CppSystem.Guid[] GetSinglePlayerSessions() // CHECKMATE MIDJIWAN
+    {
+        string saveDirectoryPath = Paths.GetSaveDirectoryPath("Singleplayer");
+        if (PolytopiaDirectory.Exists(saveDirectoryPath))
+        {
+            string[] files = PolytopiaDirectory.GetFiles(saveDirectoryPath, "*.state");
+            if (files != null && files.Length != 0)
+            {
+                List<Il2CppSystem.Guid> list = new List<Il2CppSystem.Guid>(files.Length);
+                for (int i = 0; i < files.Length; i++)
+                {
+                    Il2CppSystem.Guid guid;
+                    if (Il2CppSystem.Guid.TryParse(Path.GetFileNameWithoutExtension(files[i]), out guid))
+                    {
+                        list.Add(guid);
+                    }
+                }
+                return list.ToArray();
+            }
+        }
+        return new Il2CppSystem.Guid[] { };
+    }
+
+    /// <summary>
     /// Performs compatibility checks when the start screen is shown.
     /// </summary>
     [HarmonyPostfix]
@@ -146,7 +173,7 @@ internal static class Compatibility
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnResumeButtonClick))]
     private static bool StartScreen_OnResumeButtonClick(StartScreen __instance, int id, BaseEventData eventData)
     {
-        return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, ClientBase.GetSinglePlayerSessions()[0]);
+        return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, GetSinglePlayerSessions()[0]);
     }
 
     /// <summary>
@@ -157,19 +184,6 @@ internal static class Compatibility
     private static void ClientBase_DeletePassAndPlayGame(GameInfoPopup __instance)
     {
         File.Delete(Path.Combine(Application.persistentDataPath, $"{__instance.gameId}.signatures"));
-    }
-
-    /// <summary>
-    /// Deletes the signature files of all single-player games when they are deleted.
-    /// </summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(ClientBase), nameof(ClientBase.DeleteSinglePlayerGames))]
-    private static void ClientBase_DeleteSinglePlayerGames()
-    {
-        foreach (var gameId in ClientBase.GetSinglePlayerSessions())
-        {
-            File.Delete(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
-        }
     }
 
     /// <summary>
