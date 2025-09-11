@@ -29,7 +29,7 @@ public static class Registry
 	/// <summary>
 	/// A dictionary of all loaded mods, keyed by their ID.
 	/// </summary>
-	internal static Dictionary<string, Mod> mods = new();
+	public static Dictionary<string, Mod> mods = new();
 
 	/// <summary>
 	/// A dictionary of tribe previews, keyed by tribe name.
