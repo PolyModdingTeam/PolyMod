@@ -155,9 +155,25 @@ internal static class Compatibility
     /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.DeletePaPGame))]
-    private static void ClientBase_DeletePassAndPlayGame(GameInfoPopup __instance)
+    private static void GameInfoPopup_DeletePaPGame(GameInfoPopup __instance)
     {
         File.Delete(Path.Combine(Application.persistentDataPath, $"{__instance.gameId}.signatures"));
+    }
+
+    /// <summary>
+    /// Deletes the signature file of all singleplayer games when they are deleted.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(LocalSaveFileUtils), nameof(LocalSaveFileUtils.DeleteAllSaveFilesOfType))]
+    private static void LocalSaveFileUtils_DeleteAllSaveFilesOfType(PolytopiaBackendBase.Game.GameType gameType, bool localOnly)
+    {
+        if (gameType == PolytopiaBackendBase.Game.GameType.SinglePlayer)
+        {
+            foreach (var gameId in LocalSaveFileUtils.GetSaveFiles(PolytopiaBackendBase.Game.GameType.SinglePlayer))
+            {
+                File.Delete(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+            }
+        }
     }
 
     /// <summary>
