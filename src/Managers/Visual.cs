@@ -78,6 +78,7 @@ public static class Visual
 		bool tintable = false
 	);
 	private static bool enableOutlines = false;
+	private static bool seenWarningWCPopup = false;
 
 	#region General
 
@@ -616,6 +617,34 @@ public static class Visual
 	private static void PopupBase_Hide(PopupBase __instance)
 	{
 		basicPopupWidths.Remove(__instance.GetInstanceID());
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnWeeklyChallengedButtonClick))]
+	private static bool StartScreen_OnWeeklyChallengedButtonClick(StartScreen __instance)
+	{
+		if(seenWarningWCPopup)
+			return true;
+		BasicPopup popup = PopupManager.GetBasicPopup();
+		popup.Header = Localization.Get("polymod.hub");
+		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { });
+		List<PopupBase.PopupButtonData> popupButtons = new()
+		{
+			new("buttons.back"),
+			new(
+				"polymod.wc.proceed",
+				PopupBase.PopupButtonData.States.None,
+				callback: (UIButtonBase.ButtonAction)((_, _) =>
+				{
+					seenWarningWCPopup = true;
+					__instance.OnWeeklyChallengedButtonClick();
+				}),
+				customColorStates: ColorConstants.redButtonColorStates
+			)
+		};
+		popup.buttonData = popupButtons.ToArray();
+		popup.Show();
+		return false;
 	}
 
 	/// <summary>Shows a basic popup with a custom width.</summary>

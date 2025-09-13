@@ -208,5 +208,13 @@
 	"polymod_spriteinfo_notupdated": {
 		"English": "No sprite infos were found!",
 		"Russian": "Данные спрайтов не найдены!"
+	},
+	"polymod_wc_warning": {
+		"English": "Weekly Challenges may not work correctly due to PolyMod. Do you wish to proceed?",
+		"Russian": "Испытания Недели могут работать неверно из-за PolyMod'а. Вы уверены что хотите продолжить?"
+	},
+	"polymod_wc_proceed": {
+		"English": "PROCEED",
+		"Russian": "ПРОДОЛЖИТЬ"
 	}
 }
