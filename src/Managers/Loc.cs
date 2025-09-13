@@ -29,10 +29,11 @@ public static class Loc
 					Localization.Get(__instance.tribeData.displayName),
 				});
 			}
-			__instance.Description = description + "\n\n" + Localization.GetSkinned(__instance.SkinType, __instance.tribeData.description2, new Il2CppSystem.Object[]
+			__instance.Description = description + "\n\n" + Localization.GetSkinned(Util.GetStyle(__instance.tribeData.type, __instance.SkinType), __instance.tribeData.description2, new Il2CppSystem.Object[]
 			{
 				__instance.tribeName,
-				Localization.Get(__instance.startTechSid, Array.Empty<Il2CppSystem.Object>())
+				Localization.Get(__instance.startTechSid, Array.Empty<Il2CppSystem.Object>()),
+				__instance.tribeData.startingStars
 			});
 		}
 	}
