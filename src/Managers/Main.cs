@@ -106,6 +106,17 @@ public static class Main
 	}
 
 	/// <summary>
+	/// Patches the steam purchase manager to unlock custom content.
+	/// </summary>
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(SteamPlatformPurchaseManager), nameof(SteamPlatformPurchaseManager.IsProductUnlocked))]
+	private static bool SteamPlatformPurchaseManager_IsProductUnlocked(ref bool __result, IAPProduct iapProduct)
+	{
+		__result = iapProduct == null;
+		return iapProduct != null;
+	}
+
+	/// <summary>
 	/// Patches the purchase manager to add custom tribes to the list of unlocked tribes.
 	/// </summary>
 	[HarmonyPostfix]
