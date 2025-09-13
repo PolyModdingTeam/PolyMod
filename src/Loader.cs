@@ -194,19 +194,23 @@ public static class Loader
 	/// <param name="action">The action to perform when the button is clicked.</param>
 	/// <param name="buttonIndex">The index of the button in the UI.</param>
 	/// <param name="sprite">The sprite for the button.</param>
-	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
+	/// <param name="spriteName">The name of the sprite for the button.</param>
+	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite, string? spriteName);
 
 	/// <summary>
 	/// Adds a new game mode button.
 	/// </summary>
 	/// <param name="id">The unique identifier for the game mode.</param>
 	/// <param name="action">The action to perform when the button is clicked.</param>
+	/// <param name="shouldShowInMenu">The boolean which decides if GameMode should appear in the menu.</param>
 	/// <param name="sprite">The sprite for the button.</param>
-	public static void AddGameModeButton(string id, UIButtonBase.ButtonAction action, Sprite? sprite)
+	/// <param name="spriteName">The name of the sprite for the button.</param>
+	public static void AddGameMode(string id, UIButtonBase.ButtonAction action, bool shouldShowInMenu = true, Sprite? sprite = null, string? spriteName = null)
 	{
 		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
 		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
-		gamemodes.Add(new GameModeButtonsInformation(Registry.gameModesAutoidx, action, null, sprite));
+		if(shouldShowInMenu)
+			gamemodes.Add(new GameModeButtonsInformation(Registry.gameModesAutoidx, action, null, sprite, spriteName));
 		Registry.gameModesAutoidx++;
 	}
 

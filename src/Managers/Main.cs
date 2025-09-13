@@ -146,7 +146,12 @@ public static class Main
 			var item = Loader.gamemodes[i];
 			var button = GameObject.Instantiate(__instance.buttons[2]);
 			list.Add(button);
-			Loader.gamemodes[i] = new Loader.GameModeButtonsInformation(item.gameModeIndex, item.action, __instance.buttons.Length, item.sprite);
+			Sprite? sprite = item.sprite;
+			if (item.sprite == null && item.spriteName != null)
+			{
+				sprite = Registry.GetSprite(item.spriteName);
+			}
+			Loader.gamemodes[i] = new Loader.GameModeButtonsInformation(item.gameModeIndex, item.action, __instance.buttons.Length, sprite, item.spriteName);
 		}
 
 		var newArray = list.ToArray();
