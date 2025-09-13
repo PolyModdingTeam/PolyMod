@@ -3,6 +3,7 @@ using PolyMod.Managers;
 using Polytopia.Data;
 using PolytopiaBackendBase.Game;
 using UnityEngine;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod;
 
@@ -69,7 +70,7 @@ public static class Registry
 	/// <summary>
 	/// A list of custom tribes.
 	/// </summary>
-	public static List<TribeData.Type> customTribes = new();
+	public static List<TribeType> customTribes = new();
 
 	/// <summary>
 	/// A list of custom skin information.
@@ -79,7 +80,7 @@ public static class Registry
 	/// <summary>
 	/// The next available index for climate styles.
 	/// </summary>
-	public static int climateAutoidx = (int)Enum.GetValues(typeof(TribeData.Type)).Cast<TribeData.Type>().Last();
+	public static int climateAutoidx = (int)Enum.GetValues(typeof(TribeType)).Cast<TribeType>().Last();
 
 	/// <summary>
 	/// The next available index for game modes.

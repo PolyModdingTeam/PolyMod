@@ -3,12 +3,12 @@ using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using I2.Loc;
 using Il2CppInterop.Runtime;
-using Polytopia.Data;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using static PopupBase;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod.Managers;
 
@@ -199,7 +199,7 @@ internal static class Hub
                                 }
                             }
                         }
-                        foreach (TribeData.Type type in Enum.GetValues(typeof(TribeData.Type)))
+                        foreach (TribeType type in Enum.GetValues(typeof(TribeType)))
                         {
                             List<Visual.PreviewTile> previewTiles = new();
                             SelectTribePopup popup = PopupManager.GetSelectTribePopup();

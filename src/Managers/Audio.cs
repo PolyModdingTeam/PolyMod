@@ -1,7 +1,7 @@
 using HarmonyLib;
 using Polytopia.Data;
 using UnityEngine;
-using UnityEngine.Networking;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod.Managers;
 
@@ -31,7 +31,7 @@ public static class Audio
     /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(MusicData), nameof(MusicData.GetNatureAudioClip))]
-    private static bool MusicData_GetNatureAudioClip(ref AudioClip __result, TribeData.Type type, SkinType skinType)
+    private static bool MusicData_GetNatureAudioClip(ref AudioClip __result, TribeType type, SkinType skinType)
     {
         AudioClip? audioClip = Registry.GetAudioClip("nature", Util.GetStyle(type, skinType));
         if (audioClip != null)
@@ -47,7 +47,7 @@ public static class Audio
     /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(MusicData), nameof(MusicData.GetMusicAudioClip))]
-    private static bool MusicData_GetMusicAudioClip(ref AudioClip __result, TribeData.Type type, SkinType skinType)
+    private static bool MusicData_GetMusicAudioClip(ref AudioClip __result, TribeType type, SkinType skinType)
     {
         AudioClip? audioClip = Registry.GetAudioClip("music", Util.GetStyle(type, skinType));
         if (audioClip != null)

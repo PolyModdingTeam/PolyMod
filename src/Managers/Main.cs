@@ -4,12 +4,11 @@ using Il2CppSystem.Linq;
 using Newtonsoft.Json.Linq;
 using Polytopia.Data;
 using PolytopiaBackendBase.Game;
-using System.Reflection;
 using System.Diagnostics;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod.Managers;
 
@@ -101,7 +100,7 @@ public static class Main
 	/// </summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsTribeUnlocked))]
-	private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeData.Type type)
+	private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeType type)
 	{
 		__result = (int)type >= Plugin.AUTOIDX_STARTS_FROM || __result;
 	}
@@ -112,7 +111,7 @@ public static class Main
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.GetUnlockedTribes))]
 	private static void PurchaseManager_GetUnlockedTribes(
-		ref Il2CppSystem.Collections.Generic.List<TribeData.Type> __result,
+		ref Il2CppSystem.Collections.Generic.List<TribeType> __result,
 		bool forceUpdate = false
 	)
 	{
@@ -324,7 +323,7 @@ public static class Main
 	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(Unit), nameof(Unit.CreateUnit))]
-	private static bool Unit_CreateUnit(Unit __instance, UnitData unitData, TribeData.Type tribe, SkinType unitSkin)
+	private static bool Unit_CreateUnit(Unit __instance, UnitData unitData, TribeType tribe, SkinType unitSkin)
 	{
 		Unit unit = PrefabManager.GetPrefab(unitData.type, tribe, unitSkin);
 		if (unit == null) Console.Write("THIS FUCKING SHIT IS NULL WHAT THE FUCK");

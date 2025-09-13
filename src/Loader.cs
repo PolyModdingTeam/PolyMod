@@ -7,7 +7,6 @@ using PolyMod.Json;
 using PolyMod.Managers;
 using Polytopia.Data;
 using PolytopiaBackendBase.Game;
-using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
@@ -16,6 +15,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod;
 
@@ -31,7 +31,7 @@ public static class Loader
 	/// </summary>
 	internal static Dictionary<string, TypeMapping> typeMappings = new()
 	{
-		{ "tribeData", new TypeMapping(typeof(TribeData.Type)) },
+		{ "tribeData", new TypeMapping(typeof(TribeType)) },
 		{ "techData", new TypeMapping(typeof(TechData.Type)) },
 		{ "unitData", new TypeMapping(typeof(UnitData.Type)) },
 		{ "improvementData", new TypeMapping(typeof(ImprovementData.Type)) },
@@ -56,11 +56,11 @@ public static class Loader
 	/// </summary>
 	internal static readonly Dictionary<Type, Action<JObject, bool>> typeHandlers = new()
 	{
-		[typeof(TribeData.Type)] = new((token, duringEnumCacheCreation) =>
+		[typeof(TribeType)] = new((token, duringEnumCacheCreation) =>
 		{
 			if (duringEnumCacheCreation)
 			{
-				Registry.customTribes.Add((TribeData.Type)Registry.autoidx);
+				Registry.customTribes.Add((TribeType)Registry.autoidx);
 				token["style"] = Registry.climateAutoidx;
 				token["climate"] = Registry.climateAutoidx;
 				Registry.climateAutoidx++;
@@ -637,7 +637,7 @@ public static class Loader
 			if (prefab == null || prefab.type != Visual.PrefabType.Unit)
 				return;
 
-			var baseUnit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeData.Type.Imperius, SkinType.Default);
+			var baseUnit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeType.Imperius, SkinType.Default);
 			if (baseUnit == null)
 				return;
 
