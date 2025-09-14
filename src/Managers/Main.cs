@@ -396,7 +396,7 @@ public static class Main
 				if (Regex.IsMatch(Path.GetFileName(file.name), @"^patch(_.*)?\.json$"))
 				{
 					var patchText = new StreamReader(new MemoryStream(file.bytes)).ReadToEnd();
-					var template = new GldConfigTemplate(patchText, mod.id);
+					var template = new Api.GldConfigTemplate(patchText, mod.id);
 					var text = template.Render();
 					if (text is null)
 					{

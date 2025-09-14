@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 using Scriban;
 using Scriban.Runtime;
 
-namespace PolyMod.Managers;
+namespace PolyMod.Api;
 
 public class GldConfigTemplate
 {

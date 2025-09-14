@@ -627,7 +627,7 @@ public static class Visual
 			return true;
 		BasicPopup popup = PopupManager.GetBasicPopup();
 		popup.Header = Localization.Get("polymod.hub");
-		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { });
+		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", new Il2CppSystem.Object[] { }) });
 		List<PopupBase.PopupButtonData> popupButtons = new()
 		{
 			new("buttons.back"),

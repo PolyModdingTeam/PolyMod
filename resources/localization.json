@@ -163,58 +163,84 @@
 	},
 	"polymod_debug": {
 		"English": "Debug",
-		"Russian": "Дебаг"
+		"Russian": "Дебаг",
+		"Turkish": "Hata ayıklama",
+		"Spanish (Mexico)": "Depurar",
+		"French (France)": "Débogage",
+		"Polish": "Debugowanie",
+		"Portuguese (Brazil)": "Depurar",
+		"Elyrion": "Δ∑o₺þ",
+		"German (Germany)": "Debuggen"
 	},
 	"polymod_autoupdate": {
 		"English": "Auto-update",
-		"Russian": "Автообновление"
+		"Russian": "Автообновление",
+		"Turkish": "Otomatik güncelleme",
+		"Spanish (Mexico)": "Actualización automática",
+		"French (France)": "MAJ auto",
+		"Polish": "Auto aktualizacja",
+		"Portuguese (Brazil)": "Atualização automática",
+		"Elyrion": "a₺Ŧȱ₺πΔaŦ∑",
+		"German (Germany)": "Auto Aktualisierung"
 	},
 	"polymod_autoupdate_alpha": {
 		"English": "Include alphas",
-		"Russian": "Include alphas"
+		"Russian": "Включить альфы",
+		"Elyrion": "iŋ#∫₺Δ∑ a∫πţaȓ"
 	},
 	"polymod_autoupdate_description": {
 		"English": "New update available!",
-		"Russian": "Доступно новое обновление!"
+		"Russian": "Доступно новое обновление!",
+		"Elyrion": "ŋ∑~ ₺πΔaŦ∑ a‡ai∫ao∫∑"
 	},
 	"polymod_autoupdate_update": {
 		"English": "Update",
-		"Russian": "Обновить"
+		"Russian": "Обновить",
+		"Elyrion": "₺πΔaŦ∑"
 	},
 	"polymod_hub_config": {
 		"English": "CONFIG",
-		"Russian": "КОНФИГ"
+		"Russian": "КОНФИГ",
+		"Elyrion": "#ȱŋ₼iþ"
 	},
 	"polymod_hub_config_enable": {
 		"English": "ENABLE {0}",
-		"Russian": "ВКЛЮЧИТЬ {0}"
+		"Russian": "ВКЛЮЧИТЬ {0}",
+		"Elyrion": "∑ŋao∫∑ {0}"
 	},
 	"polymod_hub_config_disable": {
 		"English": "DISABLE {0}",
-		"Russian": "ВЫКЛЮЧИТЬ {0}"
+		"Russian": "ВЫКЛЮЧИТЬ {0}",
+		"Elyrion": "Δiȓao∫∑ {0}"
 	},
 	"polymod_config_setto": {
 		"English": "{0} is set to {1}!",
-		"Russian": "{0} задан на {1}!"
+		"Russian": "{0} задан на {1}!",
+		"Elyrion": "{0} iȓ ȓ∑Ŧ Ŧȱ {1}!"
 	},
 	"polymod_hub_spriteinfo_update": {
 		"English": "UPDATE SPRITES",
-		"Russian": "ОБНОВИТЬ СПРАЙТЫ"
+		"Russian": "ОБНОВИТЬ СПРАЙТЫ",
+		"Elyrion": "₺πΔaŦ∑ ȓπriŦ∑ȓ"
 	},
 	"polymod_spriteinfo_updated": {
 		"English": "Sprite info for mod {0} updated!",
-		"Russian": "Данные спрайтов обновлены для мода {0}!"
+		"Russian": "Данные спрайтов обновлены для мода {0}!",
+		"Elyrion": "ȓπriŦ∑ iŋ₼ȱ ₼ȱr mȱΔ {0} ₺πΔaŦ∑Δ!"
 	},
 	"polymod_spriteinfo_notupdated": {
 		"English": "No sprite infos were found!",
-		"Russian": "Данные спрайтов не найдены!"
+		"Russian": "Данные спрайтов не найдены!",
+		"Elyrion": "ŋȱ ȓπriŦ∑ iŋ₼ȱȓ ~∑r∑ ₼ȱ₺ŋΔ!"
 	},
 	"polymod_wc_warning": {
-		"English": "Weekly Challenges may not work correctly due to PolyMod. Do you wish to proceed?",
-		"Russian": "Испытания Недели могут работать неверно из-за PolyMod'а. Вы уверены что хотите продолжить?"
+		"English": "{0} may not work correctly due to PolyMod. Do you wish to proceed?",
+		"Russian": "{0} может работать некорректно из-за PolyMod'а. Вы уверены что хотите продолжить?",
+		"Elyrion": "{0} maỹ ŋȱŦ ~ȱr§ #ȱrr∑#Ŧ∫ỹ Δ₺∑ Ŧȱ πȱ∫ỹmȱΔ. Δȱ ỹȱ₺ ~iȓţ Ŧȱ πrȱ#∑∑Δ?"
 	},
 	"polymod_wc_proceed": {
 		"English": "PROCEED",
-		"Russian": "ПРОДОЛЖИТЬ"
+		"Russian": "ПРОДОЛЖИТЬ",
+		"Elyrion": "πrȱ#∑∑Δ"
 	}
 }
