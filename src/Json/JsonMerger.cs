@@ -63,6 +63,9 @@ public static class JsonMerger
     /// <returns>The merged JArray.</returns>
     private static JArray MergeArrays(JArray original, JArray patch, bool isSkins)
     {
+        if (patch.Count == 0)
+            return new JArray();
+
         var result = new JArray(original);
         var patchList = patch._values.ToArray().ToList();
 
