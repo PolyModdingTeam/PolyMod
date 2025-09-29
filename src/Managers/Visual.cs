@@ -75,7 +75,8 @@ public static class Visual
 		float rotation = 0f,
 		Vector2 coordinates = new Vector2(),
 		Vector2 scale = new Vector2(),
-		bool tintable = false
+		bool tintable = false,
+		bool headPositionMarker = false
 	);
 	private static bool enableOutlines = false;
 	private static bool seenWarningWCPopup = false;

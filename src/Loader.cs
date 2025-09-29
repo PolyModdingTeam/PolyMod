@@ -638,7 +638,7 @@ public static class Loader
 				Converters = { new Vector2Json() },
 				PropertyNameCaseInsensitive = true,
 			});
-			if (prefab == null || prefab.type != Visual.PrefabType.Unit)
+			if (prefab == null || prefab.type != Visual.PrefabType.Unit || prefab.visualParts.Count == 0)
 				return;
 
 			var baseUnit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeType.Imperius, SkinType.Default);
@@ -652,10 +652,12 @@ public static class Loader
 			var spriteContainer = unitInstance.transform.GetChild(0);
 			var material = ClearExistingPartsAndExtractMaterial(spriteContainer);
 
-			var visualParts = ApplyVisualParts(prefab.visualParts, spriteContainer, material);
+			var visualParts = ApplyVisualParts(prefab.visualParts, spriteContainer, material, out Transform headMarker);
 
 			var svr = unitInstance.GetComponent<SkinVisualsReference>();
 			svr.visualParts = visualParts.ToArray();
+
+			unitInstance.headPositionMarker = headMarker;
 
 			GameObject.DontDestroyOnLoad(unitInstance.gameObject);
 			Registry.unitPrefabs.Add(prefab, unitInstance.GetComponent<Unit>());
@@ -700,15 +702,24 @@ public static class Loader
 	private static List<SkinVisualsReference.VisualPart> ApplyVisualParts(
 		List<Visual.VisualPartInfo> partInfos,
 		Transform spriteContainer,
-		Material? material)
+		Material? material,
+		out Transform headMarker)
 	{
 		List<SkinVisualsReference.VisualPart> parts = new();
+		headMarker = null;
 
 		foreach (var info in partInfos)
 		{
-			parts.Add(CreateVisualPart(info, spriteContainer, material));
+			var vp = CreateVisualPart(info, spriteContainer, material);
+			if (info.headPositionMarker)
+			{
+				headMarker = vp.visualPart.transform;
+			}
+			parts.Add(vp);
 		}
 
+		if (headMarker == null)
+			headMarker = parts[0].visualPart.gameObject.transform;
 		return parts;
 	}
 
