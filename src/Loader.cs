@@ -652,12 +652,22 @@ public static class Loader
 			var spriteContainer = unitInstance.transform.GetChild(0);
 			var material = ClearExistingPartsAndExtractMaterial(spriteContainer);
 
-			var visualParts = ApplyVisualParts(prefab.visualParts, spriteContainer, material, out Transform headMarker);
+			var visualParts = ApplyVisualParts(prefab, spriteContainer, material);
+
+			Transform? headPositionMarker = null;
+			foreach (var vp in visualParts)
+			{
+				if (vp.visualPart.gameObject.name == prefab.headPositionMarker)
+				{
+					headPositionMarker = vp.visualPart.gameObject.transform;
+					break;
+				}
+			}
+
+			unitInstance.headPositionMarker = headPositionMarker ?? visualParts[0].visualPart.transform;
 
 			var svr = unitInstance.GetComponent<SkinVisualsReference>();
 			svr.visualParts = visualParts.ToArray();
-
-			unitInstance.headPositionMarker = headMarker;
 
 			GameObject.DontDestroyOnLoad(unitInstance.gameObject);
 			Registry.unitPrefabs.Add(prefab, unitInstance.GetComponent<Unit>());
@@ -700,26 +710,20 @@ public static class Loader
 	/// <param name="material">The material to use for the parts.</param>
 	/// <returns>A list of the created visual parts.</returns>
 	private static List<SkinVisualsReference.VisualPart> ApplyVisualParts(
-		List<Visual.VisualPartInfo> partInfos,
+		Visual.PrefabInfo prefab,
 		Transform spriteContainer,
-		Material? material,
-		out Transform headMarker)
+		Material? material)
 	{
-		List<SkinVisualsReference.VisualPart> parts = new();
-		headMarker = spriteContainer;
+		if (prefab.visualParts.Count == 0)
+			return new List<SkinVisualsReference.VisualPart>();
 
-		foreach (var info in partInfos)
+		List<SkinVisualsReference.VisualPart> parts = new();
+
+		foreach (var info in prefab.visualParts)
 		{
-			var vp = CreateVisualPart(info, spriteContainer, material);
-			if (info.headPositionMarker)
-			{
-				headMarker = vp.visualPart.transform;
-			}
-			parts.Add(vp);
+			parts.Add(CreateVisualPart(info, spriteContainer, material));
 		}
 
-		if (headMarker == spriteContainer)
-			headMarker = parts[0].visualPart.gameObject.transform;
 		return parts;
 	}
 

@@ -66,7 +66,12 @@ public static class Visual
 	}
 
 	/// <summary>Represents information about a custom prefab.</summary>
-	public record PrefabInfo(PrefabType type, string name, List<VisualPartInfo> visualParts);
+	public record PrefabInfo(
+		PrefabType type,
+		string name,
+		List<VisualPartInfo> visualParts,
+		string headPositionMarker = ""
+	);
 
 	/// <summary>Represents information about a visual part of a prefab.</summary>
 	public record VisualPartInfo(
@@ -75,8 +80,7 @@ public static class Visual
 		float rotation = 0f,
 		Vector2 coordinates = new Vector2(),
 		Vector2 scale = new Vector2(),
-		bool tintable = false,
-		bool headPositionMarker = false
+		bool tintable = false
 	);
 	private static bool enableOutlines = false;
 	private static bool seenWarningWCPopup = false;

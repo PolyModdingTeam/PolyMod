@@ -27,7 +27,17 @@ public static class JsonMerger
 
             if (originalValue == null)
             {
-                original[propName] = patchValue;
+                JArray? patchArray = patchValue.TryCast<JArray>();
+                if (patchArray != null)
+                {
+                    bool isSkins = propName.Equals("skins", StringComparison.OrdinalIgnoreCase);
+                    JArray merged = MergeArrays(new JArray(), patchArray, isSkins);
+                    original[propName] = merged;
+                }
+                else
+                {
+                    original[propName] = patchValue;
+                }
                 continue;
             }
 
