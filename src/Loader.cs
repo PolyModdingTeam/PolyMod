@@ -706,7 +706,7 @@ public static class Loader
 		out Transform headMarker)
 	{
 		List<SkinVisualsReference.VisualPart> parts = new();
-		headMarker = null;
+		headMarker = spriteContainer;
 
 		foreach (var info in partInfos)
 		{
@@ -718,7 +718,7 @@ public static class Loader
 			parts.Add(vp);
 		}
 
-		if (headMarker == null)
+		if (headMarker == spriteContainer)
 			headMarker = parts[0].visualPart.gameObject.transform;
 		return parts;
 	}
