@@ -65,7 +65,7 @@ internal static class Hub
     /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-    private static void StartScreen_Start()
+    private static void StartScreen_Start(StartScreen __instance)
     {
         Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<UnityEngine.Object> allLocalizers = GameObject.FindObjectsOfTypeAll(Il2CppType.From(typeof(TMPLocalizer)));
 
@@ -124,6 +124,10 @@ internal static class Hub
 
                 GameObject.Destroy(buttonComponent.icon.gameObject);
                 GameObject.Destroy(buttonComponent.outline.gameObject);
+
+                Transform descriptionText = button.transform.Find("DescriptionText");
+                descriptionText.gameObject.SetActive(true);
+                descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
 
                 buttonComponent.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
             }

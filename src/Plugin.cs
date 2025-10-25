@@ -23,7 +23,8 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	internal record PolyConfig(
 		bool debug = false,
 		bool autoUpdate = true,
-		bool updatePrerelease = false
+		bool updatePrerelease = false,
+		bool allowUnsafeIndexes = false
 	);
 
 	/// <summary>

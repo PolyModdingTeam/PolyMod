@@ -844,24 +844,45 @@ public static class Loader
 				string dataType = Util.GetJTokenName(token, 2);
 				if (Loader.typeMappings.TryGetValue(dataType, out Loader.TypeMapping? typeMapping))
 				{
-					if (token["idx"] != null && (int)token["idx"] == -1 && typeMapping.shouldCreateCache)
+					if (token["idx"] != null && typeMapping.shouldCreateCache)
 					{
 						Type targetType = typeMapping.type;
+						if (!targetType.IsEnum)
+						{
+							Plugin.logger.LogWarning($"Type {targetType.FullName} is not an enum, skipping!");
+							continue;
+						}
 						string id = Util.GetJTokenName(token);
-						token["idx"] = Registry.autoidx;
+						if((int)token["idx"] == -1)
+                        {
+							token["idx"] = Registry.autoidx;
+                        }
+						else if(PolyMod.Plugin.config.allowUnsafeIndexes)
+                        {
+							Array values = Enum.GetValues(targetType);
+
+							var maxValue = values.Cast<int>().Max();
+
+							if(maxValue >= (int)token["idx"])
+                            {
+								continue;
+                            }
+                        }
+
 						MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
 						if (methodInfo != null)
 						{
-							methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
-							methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
-
+							methodInfo.Invoke(null, new object[] { id, (int)token["idx"] });
+							methodInfo.Invoke(null, new object[] { id, (int)token["idx"] });
 							if (Loader.typeHandlers.TryGetValue(targetType, out var handler))
 							{
 								handler(token, true);
 							}
-							Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + Registry.autoidx);
-							Registry.autoidx++;
+							Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + (int)token["idx"]);
 						}
+
+						if((int)token["idx"] == Registry.autoidx)
+							Registry.autoidx++;
 					}
 				}
 			}
