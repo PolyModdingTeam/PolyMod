@@ -109,15 +109,12 @@ public static class Loader
 
 		[typeof(UnitData.Type)] = new((token, duringEnumCacheCreation) =>
 		{
-			if (duringEnumCacheCreation)
+			if (!duringEnumCacheCreation)
 			{
 				if (token["prefab"] != null)
 				{
-					Registry.prefabNames.Add((int)(UnitData.Type)Registry.autoidx, CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString()));
+					Registry.prefabNames.Add((int)(UnitData.Type)(int)token["idx"], CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString()));
 				}
-			}
-			else
-			{
 				if (token["embarksTo"] != null)
 				{
 					string unitId = Util.GetJTokenName(token);
