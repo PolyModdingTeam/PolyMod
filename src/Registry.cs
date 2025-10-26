@@ -1,6 +1,5 @@
 using LibCpp2IL;
 using PolyMod.Managers;
-using Polytopia.Data;
 using PolytopiaBackendBase.Game;
 using UnityEngine;
 using PolytopiaBackendBase.Common;
