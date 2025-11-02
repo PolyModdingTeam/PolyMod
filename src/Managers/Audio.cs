@@ -17,11 +17,11 @@ public static class Audio
     [HarmonyPatch(typeof(AudioManager), nameof(AudioManager.SetupData))]
     private static void AudioManager_SetupData()
     {
-        foreach (var item in Registry.customTribes)
+        foreach (var item in PolytopiaDataManager.GetLatestGameLogicData().AllTribeData)
         {
-            if (PolytopiaDataManager.GetLatestGameLogicData().TryGetData(item, out TribeData data))
+            if((int)item.Key >= Plugin.AUTOIDX_STARTS_FROM)
             {
-                AudioManager.instance.climateTribeMap.Add(data.climate, item);
+                AudioManager.instance.climateTribeMap.Add(item.Value.climate, item.Key);
             }
         }
     }
