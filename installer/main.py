@@ -15,8 +15,8 @@ OS = {
     "win32": "win",
     "darwin": "macos",
 }[sys.platform]
-BEPINEX = f"733/BepInEx-Unity.IL2CPP-{OS}-x64-6.0.0-be.733%2B995f049"
-POLYMOD = "https://github.com/PolyModdingTeam/PolyMod/releases/latest/download/PolyMod.dll"
+BEPINEX = "https://polymod.dev/data/bepinex.txt"
+POLYMOD = "https://api.github.com/repos/PolyModdingTeam/PolyMod/releases"
 
 
 def resource_path(path):
@@ -54,6 +54,7 @@ def prepare(target):
         return
     path_entry.configure(state=customtkinter.DISABLED)
     browse_button.configure(state=customtkinter.DISABLED)
+    prerelease_checkbox.destroy()
     install_button.destroy()
     uninstall_button.destroy()
     progress_bar = customtkinter.CTkProgressBar(app, determinate_speed=50 / 2)
@@ -65,13 +66,17 @@ def prepare(target):
 def install(path):
     to_zip(
         requests.get(
-            f"https://builds.bepinex.dev/projects/bepinex_be/{BEPINEX}.zip"
+            requests.get(BEPINEX).text.strip().replace("{os}", OS)
         )
     ).extractall(path)
     progress_bar.step()
 
+    for release in requests.get(POLYMOD).json():
+        if release["prerelease"] and not prerelease_checkbox.get(): continue
+        latest = release
+        break
     open(path + "/BepInEx/plugins/PolyMod.dll", "wb").write(
-        requests.get(POLYMOD).content
+        requests.get(latest["assets"][0]["browser_download_url"]).content
     )
     progress_bar.step()
 
@@ -133,6 +138,8 @@ path_entry = customtkinter.CTkEntry(
     app, placeholder_text="Game path", width=228)
 browse_button = customtkinter.CTkButton(
     app, text="Browse", command=browse, width=1)
+prerelease_checkbox = customtkinter.CTkCheckBox(
+    app, text="Prerelease", width=1)
 install_button = customtkinter.CTkButton(
     app, text="Install", command=lambda: prepare(install))
 uninstall_button = customtkinter.CTkButton(
@@ -140,7 +147,8 @@ uninstall_button = customtkinter.CTkButton(
 
 path_entry.grid(column=0, row=0, padx=5, pady=5)
 browse_button.grid(column=1, row=0, padx=(0, 5), pady=5)
-install_button.grid(column=0, row=1, columnspan=2, padx=5, pady=5)
-uninstall_button.grid(column=0, row=2, columnspan=2, padx=5, pady=5)
+prerelease_checkbox.grid(column=0, row=1, columnspan=2, padx=5, pady=5)
+install_button.grid(column=0, row=2, columnspan=2, padx=5, pady=5)
+uninstall_button.grid(column=0, row=3, columnspan=2, padx=5, pady=5)
 
 app.mainloop()

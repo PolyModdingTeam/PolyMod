@@ -1,17 +1,34 @@
+using System.Text.Json;
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
+using I2.Loc;
 using Il2CppInterop.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using static PopupBase;
+using Polytopia.Data;
 
 namespace PolyMod.Managers;
+
+/// <summary>
+/// Manages the PolyMod hub, including UI elements and popups.
+/// </summary>
 internal static class Hub
 {
     private const string HEADER_PREFIX = "<align=\"center\"><size=150%><b>";
     private const string HEADER_POSTFIX = "</b></size><align=\"left\">";
+    private const int POPUP_WIDTH = 1400;
 
+    /// <summary>
+    /// Whether the configuration popup is currently active.
+    /// </summary>
+    public static bool isConfigPopupActive = false;
+
+    /// <summary>
+    /// Patches the splash screen to play a custom intro video.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SplashController), nameof(SplashController.LoadAndPlayClip))]
     private static bool SplashController_LoadAndPlayClip(SplashController __instance)
@@ -25,6 +42,9 @@ internal static class Hub
         return false;
     }
 
+    /// <summary>
+    /// Patches the popup button container to correctly anchor buttons.
+    /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PopupButtonContainer), nameof(PopupButtonContainer.SetButtonData))]
     private static void PopupButtonContainer_SetButtonData(PopupButtonContainer __instance)
@@ -40,9 +60,12 @@ internal static class Hub
         }
     }
 
+    /// <summary>
+    /// Patches the start screen to add the PolyMod hub button and version text.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-    private static void StartScreen_Start()
+    private static void StartScreen_Start(StartScreen __instance)
     {
         Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<UnityEngine.Object> allLocalizers = GameObject.FindObjectsOfTypeAll(Il2CppType.From(typeof(TMPLocalizer)));
 
@@ -102,6 +125,10 @@ internal static class Hub
                 GameObject.Destroy(buttonComponent.icon.gameObject);
                 GameObject.Destroy(buttonComponent.outline.gameObject);
 
+                Transform descriptionText = button.transform.Find("DescriptionText");
+                descriptionText.gameObject.SetActive(true);
+                descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
+
                 buttonComponent.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
             }
         }
@@ -121,7 +148,8 @@ internal static class Hub
                     Localization.Get("polymod.hub.mod.status."
                         + Enum.GetName(typeof(Mod.Status), mod.status)!.ToLower()),
                     string.Join(", ", mod.authors),
-                    mod.version.ToString()
+                    mod.version.ToString(),
+                    mod.description ?? ""
                 });
                 popup.Description += "\n\n";
             }
@@ -134,30 +162,91 @@ internal static class Hub
                 new("buttons.back"),
                 new(
                     "polymod.hub.discord",
-                    callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
+                    callback: (UIButtonBase.ButtonAction)((_, _) =>
                         NativeHelpers.OpenURL(Plugin.DISCORD_LINK, false))
+                ),
+                new(
+                    "polymod.hub.config",
+                    callback: (UIButtonBase.ButtonAction)((_, _) =>
+                    {
+                        ShowConfigPopup();
+                    })
                 )
             };
             if (Plugin.config.debug)
+            {
                 popupButtons.Add(new(
                     "polymod.hub.dump",
-                    callback: (UIButtonBase.ButtonAction)((int _, BaseEventData _) =>
+                    callback: (UIButtonBase.ButtonAction)((_, _) =>
                     {
                         Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, $"gameLogicData.json"),
+                            Path.Combine(Plugin.DUMPED_DATA_PATH, "gameLogicData.json"),
                             PolytopiaDataManager.provider.LoadGameLogicData(VersionManager.GameLogicDataVersion)
                         );
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, $"avatarData.json"),
+                            Path.Combine(Plugin.DUMPED_DATA_PATH, "avatarData.json"),
                             PolytopiaDataManager.provider.LoadAvatarData(1337)
                         );
+                        foreach (var category in LocalizationManager.Sources[0].GetCategories())
+                            File.WriteAllTextAsync(
+                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"localization_{category}.csv"),
+                                LocalizationManager.Sources[0].Export_CSV(category)
+                            );
+                        foreach (KeyValuePair<string, Mod> entry in Registry.mods)
+                        {
+                            foreach (Mod.File file in entry.Value.files)
+                            {
+                                if (Path.GetFileName(file.name) == "sprites.json")
+                                {
+                                    File.WriteAllBytes(Path.Combine(Plugin.DUMPED_DATA_PATH, $"sprites_{entry.Key}.json"), file.bytes);
+                                }
+                            }
+                        }
+                        foreach (TribeData.Type type in Enum.GetValues(typeof(TribeData.Type)))
+                        {
+                            List<Visual.PreviewTile> previewTiles = new();
+                            SelectTribePopup popup = PopupManager.GetSelectTribePopup();
+                            for (int x = -3; x <= 3; x++)
+                            {
+                                for (int y = -7; y <= 7; y++)
+                                {
+                                    Vector2Int pos = new Vector2Int(x, y);
+                                    if (popup.UIWorldPreview.worldPreviewData.TryGetData(pos, type, out UITileData tileData))
+                                    {
+                                        Visual.PreviewTile previewTile = new Visual.PreviewTile
+                                        {
+                                            x = tileData.Position.x,
+                                            y = tileData.Position.y,
+                                            terrainType = tileData.terrainType,
+                                            resourceType = tileData.resourceType,
+                                            unitType = tileData.unitType,
+                                            improvementType = tileData.improvementType
+                                        };
+                                        previewTiles.Add(previewTile);
+                                    }
+                                }
+                            }
+                            File.WriteAllTextAsync(
+                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"preview_{type}.json"),
+                                JsonSerializer.Serialize(previewTiles, new JsonSerializerOptions { WriteIndented = true })
+                            );
+                        }
                         NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
                     }),
                     closesPopup: false
                 ));
+                popupButtons.Add(new(
+                    "polymod.hub.spriteinfo.update",
+                    callback: (UIButtonBase.ButtonAction)((_, _) =>
+                    {
+                        UpdateSpriteInfos();
+                    }),
+                    closesPopup: false
+                ));
+            }
             popup.buttonData = popupButtons.ToArray();
-            popup.ShowSetWidth(1000);
+            popup.ShowSetWidth(POPUP_WIDTH);
         }
 
         // if (Main.dependencyCycle)
@@ -180,6 +269,160 @@ internal static class Hub
         // }
     }
 
+    /// <summary>
+    /// Patches the game manager to handle key presses for the config popup.
+    /// </summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
+    private static void GameManager_Update()
+    {
+        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.Tab) && !isConfigPopupActive)
+        {
+            ShowConfigPopup();
+        }
+    }
+
+    /// <summary>
+    /// Updates sprite information from dumped files.
+    /// </summary>
+    internal static void UpdateSpriteInfos()
+    {
+        string message = string.Empty;
+        Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
+
+        foreach (var file in Directory.GetFiles(Plugin.DUMPED_DATA_PATH))
+        {
+            string? name = Path.GetFileNameWithoutExtension(file);
+            List<string> subnames = new();
+            if (name.Contains("sprites_"))
+            {
+                subnames = name.Split('_').ToList();
+                Mod.File spriteInfo = new(Path.GetFileNameWithoutExtension(file), File.ReadAllBytes(file));
+                Dictionary<string, Visual.SpriteInfo>? deserialized = Loader.LoadSpriteInfoFile(Registry.mods[subnames[1]], spriteInfo);
+                if (deserialized != null)
+                {
+                    foreach (var kvp in deserialized)
+                    {
+                        Loader.UpdateSprite(kvp.Key);
+                    }
+                    message += Localization.Get("polymod.spriteinfo.updated", new Il2CppSystem.Object[] { subnames[1] });
+                }
+            }
+        }
+        if (message == string.Empty)
+        {
+            message = Localization.Get("polymod.spriteinfo.notupdated");
+        }
+        NotificationManager.Notify(message);
+    }
+
+    /// <summary>
+    /// Shows the configuration popup.
+    /// </summary>
+    internal static void ShowConfigPopup()
+    {
+        BasicPopup polymodPopup = PopupManager.GetBasicPopup();
+
+        polymodPopup.Header = Localization.Get("polymod.hub.config");
+        polymodPopup.Description = "";
+
+        polymodPopup.buttonData = CreateConfigPopupButtonData();
+        polymodPopup.ShowSetWidth(POPUP_WIDTH);
+        polymodPopup.Show();
+    }
+
+    /// <summary>
+    /// Creates the button data for the configuration popup.
+    /// </summary>
+    /// <returns>An array of popup button data.</returns>
+    internal static PopupButtonData[] CreateConfigPopupButtonData()
+    {
+        List<PopupButtonData> popupButtons = new()
+        {
+            new(Localization.Get("buttons.back"), PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnBackButtonClicked, -1, true, null)
+        };
+
+        if (GameManager.Instance.isLevelLoaded)
+        {
+            popupButtons.Add(new PopupButtonData(Localization.Get("polymod.hub.spriteinfo.update"), PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnUpdateSpritesButtonClicked, -1, true, null));
+        }
+        else
+        {
+            string debugButtonName = Localization.Get(
+                Plugin.config.debug ? "polymod.hub.config.disable" : "polymod.hub.config.enable",
+                new Il2CppSystem.Object[] { Localization.Get("polymod.debug",
+                new Il2CppSystem.Object[]{}).ToUpperInvariant() }
+            );
+            string autoUpdateButtonName = Localization.Get(
+                Plugin.config.autoUpdate ? "polymod.hub.config.disable" : "polymod.hub.config.enable",
+                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate",
+                new Il2CppSystem.Object[]{}).ToUpperInvariant() }
+            );
+            string includeAlphasButtonName = Localization.Get(
+                Plugin.config.updatePrerelease ? "polymod.hub.config.disable" : "polymod.hub.config.enable",
+                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate.alpha",
+                new Il2CppSystem.Object[]{}).ToUpperInvariant() }
+            );
+            popupButtons.Add(new PopupButtonData(debugButtonName, PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnDebugButtonClicked, -1, true, null));
+            popupButtons.Add(new PopupButtonData(autoUpdateButtonName, PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnAutoUpdateButtonClicked, -1, true, null));
+            popupButtons.Add(new PopupButtonData(includeAlphasButtonName, Plugin.config.autoUpdate ? PopupButtonData.States.None : PopupButtonData.States.Disabled, (UIButtonBase.ButtonAction)OnIncludeAlphasButtonClicked, -1, true, null));
+        }
+        return popupButtons.ToArray();
+
+        void OnDebugButtonClicked(int buttonId, BaseEventData eventData)
+        {
+            Plugin.config = new(debug: !Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
+            Plugin.WriteConfig();
+            Plugin.UpdateConsole();
+            NotificationManager.Notify(Localization.Get(
+                "polymod.config.setto",
+                new Il2CppSystem.Object[] { Localization.Get("polymod.debug",
+                new Il2CppSystem.Object[]{}), Plugin.config.debug }
+            ));
+            isConfigPopupActive = false;
+        }
+
+        void OnAutoUpdateButtonClicked(int buttonId, BaseEventData eventData)
+        {
+            Plugin.config = new(debug: Plugin.config.debug, autoUpdate: !Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
+            Plugin.WriteConfig();
+            Plugin.UpdateConsole();
+            NotificationManager.Notify(Localization.Get(
+                "polymod.config.setto",
+                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate",
+                new Il2CppSystem.Object[]{}), Plugin.config.autoUpdate }
+            ));
+            isConfigPopupActive = false;
+        }
+
+        void OnIncludeAlphasButtonClicked(int buttonId, BaseEventData eventData)
+        {
+            Plugin.config = new(debug: Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: !Plugin.config.updatePrerelease);
+            Plugin.WriteConfig();
+            Plugin.UpdateConsole();
+            NotificationManager.Notify(Localization.Get(
+                "polymod.config.setto",
+                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate.alpha",
+                new Il2CppSystem.Object[]{}), Plugin.config.updatePrerelease }
+            ));
+            isConfigPopupActive = false;
+        }
+
+        void OnUpdateSpritesButtonClicked(int buttonId, BaseEventData eventData)
+        {
+            UpdateSpriteInfos();
+            isConfigPopupActive = false;
+        }
+
+        void OnBackButtonClicked(int buttonId, BaseEventData eventData)
+        {
+            isConfigPopupActive = false;
+        }
+    }
+
+    /// <summary>
+    /// Initializes the Hub manager by patching the necessary methods.
+    /// </summary>
     internal static void Init()
     {
         Harmony.CreateAndPatchAll(typeof(Hub));
