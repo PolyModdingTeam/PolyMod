@@ -151,7 +151,7 @@ internal static class Compatibility
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnResumeButtonClick))]
     private static bool StartScreen_OnResumeButtonClick(StartScreen __instance, int id, BaseEventData eventData)
     {
-        return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, ClientBase.GetSinglePlayerSessions(GameManager.LocalPlayer.Id)[0]);
+        return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, ClientBase.GetSinglePlayerSessions(0)[0]);
     }
 
     /// <summary>
@@ -198,11 +198,11 @@ internal static class Compatibility
     /// Creates a signature file when a new game session is created.
     /// </summary>
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(ClientBase), nameof(ClientBase.CreateSession), typeof(GameSettings), typeof(Il2CppSystem.Guid))]
-    private static void ClientBase_CreateSession(GameSettings settings, Il2CppSystem.Guid gameId)
+    [HarmonyPatch(typeof(ClientBase), nameof(ClientBase.CreateSession), typeof(GameSettings), typeof(Il2CppSystem.Collections.Generic.List<PlayerState>))]
+    private static void ClientBase_CreateSession(ClientBase __instance, GameSettings settings, Il2CppSystem.Collections.Generic.List<PlayerState> players)
     {
         File.WriteAllTextAsync(
-            Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"),
+            Path.Combine(Application.persistentDataPath, $"{__instance.gameId}.signatures"),
             checksum
         );
     }

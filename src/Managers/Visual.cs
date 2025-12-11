@@ -8,6 +8,7 @@ using Il2CppSystem.Linq;
 using PolyMod.Json;
 using System.Text.Json.Serialization;
 using UnityEngine.EventSystems;
+using PolytopiaBackendBase.Auth;
 
 namespace PolyMod.Managers;
 
@@ -428,27 +429,28 @@ public static class Visual
 	/// <summary>Provides custom sprites for houses in the UI city renderer.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(UICityRenderer), nameof(UICityRenderer.GetResource))]
-	private static void UICityRenderer_GetResource(ref GameObject __result, string baseName, TribeData.Type tribe, SkinType skin)
+	private static void UICityRenderer_GetResource(ref GameObject __result, Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<SpriteAddress> spriteAddresses)
 	{
-		Image imageComponent = __result.GetComponent<Image>();
-		string[] tokens = baseName.Split('_');
-		if (tokens.Length > 0)
+		foreach (var address in spriteAddresses)
 		{
-			if (tokens[0] == "House")
+			Image imageComponent = __result.GetComponent<Image>();
+			string[] tokens = address.sprite.Split('_');
+			if (tokens.Length == 3 && tokens[0] == "House")
 			{
-				int level = 0;
-				if (tokens.Length > 1)
+				if (tokens[0] == "House")
 				{
-					_ = int.TryParse(tokens[1], out level);
+					string style = tokens[1];
+					if(int.TryParse(tokens[2], out int level) && !string.IsNullOrEmpty(style))
+					{
+						Sprite? sprite = Registry.GetSprite("house", style, level);
+						if (sprite == null)
+						{
+							return;
+						}
+						imageComponent.sprite = sprite;
+						imageComponent.SetNativeSize();
+					}
 				}
-
-				Sprite? sprite = Registry.GetSprite("house", Util.GetStyle(tribe, skin), level);
-				if (sprite == null)
-				{
-					return;
-				}
-				imageComponent.sprite = sprite;
-				imageComponent.SetNativeSize();
 			}
 		}
 	}
@@ -514,12 +516,17 @@ public static class Visual
 
 	/// <summary>Provides custom sprites for player info icons.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(PlayerInfoIcon), nameof(PlayerInfoIcon.SetData), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteData.SpecialFaceIcon), typeof(Color), typeof(DiplomacyRelationState), typeof(PlayerInfoIcon.Mood))]
-	private static void PlayerInfoIcon_SetData(PlayerInfoIcon __instance, TribeData.Type tribe, SkinType skin, SpriteData.SpecialFaceIcon face, Color color, DiplomacyRelationState diplomacyState, PlayerInfoIcon.Mood mood)
+	[HarmonyPatch(typeof(PlayerInfoIcon), nameof(PlayerInfoIcon.SetData))]
+	private static void PlayerInfoIcon_SetData(PlayerInfoIcon __instance, PlayerState player, PlayerState otherPlayer, PlayerInfoIcon.Mood mood, bool shouldShowDiplomaticState, bool forceKnownPlayer)
 	{
-		if (face == SpriteData.SpecialFaceIcon.neutral)
+		GameState gameState = GameManager.GameState;
+		bool flag = player.IsAlive(gameState);
+		PlayerState localPlayer = GameManager.LocalPlayer;
+		bool flag2 = localPlayer.KnowsPlayer(player.Id) || forceKnownPlayer;
+
+		if (flag && !(localPlayer.Id != player.Id && !flag2))
 		{
-			Sprite? sprite = Registry.GetSprite("head", Util.GetStyle(tribe, skin));
+			Sprite? sprite = Registry.GetSprite("head", Util.GetStyle(player.tribe, player.skinType));
 			if (sprite != null)
 			{
 				__instance.HeadImage.sprite = sprite;

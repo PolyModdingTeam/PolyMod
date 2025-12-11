@@ -79,6 +79,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		"Couldn't find prefab for type",
 		"MARKET: id:",
 		"Missing name for value",
+		"Can't find atlas for raw name",
 	};
 
 
