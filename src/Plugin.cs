@@ -60,7 +60,6 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		Hub.Init();
 
 		Main.Init();
-		Multiplayer.Init();
 	}
 
 	internal static Stream GetResource(string id)
