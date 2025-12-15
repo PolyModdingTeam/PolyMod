@@ -10,8 +10,8 @@
             https://polymod.dev/nuget/v3/index.json;
         </RestoreAdditionalProjectSources>
         <Configurations>IL2CPP</Configurations>
-        <Version>1.2.6</Version>
-        <PolytopiaVersion>2.15.3.15099</PolytopiaVersion>
+        <Version>1.2.7</Version>
+        <PolytopiaVersion>2.16.0.15379</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
         <NoWarn>IDE0130</NoWarn>
@@ -19,7 +19,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.738" />
+        <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.752" />
         <PackageReference Include="Costura.Fody" Version="6.0.0">
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>

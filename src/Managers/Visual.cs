@@ -231,8 +231,8 @@ public static class Visual
 
 	/// <summary>Updates the visual parts of a resource with custom sprites.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(SkinVisualsTransientData))]
-	private static void Resource_UpdateObject(Resource __instance, SkinVisualsTransientData transientSkinData)
+	[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(MapRenderContext), typeof(SkinVisualsTransientData))]
+	private static void Resource_UpdateObject(Resource __instance, MapRenderContext ctx, SkinVisualsTransientData transientSkinData)
 	{
 		if (__instance.data != null)
 		{
@@ -248,8 +248,8 @@ public static class Visual
 
 	/// <summary>Updates a building with a custom sprite.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(Building), nameof(Building.UpdateObject), typeof(SkinVisualsTransientData))]
-	private static void Building_UpdateObject(Building __instance, SkinVisualsTransientData transientSkinData)
+	[HarmonyPatch(typeof(Building), nameof(Building.UpdateObject), typeof(MapRenderContext), typeof(SkinVisualsTransientData))]
+	private static void Building_UpdateObject(Building __instance, MapRenderContext ctx, SkinVisualsTransientData transientSkinData)
 	{
 		string style = Util.GetStyle(transientSkinData.foundingTribeSettings.tribe, transientSkinData.foundingTribeSettings.skin);
 		string name = EnumCache<ImprovementData.Type>.GetName(__instance.tile.data.improvement.type);

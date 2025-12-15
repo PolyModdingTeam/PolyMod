@@ -39,6 +39,9 @@ public static class Loc
 		{
 			foreach (var typeMapping in Loader.typeMappings.Values)
 			{
+				if(!typeMapping.shouldCreateCache)
+					continue;
+
 				MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(typeMapping.type).GetMethod("TryGetName");
 				if (methodInfo != null)
 				{
