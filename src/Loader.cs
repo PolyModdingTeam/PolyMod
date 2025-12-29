@@ -419,6 +419,7 @@ public static class Loader
 		{
 			foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
 			{
+				if (!graph.ContainsKey(dependency.id)) continue;
 				graph[dependency.id].Add(id);
 				inDegree[id]++;
 			}
