@@ -3,12 +3,12 @@ using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using I2.Loc;
 using Il2CppInterop.Runtime;
-using Polytopia.Data;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using static PopupBase;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod.Managers;
 
@@ -65,7 +65,7 @@ internal static class Hub
     /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-    private static void StartScreen_Start()
+    private static void StartScreen_Start(StartScreen __instance)
     {
         Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<UnityEngine.Object> allLocalizers = GameObject.FindObjectsOfTypeAll(Il2CppType.From(typeof(TMPLocalizer)));
 
@@ -124,6 +124,10 @@ internal static class Hub
 
                 GameObject.Destroy(buttonComponent.icon.gameObject);
                 GameObject.Destroy(buttonComponent.outline.gameObject);
+
+                Transform descriptionText = button.transform.Find("DescriptionText");
+                descriptionText.gameObject.SetActive(true);
+                descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
 
                 buttonComponent.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
             }
@@ -199,7 +203,7 @@ internal static class Hub
                                 }
                             }
                         }
-                        foreach (TribeData.Type type in Enum.GetValues(typeof(TribeData.Type)))
+                        foreach (TribeType type in Enum.GetValues(typeof(TribeType)))
                         {
                             List<Visual.PreviewTile> previewTiles = new();
                             SelectTribePopup popup = PopupManager.GetSelectTribePopup();

@@ -7,6 +7,7 @@ using UnityEngine.UI;
 using Il2CppSystem.Linq;
 using PolyMod.Json;
 using System.Text.Json.Serialization;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod.Managers;
 
@@ -54,7 +55,7 @@ public static class Visual
 	public static Dictionary<int, int> basicPopupWidths = new();
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
-	private static TribeData.Type attackerTribe = TribeData.Type.None;
+	private static TribeType attackerTribe = TribeType.None;
 
 	/// <summary>The type of a custom prefab.</summary>
 	public enum PrefabType
@@ -65,7 +66,12 @@ public static class Visual
 	}
 
 	/// <summary>Represents information about a custom prefab.</summary>
-	public record PrefabInfo(PrefabType type, string name, List<VisualPartInfo> visualParts);
+	public record PrefabInfo(
+		PrefabType type,
+		string name,
+		List<VisualPartInfo> visualParts,
+		string headPositionMarker = ""
+	);
 
 	/// <summary>Represents information about a visual part of a prefab.</summary>
 	public record VisualPartInfo(
@@ -77,6 +83,7 @@ public static class Visual
 		bool tintable = false
 	);
 	private static bool enableOutlines = false;
+	private static bool seenWarningWCPopup = false;
 
 	#region General
 
@@ -115,8 +122,8 @@ public static class Visual
 				foreach (string item in names)
 				{
 					string upperitem = char.ToUpper(item[0]) + item[1..];
-					if (EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
-					|| EnumCache<TribeData.Type>.TryGetType(upperitem, out TribeData.Type tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
+					if (EnumCache<TribeType>.TryGetType(item, out TribeType tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
+					|| EnumCache<TribeType>.TryGetType(upperitem, out TribeType tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
 					{
 						filteredNames.Remove(item);
 						style = item;
@@ -137,7 +144,7 @@ public static class Visual
 	/// <summary>Patches the sprite atlas manager to look up custom sprites.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
-	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeData.Type tribe, SkinType skin, bool checkForOutline, int level)
+	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeType tribe, SkinType skin, bool checkForOutline, int level)
 	{
 		baseName = Util.FormatSpriteName(baseName);
 
@@ -224,8 +231,8 @@ public static class Visual
 
 	/// <summary>Updates the visual parts of a resource with custom sprites.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(SkinVisualsTransientData))]
-	private static void Resource_UpdateObject(Resource __instance, SkinVisualsTransientData transientSkinData)
+	[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(MapRenderContext), typeof(SkinVisualsTransientData))]
+	private static void Resource_UpdateObject(Resource __instance, MapRenderContext ctx, SkinVisualsTransientData transientSkinData)
 	{
 		if (__instance.data != null)
 		{
@@ -241,8 +248,8 @@ public static class Visual
 
 	/// <summary>Updates a building with a custom sprite.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(Building), nameof(Building.UpdateObject), typeof(SkinVisualsTransientData))]
-	private static void Building_UpdateObject(Building __instance, SkinVisualsTransientData transientSkinData)
+	[HarmonyPatch(typeof(Building), nameof(Building.UpdateObject), typeof(MapRenderContext), typeof(SkinVisualsTransientData))]
+	private static void Building_UpdateObject(Building __instance, MapRenderContext ctx, SkinVisualsTransientData transientSkinData)
 	{
 		string style = Util.GetStyle(transientSkinData.foundingTribeSettings.tribe, transientSkinData.foundingTribeSettings.skin);
 		string name = EnumCache<ImprovementData.Type>.GetName(__instance.tile.data.improvement.type);
@@ -260,11 +267,11 @@ public static class Visual
 	{
 		string terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain) ?? string.Empty;
 
-		TribeData.Type tribe = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate);
+		TribeType tribe = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate);
 		SkinType skinType = tile.data.Skin;
 
 		string flood = "";
-		if (tile.data.effects.Contains(TileData.EffectType.Flooded))
+		if (tile.data.effects.Contains(TileData.EffectType.Flooded) || (tribe == TribeType.Aquarion && tile.data.terrain == Polytopia.Data.TerrainData.Type.Mountain))
 		{
 			Il2CppSystem.Collections.Generic.List<CommandBase> newStack = new Il2CppSystem.Collections.Generic.List<CommandBase>();
 			foreach (CommandBase command in GameManager.GameState.CommandStack)
@@ -359,12 +366,12 @@ public static class Visual
 	/// <summary>Provides custom data for the tribe preview.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(UIWorldPreviewData), nameof(UIWorldPreviewData.TryGetData))]
-	private static void UIWorldPreviewData_TryGetData(ref bool __result, UIWorldPreviewData __instance, Vector2Int position, TribeData.Type tribeType, ref UITileData uiTile)
+	private static void UIWorldPreviewData_TryGetData(ref bool __result, UIWorldPreviewData __instance, Vector2Int position, TribeType tribeType, ref UITileData uiTile)
 	{
 		PreviewTile[]? preview = null;
-		if (Registry.tribePreviews.ContainsKey(EnumCache<TribeData.Type>.GetName(tribeType).ToLower()))
+		if (Registry.tribePreviews.ContainsKey(EnumCache<TribeType>.GetName(tribeType).ToLower()))
 		{
-			preview = Registry.tribePreviews[EnumCache<TribeData.Type>.GetName(tribeType).ToLower()];
+			preview = Registry.tribePreviews[EnumCache<TribeType>.GetName(tribeType).ToLower()];
 		}
 		if (preview != null)
 		{
@@ -412,8 +419,8 @@ public static class Visual
 
 	/// <summary>Provides custom sprites for improvements in the UI.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteAtlasManager))]
-	private static void UIUtils_GetImprovementSprite(ref Sprite __result, ImprovementData.Type improvement, TribeData.Type tribe, SkinType skin, SpriteAtlasManager atlasManager)
+	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeType), typeof(SkinType), typeof(SpriteAtlasManager))]
+	private static void UIUtils_GetImprovementSprite(ref Sprite __result, ImprovementData.Type improvement, TribeType tribe, SkinType skin, SpriteAtlasManager atlasManager)
 	{
 		Sprite? sprite = Registry.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvement), Util.GetStyle(tribe, skin));
 		if (sprite != null)
@@ -448,7 +455,7 @@ public static class Visual
 	/// <summary>Provides custom sprites for houses in the city view.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(CityRenderer), nameof(CityRenderer.GetHouse))]
-	private static void CityRenderer_GetHouse(ref PolytopiaSpriteRenderer __result, CityRenderer __instance, TribeData.Type tribe, int type, SkinType skinType)
+	private static void CityRenderer_GetHouse(ref PolytopiaSpriteRenderer __result, CityRenderer __instance, TribeType tribe, int type, SkinType skinType)
 	{
 		PolytopiaSpriteRenderer polytopiaSpriteRenderer = __result;
 
@@ -467,7 +474,7 @@ public static class Visual
 	/// <summary>Provides custom sprites for houses in the UI city renderer.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(UICityRenderer), nameof(UICityRenderer.GetResource))]
-	private static void UICityRenderer_GetResource(ref GameObject __result, string baseName, Polytopia.Data.TribeData.Type tribe, Polytopia.Data.SkinType skin)
+	private static void UICityRenderer_GetResource(ref GameObject __result, string baseName, TribeType tribe, SkinType skin)
 	{
 		Image imageComponent = __result.GetComponent<Image>();
 		string[] tokens = baseName.Split('_');
@@ -519,17 +526,17 @@ public static class Visual
 
 	/// <summary>Provides custom sprites for face icons in the game info row.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(GameInfoRow), nameof(GameInfoRow.LoadFaceIcon), typeof(TribeData.Type), typeof(SkinType))]
-	private static void GameInfoRow_LoadFaceIcon(GameInfoRow __instance, TribeData.Type type, SkinType skinType)
+	[HarmonyPatch(typeof(GameInfoRow), nameof(GameInfoRow.LoadFaceIcon), typeof(TribeType), typeof(SkinType))]
+	private static void GameInfoRow_LoadFaceIcon(GameInfoRow __instance, TribeType type, SkinType skinType)
 	{
-		string style = EnumCache<TribeData.Type>.GetName(type);
+		string style = EnumCache<TribeType>.GetName(type);
 
 		if (style == "None")
 		{
 			for (int i = 0; i < 20; i++)
 			{
 				type += byte.MaxValue + 1;
-				style = EnumCache<TribeData.Type>.GetName(type);
+				style = EnumCache<TribeType>.GetName(type);
 
 				if (style != "None")
 				{
@@ -553,8 +560,8 @@ public static class Visual
 
 	/// <summary>Provides custom sprites for player info icons.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(PlayerInfoIcon), nameof(PlayerInfoIcon.SetData), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteData.SpecialFaceIcon), typeof(Color), typeof(DiplomacyRelationState), typeof(PlayerInfoIcon.Mood))]
-	private static void PlayerInfoIcon_SetData(PlayerInfoIcon __instance, TribeData.Type tribe, SkinType skin, SpriteData.SpecialFaceIcon face, Color color, DiplomacyRelationState diplomacyState, PlayerInfoIcon.Mood mood)
+	[HarmonyPatch(typeof(PlayerInfoIcon), nameof(PlayerInfoIcon.SetData), typeof(TribeType), typeof(SkinType), typeof(SpriteData.SpecialFaceIcon), typeof(Color), typeof(DiplomacyRelationState), typeof(PlayerInfoIcon.Mood))]
+	private static void PlayerInfoIcon_SetData(PlayerInfoIcon __instance, TribeType tribe, SkinType skin, SpriteData.SpecialFaceIcon face, Color color, DiplomacyRelationState diplomacyState, PlayerInfoIcon.Mood mood)
 	{
 		if (face == SpriteData.SpecialFaceIcon.tribe)
 		{
@@ -598,14 +605,14 @@ public static class Visual
 	[HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.SetSkin))]
 	private static void WeaponGFX_SetSkin(WeaponGFX __instance, SkinType skinType)
 	{
-		if (attackerTribe != TribeData.Type.None)
+		if (attackerTribe != TribeType.None)
 		{
 			Sprite? sprite = Registry.GetSprite(__instance.defaultSprite.name, Util.GetStyle(attackerTribe, skinType));
 			if (sprite != null)
 			{
 				__instance.spriteRenderer.sprite = sprite;
 			}
-			attackerTribe = TribeData.Type.None;
+			attackerTribe = TribeType.None;
 		}
 	}
 
@@ -615,6 +622,34 @@ public static class Visual
 	private static void PopupBase_Hide(PopupBase __instance)
 	{
 		basicPopupWidths.Remove(__instance.GetInstanceID());
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnWeeklyChallengedButtonClick))]
+	private static bool StartScreen_OnWeeklyChallengedButtonClick(StartScreen __instance)
+	{
+		if(seenWarningWCPopup)
+			return true;
+		BasicPopup popup = PopupManager.GetBasicPopup();
+		popup.Header = Localization.Get("polymod.hub");
+		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", new Il2CppSystem.Object[] { }) });
+		List<PopupBase.PopupButtonData> popupButtons = new()
+		{
+			new("buttons.back"),
+			new(
+				"polymod.wc.proceed",
+				PopupBase.PopupButtonData.States.None,
+				callback: (UIButtonBase.ButtonAction)((_, _) =>
+				{
+					seenWarningWCPopup = true;
+					__instance.OnWeeklyChallengedButtonClick();
+				}),
+				customColorStates: ColorConstants.redButtonColorStates
+			)
+		};
+		popup.buttonData = popupButtons.ToArray();
+		popup.Show();
+		return false;
 	}
 
 	/// <summary>Shows a basic popup with a custom width.</summary>
@@ -649,6 +684,10 @@ public static class Visual
 	}
 
 	/// <summary>Builds a sprite from raw byte data.</summary>
+	/// <param name="data">The raw byte data of the image.</param>
+	/// <param name="pivot">The pivot point of the sprite.</param>
+	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
+	/// <returns>The created sprite.</returns>
 	public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
 	{
 		Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
@@ -665,6 +704,10 @@ public static class Visual
 	}
 
 	/// <summary>Builds a sprite from a texture.</summary>
+	/// <param name="texture">The texture to create the sprite from.</param>
+	/// <param name="pivot">The pivot point of the sprite.</param>
+	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
+	/// <returns>The created sprite.</returns>
 	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f)
 	{
 		return Sprite.Create(

@@ -1,7 +1,7 @@
 using HarmonyLib;
 using Polytopia.Data;
 using UnityEngine;
-using UnityEngine.Networking;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod.Managers;
 
@@ -17,11 +17,11 @@ public static class Audio
     [HarmonyPatch(typeof(AudioManager), nameof(AudioManager.SetupData))]
     private static void AudioManager_SetupData()
     {
-        foreach (var item in Registry.customTribes)
+        foreach (var item in PolytopiaDataManager.GetLatestGameLogicData().AllTribeData)
         {
-            if (PolytopiaDataManager.GetLatestGameLogicData().TryGetData(item, out TribeData data))
+            if((int)item.Key >= Plugin.AUTOIDX_STARTS_FROM)
             {
-                AudioManager.instance.climateTribeMap.Add(data.climate, item);
+                AudioManager.instance.climateTribeMap.Add(item.Value.climate, item.Key);
             }
         }
     }
@@ -31,7 +31,7 @@ public static class Audio
     /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(MusicData), nameof(MusicData.GetNatureAudioClip))]
-    private static bool MusicData_GetNatureAudioClip(ref AudioClip __result, TribeData.Type type, SkinType skinType)
+    private static bool MusicData_GetNatureAudioClip(ref AudioClip __result, TribeType type, SkinType skinType)
     {
         AudioClip? audioClip = Registry.GetAudioClip("nature", Util.GetStyle(type, skinType));
         if (audioClip != null)
@@ -47,7 +47,7 @@ public static class Audio
     /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(MusicData), nameof(MusicData.GetMusicAudioClip))]
-    private static bool MusicData_GetMusicAudioClip(ref AudioClip __result, TribeData.Type type, SkinType skinType)
+    private static bool MusicData_GetMusicAudioClip(ref AudioClip __result, TribeType type, SkinType skinType)
     {
         AudioClip? audioClip = Registry.GetAudioClip("music", Util.GetStyle(type, skinType));
         if (audioClip != null)

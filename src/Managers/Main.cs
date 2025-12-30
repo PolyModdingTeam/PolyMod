@@ -1,13 +1,14 @@
 using BepInEx.Unity.IL2CPP.Logging;
 using HarmonyLib;
+using Il2CppSystem.Linq;
 using Newtonsoft.Json.Linq;
 using Polytopia.Data;
 using PolytopiaBackendBase.Game;
 using System.Diagnostics;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod.Managers;
 
@@ -16,6 +17,8 @@ namespace PolyMod.Managers;
 /// </summary>
 public static class Main
 {
+	internal static bool dependencyCycle;
+
 	/// <summary>
 	/// The maximum tier for technology, used to extend the tech tree.
 	/// </summary>
@@ -30,12 +33,7 @@ public static class Main
 	/// Whether the mod has been fully initialized.
 	/// </summary>
 	internal static bool fullyInitialized;
-
-	/// <summary>
-	/// Whether a dependency cycle was detected among the loaded mods.
-	/// </summary>
-	internal static bool dependencyCycle;
-
+	
 	/// <summary>
 	/// A dictionary mapping unit IDs to the IDs of the units they embark into.
 	/// </summary>
@@ -76,80 +74,11 @@ public static class Main
 	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(GameLogicData), nameof(GameLogicData.AddGameLogicPlaceholders))]
-	private static void GameLogicData_Parse(GameLogicData __instance, JObject rootObject)
+	private static void GameLogicData_AddGameLogicPlaceholders(GameLogicData __instance, ref JObject rootObject)
 	{
 		if (!fullyInitialized)
 		{
-			Load(rootObject);
-			foreach (System.Collections.Generic.KeyValuePair<int, string> item in Registry.prefabNames)
-			{
-				UnitData.Type unitPrefabType = UnitData.Type.Scout;
-				string prefabId = item.Value;
-				if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
-				{
-					unitPrefabType = parsedType;
-					PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
-				}
-				else
-				{
-					KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(kv => kv.Key.name == prefabId);
-					if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
-					{
-						PrefabManager.units.TryAdd(item.Key, prefabInfo.Value);
-					}
-					else
-					{
-						PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
-					}
-				}
-			}
-			foreach (Visual.SkinInfo skin in Registry.skinInfo)
-			{
-				if (skin.skinData != null)
-					__instance.skinData[(SkinType)skin.idx] = skin.skinData;
-			}
-			foreach (KeyValuePair<string, string> entry in embarkNames)
-			{
-				try
-				{
-					UnitData.Type unit = EnumCache<UnitData.Type>.GetType(entry.Key);
-					UnitData.Type newUnit = EnumCache<UnitData.Type>.GetType(entry.Value);
-					embarkOverrides[unit] = newUnit;
-					Plugin.logger.LogInfo($"Embark unit type for {entry.Key} is now {entry.Value}");
-				}
-				catch
-				{
-					Plugin.logger.LogError($"Embark unit type for {entry.Key} is not valid: {entry.Value}");
-				}
-			}
-			foreach (KeyValuePair<string, string> entry in attractsResourceNames)
-			{
-				try
-				{
-					ImprovementData.Type improvement = EnumCache<ImprovementData.Type>.GetType(entry.Key);
-					ResourceData.Type resource = EnumCache<ResourceData.Type>.GetType(entry.Value);
-					attractsResourceOverrides[improvement] = resource;
-					Plugin.logger.LogInfo($"Improvement {entry.Key} now attracts {entry.Value}");
-				}
-				catch
-				{
-					Plugin.logger.LogError($"Improvement {entry.Key} resource type is not valid: {entry.Value}");
-				}
-			}
-			foreach (KeyValuePair<string, string> entry in attractsTerrainNames)
-			{
-				try
-				{
-					ImprovementData.Type improvement = EnumCache<ImprovementData.Type>.GetType(entry.Key);
-					Polytopia.Data.TerrainData.Type terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetType(entry.Value);
-					attractsTerrainOverrides[improvement] = terrain;
-					Plugin.logger.LogInfo($"Improvement {entry.Key} now attracts on {entry.Value}");
-				}
-				catch
-				{
-					Plugin.logger.LogError($"Improvement {entry.Key} terrain type is not valid: {entry.Value}");
-				}
-			}
+			Load(__instance, rootObject);
 			fullyInitialized = true;
 		}
 	}
@@ -171,9 +100,20 @@ public static class Main
 	/// </summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsTribeUnlocked))]
-	private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeData.Type type)
+	private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeType type)
 	{
 		__result = (int)type >= Plugin.AUTOIDX_STARTS_FROM || __result;
+	}
+
+	/// <summary>
+	/// Patches the steam purchase manager to unlock custom content.
+	/// </summary>
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(SteamPlatformPurchaseManager), nameof(SteamPlatformPurchaseManager.IsProductUnlocked))]
+	private static bool SteamPlatformPurchaseManager_IsProductUnlocked(ref bool __result, IAPProduct iapProduct)
+	{
+		__result = iapProduct == null;
+		return iapProduct != null;
 	}
 
 	/// <summary>
@@ -182,7 +122,7 @@ public static class Main
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.GetUnlockedTribes))]
 	private static void PurchaseManager_GetUnlockedTribes(
-		ref Il2CppSystem.Collections.Generic.List<TribeData.Type> __result,
+		ref Il2CppSystem.Collections.Generic.List<TribeType> __result,
 		bool forceUpdate = false
 	)
 	{
@@ -217,7 +157,12 @@ public static class Main
 			var item = Loader.gamemodes[i];
 			var button = GameObject.Instantiate(__instance.buttons[2]);
 			list.Add(button);
-			Loader.gamemodes[i] = new Loader.GameModeButtonsInformation(item.gameModeIndex, item.action, __instance.buttons.Length, item.sprite);
+			Sprite? sprite = item.sprite;
+			if (item.sprite == null && item.spriteName != null)
+			{
+				sprite = Registry.GetSprite(item.spriteName);
+			}
+			Loader.gamemodes[i] = new Loader.GameModeButtonsInformation(item.gameModeIndex, item.action, __instance.buttons.Length, sprite, item.spriteName);
 		}
 
 		var newArray = list.ToArray();
@@ -394,7 +339,7 @@ public static class Main
 	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(Unit), nameof(Unit.CreateUnit))]
-	private static bool Unit_CreateUnit(Unit __instance, UnitData unitData, TribeData.Type tribe, SkinType unitSkin)
+	private static bool Unit_CreateUnit(Unit __instance, UnitData unitData, TribeType tribe, SkinType unitSkin)
 	{
 		Unit unit = PrefabManager.GetPrefab(unitData.type, tribe, unitSkin);
 		if (unit == null) Console.Write("THIS FUCKING SHIT IS NULL WHAT THE FUCK");
@@ -417,34 +362,9 @@ public static class Main
 			Array.Empty<Mod.Dependency>()
 		);
 		Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
-		Loader.LoadMods(Registry.mods);
-		dependencyCycle = !Loader.SortMods(Registry.mods);
-		if (dependencyCycle) return;
-
-		StringBuilder checksumString = new();
-		foreach (var (id, mod) in Registry.mods)
-		{
-			if (mod.status != Mod.Status.Success) continue;
-			foreach (var file in mod.files)
-			{
-				checksumString.Append(JsonSerializer.Serialize(file));
-				if (Path.GetExtension(file.name) == ".dll")
-				{
-					Loader.LoadAssemblyFile(mod, file);
-				}
-				if (Path.GetFileName(file.name) == "sprites.json")
-				{
-					Loader.LoadSpriteInfoFile(mod, file);
-				}
-			}
-			if (!mod.client && id != "polytopia")
-			{
-				checksumString.Append(id);
-				checksumString.Append(mod.version.ToString());
-			}
-		}
-		Compatibility.HashSignatures(checksumString);
-
+		Loader.RegisterMods(Registry.mods);
+		Loader.LoadMods(Registry.mods, out var cycle);
+		dependencyCycle = cycle;
 		stopwatch.Stop();
 	}
 
@@ -452,7 +372,8 @@ public static class Main
 	/// Loads all mod content.
 	/// </summary>
 	/// <param name="gameLogicdata">The game logic data to patch.</param>
-	internal static void Load(JObject gameLogicdata)
+	/// <param name="json">The JSON object representing the game logic data.</param>
+	internal static void Load(GameLogicData gameLogicData, JObject json)
 	{
 		stopwatch.Start();
 		Loc.BuildAndLoadLocalization(
@@ -474,10 +395,18 @@ public static class Main
 				}
 				if (Regex.IsMatch(Path.GetFileName(file.name), @"^patch(_.*)?\.json$"))
 				{
+					var patchText = new StreamReader(new MemoryStream(file.bytes)).ReadToEnd();
+					var template = new Api.GldConfigTemplate(patchText, mod.id);
+					var text = template.Render();
+					if (text is null)
+					{
+						mod.status = Mod.Status.Error;
+						continue;
+					}
 					Loader.LoadGameLogicDataPatch(
 						mod,
-						gameLogicdata,
-						JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd())
+						json,
+						JObject.Parse(text)
 					);
 					continue;
 				}
@@ -509,6 +438,7 @@ public static class Main
 		{
 			TechItem.techTierFirebaseId.Add($"tech_research_{i}");
 		}
+		Loader.ProcessGameLogicData(gameLogicData, json);
 		stopwatch.Stop();
 		Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
 	}

@@ -23,7 +23,8 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	internal record PolyConfig(
 		bool debug = false,
 		bool autoUpdate = true,
-		bool updatePrerelease = false
+		bool updatePrerelease = false,
+		bool allowUnsafeIndexes = false
 	);
 
 	/// <summary>
@@ -111,10 +112,11 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		logger = Log;
 		ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
 
+		AutoUpdate.Init();
+
 		Compatibility.Init();
 
 		Audio.Init();
-		AutoUpdate.Init();
 		Loc.Init();
 		Visual.Init();
 		Hub.Init();

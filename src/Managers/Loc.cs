@@ -3,7 +3,6 @@ using I2.Loc;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using System.Reflection;
 using LibCpp2IL;
-using Polytopia.Data;
 
 namespace PolyMod.Managers;
 
@@ -12,31 +11,6 @@ namespace PolyMod.Managers;
 /// </summary>
 public static class Loc
 {
-	/// <summary>
-	/// Patches the tribe selection popup to correctly display descriptions for custom skins.
-	/// </summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(SelectTribePopup), nameof(SelectTribePopup.SetDescription))]
-	private static void SetDescription(SelectTribePopup __instance)
-	{
-		if ((int)__instance.SkinType >= Plugin.AUTOIDX_STARTS_FROM)
-		{
-			string description = Localization.Get(__instance.SkinType.GetLocalizationDescriptionKey());
-			if (description == __instance.SkinType.GetLocalizationDescriptionKey())
-			{
-				description = Localization.Get(__instance.tribeData.description, new Il2CppSystem.Object[]
-				{
-					Localization.Get(__instance.tribeData.displayName),
-				});
-			}
-			__instance.Description = description + "\n\n" + Localization.GetSkinned(__instance.SkinType, __instance.tribeData.description2, new Il2CppSystem.Object[]
-			{
-				__instance.tribeName,
-				Localization.Get(__instance.startTechSid, Array.Empty<Il2CppSystem.Object>())
-			});
-		}
-	}
-
 	/// <summary>
 	/// Patches the localization getter to handle custom enum values.
 	/// </summary>
@@ -63,9 +37,12 @@ public static class Loc
 		// If a custom enum index is found, try to resolve its name
 		if (idx != null)
 		{
-			foreach (var targetType in Loader.typeMappings.Values)
+			foreach (var typeMapping in Loader.typeMappings.Values)
 			{
-				MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("TryGetName");
+				if(!typeMapping.shouldCreateCache)
+					continue;
+
+				MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(typeMapping.type).GetMethod("TryGetName");
 				if (methodInfo != null)
 				{
 					object?[] parameters = { idx, null };

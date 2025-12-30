@@ -4,6 +4,7 @@ using Il2CppInterop.Runtime;
 using Il2CppInterop.Runtime.Injection;
 using Newtonsoft.Json.Linq;
 using Polytopia.Data;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod;
 
@@ -106,9 +107,9 @@ internal static class Util
     /// <param name="tribe">The tribe.</param>
     /// <param name="skin">The skin.</param>
     /// <returns>The style name.</returns>
-    internal static string GetStyle(TribeData.Type tribe, SkinType skin)
+    internal static string GetStyle(TribeType tribe, SkinType skin)
     {
-        return skin != SkinType.Default ? EnumCache<SkinType>.GetName(skin) : EnumCache<TribeData.Type>.GetName(tribe);
+        return skin != SkinType.Default ? EnumCache<SkinType>.GetName(skin) : EnumCache<TribeType>.GetName(tribe);
     }
 
     /// <summary>

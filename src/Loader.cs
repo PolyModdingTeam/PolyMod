@@ -7,14 +7,15 @@ using PolyMod.Json;
 using PolyMod.Managers;
 using Polytopia.Data;
 using PolytopiaBackendBase.Game;
-using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod;
 
@@ -23,23 +24,26 @@ namespace PolyMod;
 /// </summary>
 public static class Loader
 {
+	internal record TypeMapping(Type type, bool shouldCreateCache = true);
+
 	/// <summary>
 	/// Mappings from JSON data types to their corresponding C# types.
 	/// </summary>
-	internal static Dictionary<string, Type> typeMappings = new()
+	internal static Dictionary<string, TypeMapping> typeMappings = new()
 	{
-		{ "tribeData", typeof(TribeData.Type) },
-		{ "techData", typeof(TechData.Type) },
-		{ "unitData", typeof(UnitData.Type) },
-		{ "improvementData", typeof(ImprovementData.Type) },
-		{ "terrainData", typeof(Polytopia.Data.TerrainData.Type) },
-		{ "resourceData", typeof(ResourceData.Type) },
-		{ "taskData", typeof(TaskData.Type) },
-		{ "tribeAbility", typeof(TribeAbility.Type) },
-		{ "unitAbility", typeof(UnitAbility.Type) },
-		{ "improvementAbility", typeof(ImprovementAbility.Type) },
-		{ "playerAbility", typeof(PlayerAbility.Type) },
-		{ "weaponData", typeof(UnitData.WeaponEnum) }
+		{ "tribeData", new TypeMapping(typeof(TribeType)) },
+		{ "techData", new TypeMapping(typeof(TechData.Type)) },
+		{ "unitData", new TypeMapping(typeof(UnitData.Type)) },
+		{ "improvementData", new TypeMapping(typeof(ImprovementData.Type)) },
+		{ "terrainData", new TypeMapping(typeof(Polytopia.Data.TerrainData.Type)) },
+		{ "resourceData", new TypeMapping(typeof(ResourceData.Type)) },
+		{ "taskData", new TypeMapping(typeof(TaskData.Type)) },
+		{ "tribeAbility", new TypeMapping(typeof(TribeAbility.Type)) },
+		{ "unitAbility", new TypeMapping(typeof(UnitAbility.Type)) },
+		{ "improvementAbility", new TypeMapping(typeof(ImprovementAbility.Type)) },
+		{ "playerAbility", new TypeMapping(typeof(PlayerAbility.Type)) },
+		{ "weaponData", new TypeMapping(typeof(UnitData.WeaponEnum)) },
+		{ "skinData", new TypeMapping(typeof(SkinData), false) }
 	};
 
 	/// <summary>
@@ -50,19 +54,51 @@ public static class Loader
 	/// <summary>
 	/// Handlers for processing specific data types during mod loading.
 	/// </summary>
-	private static readonly Dictionary<Type, Action<JObject, bool>> typeHandlers = new()
+	internal static readonly Dictionary<Type, Action<JObject, bool>> typeHandlers = new()
 	{
-		[typeof(TribeData.Type)] = new((token, duringEnumCacheCreation) =>
+		[typeof(TribeType)] = new((token, duringEnumCacheCreation) =>
 		{
 			if (duringEnumCacheCreation)
 			{
-				Registry.customTribes.Add((TribeData.Type)Registry.autoidx);
+				Registry.customTribes.Add((TribeType)Registry.autoidx);
 				token["style"] = Registry.climateAutoidx;
 				token["climate"] = Registry.climateAutoidx;
 				Registry.climateAutoidx++;
 			}
 			else
 			{
+				if (token["skins"] != null)
+				{
+					JArray skins = token["skins"].Cast<JArray>();
+					List<JToken> skinValues = skins._values.ToArray().ToList();
+					foreach (var skin in skinValues)
+					{
+						string skinValue = skin.ToString();
+						if (!Enum.TryParse<SkinType>(skinValue, ignoreCase: true, out _))
+						{
+							EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
+							EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
+							Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
+							Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
+							Registry.autoidx++;
+						}
+					}
+					Il2CppSystem.Collections.Generic.List<JToken> modifiedSkins = skins._values;
+					foreach (var skin in Registry.skinInfo)
+					{
+						if (modifiedSkins.Contains(skin.id))
+						{
+							modifiedSkins.Remove(skin.id);
+							modifiedSkins.Add(skin.idx.ToString());
+						}
+					}
+					JArray newSkins = new JArray();
+					foreach (var item in modifiedSkins)
+					{
+						newSkins.Add(item);
+					}
+					token["skins"] = newSkins;
+				}
 				if (token["preview"] != null)
 				{
 					Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
@@ -73,15 +109,12 @@ public static class Loader
 
 		[typeof(UnitData.Type)] = new((token, duringEnumCacheCreation) =>
 		{
-			if (duringEnumCacheCreation)
+			if (!duringEnumCacheCreation)
 			{
 				if (token["prefab"] != null)
 				{
-					Registry.prefabNames.Add((int)(UnitData.Type)Registry.autoidx, CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString()));
+					Registry.prefabNames.Add((int)(UnitData.Type)(int)token["idx"], CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString()));
 				}
-			}
-			else
-			{
 				if (token["embarksTo"] != null)
 				{
 					string unitId = Util.GetJTokenName(token);
@@ -142,7 +175,13 @@ public static class Loader
 				}
 				PrefabManager.resources.TryAdd((ResourceData.Type)Registry.autoidx, PrefabManager.resources[resourcePrefabType]);
 			}
-		})
+		}),
+
+		[typeof(SkinData)] = new((token, duringEnumCacheCreation) =>
+		{
+			var prop = token.Parent.Cast<JProperty>();
+			prop.Replace(new JProperty(prop.Name.ToLower(), prop.Value));
+		}),
 	};
 
 	/// <summary>
@@ -152,19 +191,23 @@ public static class Loader
 	/// <param name="action">The action to perform when the button is clicked.</param>
 	/// <param name="buttonIndex">The index of the button in the UI.</param>
 	/// <param name="sprite">The sprite for the button.</param>
-	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite);
+	/// <param name="spriteName">The name of the sprite for the button.</param>
+	public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite, string? spriteName);
 
 	/// <summary>
 	/// Adds a new game mode button.
 	/// </summary>
 	/// <param name="id">The unique identifier for the game mode.</param>
 	/// <param name="action">The action to perform when the button is clicked.</param>
+	/// <param name="shouldShowInMenu">The boolean which decides if GameMode should appear in the menu.</param>
 	/// <param name="sprite">The sprite for the button.</param>
-	public static void AddGameModeButton(string id, UIButtonBase.ButtonAction action, Sprite? sprite)
+	/// <param name="spriteName">The name of the sprite for the button.</param>
+	public static void AddGameMode(string id, UIButtonBase.ButtonAction action, bool shouldShowInMenu = true, Sprite? sprite = null, string? spriteName = null)
 	{
 		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
 		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
-		gamemodes.Add(new GameModeButtonsInformation(Registry.gameModesAutoidx, action, null, sprite));
+		if(shouldShowInMenu)
+			gamemodes.Add(new GameModeButtonsInformation(Registry.gameModesAutoidx, action, null, sprite, spriteName));
 		Registry.gameModesAutoidx++;
 	}
 
@@ -176,14 +219,20 @@ public static class Loader
 	public static void AddPatchDataType(string typeId, Type type)
 	{
 		if (!typeMappings.ContainsKey(typeId))
-			typeMappings.Add(typeId, type);
+			typeMappings.Add(typeId, new TypeMapping(type));
+	}
+
+	public static void AddPatchDataType(string typeId, Type type, bool shouldCreateCache)
+	{
+		if (!typeMappings.ContainsKey(typeId))
+			typeMappings.Add(typeId, new TypeMapping(type, shouldCreateCache));
 	}
 
 	/// <summary>
 	/// Loads all mods from the mods directory.
 	/// </summary>
 	/// <param name="mods">A dictionary to populate with the loaded mods.</param>
-	internal static void LoadMods(Dictionary<string, Mod> mods)
+	internal static void RegisterMods(Dictionary<string, Mod> mods)
 	{
 		Directory.CreateDirectory(Plugin.MODS_PATH);
 		string[] modContainers = Directory.GetDirectories(Plugin.MODS_PATH)
@@ -232,8 +281,7 @@ public static class Loader
 					files.Add(new(entry.FullName, entry.ReadBytes()));
 				}
 			}
-
-			// Validate manifest
+			#region ValidateManifest()
 			if (manifest == null)
 			{
 				Plugin.logger.LogError($"Mod manifest not found in {modContainer}");
@@ -264,6 +312,7 @@ public static class Loader
 				Plugin.logger.LogError($"Mod {manifest.id} already exists");
 				continue;
 			}
+			#endregion
 			mods.Add(manifest.id, new(
 				manifest,
 				Mod.Status.Success,
@@ -272,7 +321,41 @@ public static class Loader
 			Plugin.logger.LogInfo($"Registered mod {manifest.id}");
 		}
 
-		// Check dependencies
+		CheckDependencies(mods);
+	}
+
+	internal static void LoadMods(Dictionary<string, Mod> mods, out bool dependencyCycle)
+	{
+		dependencyCycle = !SortMods(Registry.mods);
+		if (dependencyCycle) return;
+
+		StringBuilder checksumString = new();
+		foreach (var (id, mod) in Registry.mods)
+		{
+			if (mod.status != Mod.Status.Success) continue;
+			foreach (var file in mod.files)
+			{
+				checksumString.Append(JsonSerializer.Serialize(file));
+				if (Path.GetExtension(file.name) == ".dll")
+				{
+					LoadAssemblyFile(mod, file);
+				}
+				if (Path.GetFileName(file.name) == "sprites.json")
+				{
+					LoadSpriteInfoFile(mod, file);
+				}
+			}
+			if (!mod.client && id != "polytopia")
+			{
+				checksumString.Append(id);
+				checksumString.Append(mod.version.ToString());
+			}
+		}
+		Compatibility.HashSignatures(checksumString);
+
+	}
+	private static void CheckDependencies(Dictionary<string, Mod> mods)
+	{
 		foreach (var (id, mod) in mods)
 		{
 			foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
@@ -315,7 +398,7 @@ public static class Loader
 	/// </summary>
 	/// <param name="mods">The dictionary of mods to sort.</param>
 	/// <returns>True if the mods could be sorted (no circular dependencies), false otherwise.</returns>
-	internal static bool SortMods(Dictionary<string, Mod> mods)
+	private static bool SortMods(Dictionary<string, Mod> mods)
 	{
 		Stopwatch s = new();
 		Dictionary<string, List<string>> graph = new();
@@ -336,6 +419,7 @@ public static class Loader
 		{
 			foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
 			{
+				if (!graph.ContainsKey(dependency.id)) continue;
 				graph[dependency.id].Add(id);
 				inDegree[id]++;
 			}
@@ -384,6 +468,16 @@ public static class Loader
 		try
 		{
 			Assembly assembly = Assembly.Load(file.bytes);
+			if (assembly
+				    .GetTypes()
+				    .FirstOrDefault(t => t.IsSubclassOf(typeof(Api.PolyScriptBase)))
+			    is { } modType)
+			{
+				var modInstance = (Api.PolyScriptBase) Activator.CreateInstance(modType)!;
+				modInstance.Initialize(mod.id, BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.id}"));
+				modInstance.Load();
+				return;
+			}
 			foreach (Type type in assembly.GetTypes())
 			{
 				MethodInfo? loadWithLogger = type.GetMethod("Load", new Type[] { typeof(ManualLogSource) });
@@ -428,7 +522,7 @@ public static class Loader
 		}
 		catch (Exception e)
 		{
-			Plugin.logger.LogError($"Error on loading locatization from {mod.id} mod: {e.Message}");
+			Plugin.logger.LogError($"Error on loading locatization from {mod.id} mod: {e.StackTrace}");
 		}
 	}
 
@@ -509,7 +603,7 @@ public static class Loader
 		}
 		catch (Exception e)
 		{
-			Plugin.logger.LogError($"Error on loading sprite data from {mod.id} mod: {e.Message}");
+			Plugin.logger.LogError($"Error on loading sprite data from {mod.id} mod: {e.StackTrace}");
 			return null;
 		}
 	}
@@ -542,10 +636,10 @@ public static class Loader
 				Converters = { new Vector2Json() },
 				PropertyNameCaseInsensitive = true,
 			});
-			if (prefab == null || prefab.type != Visual.PrefabType.Unit)
+			if (prefab == null || prefab.type != Visual.PrefabType.Unit || prefab.visualParts.Count == 0)
 				return;
 
-			var baseUnit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeData.Type.Imperius, SkinType.Default);
+			var baseUnit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeType.Imperius, SkinType.Default);
 			if (baseUnit == null)
 				return;
 
@@ -556,7 +650,19 @@ public static class Loader
 			var spriteContainer = unitInstance.transform.GetChild(0);
 			var material = ClearExistingPartsAndExtractMaterial(spriteContainer);
 
-			var visualParts = ApplyVisualParts(prefab.visualParts, spriteContainer, material);
+			var visualParts = ApplyVisualParts(prefab, spriteContainer, material);
+
+			Transform? headPositionMarker = null;
+			foreach (var vp in visualParts)
+			{
+				if (vp.visualPart.gameObject.name == prefab.headPositionMarker)
+				{
+					headPositionMarker = vp.visualPart.gameObject.transform;
+					break;
+				}
+			}
+
+			unitInstance.headPositionMarker = headPositionMarker ?? visualParts[0].visualPart.transform;
 
 			var svr = unitInstance.GetComponent<SkinVisualsReference>();
 			svr.visualParts = visualParts.ToArray();
@@ -568,7 +674,7 @@ public static class Loader
 		}
 		catch (Exception e)
 		{
-			Plugin.logger.LogError($"Error on loading prefab info from {mod.id} mod: {e.Message}");
+			Plugin.logger.LogError($"Error on loading prefab info from {mod.id} mod: {e.StackTrace}");
 		}
 	}
 
@@ -602,13 +708,16 @@ public static class Loader
 	/// <param name="material">The material to use for the parts.</param>
 	/// <returns>A list of the created visual parts.</returns>
 	private static List<SkinVisualsReference.VisualPart> ApplyVisualParts(
-		List<Visual.VisualPartInfo> partInfos,
+		Visual.PrefabInfo prefab,
 		Transform spriteContainer,
 		Material? material)
 	{
+		if (prefab.visualParts.Count == 0)
+			return new List<SkinVisualsReference.VisualPart>();
+
 		List<SkinVisualsReference.VisualPart> parts = new();
 
-		foreach (var info in partInfos)
+		foreach (var info in prefab.visualParts)
 		{
 			parts.Add(CreateVisualPart(info, spriteContainer, material));
 		}
@@ -675,60 +784,13 @@ public static class Loader
 	{
 		try
 		{
-			HandleSkins(gld, patch);
-			// First pass: add new enum values and create mappings
-			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
-			{
-				JObject? token = jtoken.TryCast<JObject>();
-				if (token != null)
-				{
-					string dataType = Util.GetJTokenName(token, 2);
-					if (typeMappings.TryGetValue(dataType, out Type? targetType))
-					{
-						if (token["idx"] != null && (int)token["idx"] == -1)
-						{
-							string id = Util.GetJTokenName(token);
-							token["idx"] = Registry.autoidx;
-							MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
-							if (methodInfo != null)
-							{
-								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
-								methodInfo.Invoke(null, new object[] { id, Registry.autoidx });
-
-								if (typeHandlers.TryGetValue(targetType, out var handler))
-								{
-									handler(token, true);
-								}
-								Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + Registry.autoidx);
-								Registry.autoidx++;
-							}
-						}
-					}
-				}
-			}
-			// Second pass: apply special handling
-			foreach (JToken jtoken in patch.SelectTokens("$.*.*").ToArray())
-			{
-				JObject? token = jtoken.TryCast<JObject>();
-				if (token != null)
-				{
-					string dataType = Util.GetJTokenName(token, 2);
-					if (typeMappings.TryGetValue(dataType, out Type? targetType))
-					{
-						if (typeHandlers.TryGetValue(targetType, out var handler))
-						{
-							handler(token, false);
-						}
-					}
-				}
-			}
-			// Final pass: merge the patch into the game logic data
-			gld.Merge(patch, new() { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Merge });
+			// Merge the patch into the game logic data
+			gld = JsonMerger.Merge(gld, patch);
 			Plugin.logger.LogInfo($"Registered patch from {mod.id} mod");
 		}
 		catch (Exception e)
 		{
-			Plugin.logger.LogError($"Error on loading patch from {mod.id} mod: {e.Message}");
+			Plugin.logger.LogError($"Error on loading patch from {mod.id} mod: {e.StackTrace}");
 			mod.status = Mod.Status.Error;
 		}
 	}
@@ -747,76 +809,189 @@ public static class Loader
 	}
 
 	/// <summary>
-	/// Handles skin data from a patch.
+	/// Processes the merged game logic data after all mods have been loaded and patched.
 	/// </summary>
-	/// <param name="gld">The original game logic data.</param>
-	/// <param name="patch">The patch to apply.</param>
-	public static void HandleSkins(JObject gld, JObject patch)
+	/// <param name="gameLogicData">The game logic data object to populate.</param>
+	/// <param name="rootObject">The root JObject of the merged game logic data.</param>
+	internal static void ProcessGameLogicData(GameLogicData gameLogicData, JObject rootObject)
 	{
-		foreach (JToken jtoken in patch.SelectTokens("$.tribeData.*").ToArray())
+		try
 		{
-			JObject token = jtoken.Cast<JObject>();
+			CreateMappings(rootObject);
+			ProcessPrefabs();
+			ProcessEmbarkOverrides();
+			ProcessAttractOverrides();
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on processing modified game logic data : {e.StackTrace}");
+		}
+	}
 
-			if (token["skins"] != null)
-			{
-				JArray skins = token["skins"].Cast<JArray>();
-				List<string> skinsToRemove = new();
-				List<JToken> skinValues = skins._values.ToArray().ToList();
-				foreach (var skin in skinValues)
-				{
-					string skinValue = skin.ToString();
-					if (skinValue.StartsWith('-') && Enum.TryParse<SkinType>(skinValue.Substring(1), out _))
-					{
-						skinsToRemove.Add(skinValue.Substring(1));
-					}
-					else if (!Enum.TryParse<SkinType>(skinValue, out _))
-					{
-						EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
-						EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
-						Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
-						Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
-						Registry.autoidx++;
-					}
-				}
-				foreach (var skin in Registry.skinInfo)
-				{
-					if (skins._values.Contains(skin.id))
-					{
-						skins._values.Remove(skin.id);
-						skins._values.Add(skin.idx);
-					}
-				}
-				JToken originalSkins = gld.SelectToken(skins.Path, false);
-				if (originalSkins != null)
-				{
-					skins.Merge(originalSkins);
-					foreach (var skin in skinsToRemove)
-					{
-						skins._values.Remove(skin);
-						skins._values.Remove("-" + skin);
-					}
-				}
-			}
-		}
-		foreach (JToken jtoken in patch.SelectTokens("$.skinData.*").ToArray())
+	/// <summary>
+	/// Creates EnumCache mappings for custom enum values and invokes type handlers.
+	/// </summary>
+	/// <param name="rootObject"></param>
+	internal static void CreateMappings(JObject rootObject)
+	{
+		foreach (JToken jtoken in rootObject.SelectTokens("$.*.*").ToArray())
 		{
-			JObject token = jtoken.Cast<JObject>();
-			string id = Util.GetJTokenName(token);
-			int index = Registry.skinInfo.FindIndex(t => t.id == id);
-			if (Registry.skinInfo.ElementAtOrDefault(index) != null)
+			JObject? token = jtoken.TryCast<JObject>();
+			if (token == null)
+				continue;
+
+			string dataType = Util.GetJTokenName(token, 2);
+			if (!typeMappings.TryGetValue(dataType, out TypeMapping? typeMapping))
+				continue;
+
+			if (token["idx"] == null || !typeMapping.shouldCreateCache)
+				continue;
+
+			Type targetType = typeMapping.type;
+			if (!targetType.IsEnum)
 			{
-				SkinData skinData = new();
-				if (token["color"] != null)
+				Plugin.logger.LogWarning($"Type {targetType.FullName} is not an enum, skipping!");
+				continue;
+			}
+
+			string id = Util.GetJTokenName(token);
+
+			if((int)token["idx"] == -1)
+			{
+				token["idx"] = Registry.autoidx;
+				Registry.autoidx++;
+			}
+			else if(Plugin.config.allowUnsafeIndexes)
+			{
+				Array values = Enum.GetValues(targetType);
+
+				var maxValue = values.Cast<int>().Max();
+
+				if(maxValue >= (int)token["idx"])
 				{
-					skinData.color = (int)token["color"];
+					continue;
 				}
-				if (token["language"] != null)
+			}
+			else
+			{
+				continue;
+			}
+
+			MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(targetType).GetMethod("AddMapping");
+			if (methodInfo == null)
+			{
+				Plugin.logger.LogWarning($"Missing AddMapping method for {targetType.FullName}");
+				continue;
+			}
+
+			methodInfo.Invoke(null, new object[] { id, (int)token["idx"] });
+			methodInfo.Invoke(null, new object[] { id, (int)token["idx"] });
+
+			if (typeHandlers.TryGetValue(targetType, out var handler))
+			{
+				handler(token, true);
+			}
+			Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + (int)token["idx"]);
+		}
+		foreach (JToken jtoken in rootObject.SelectTokens("$.*.*").ToArray())
+		{
+			JObject? token = jtoken.TryCast<JObject>();
+			if (token != null)
+			{
+				string dataType = Util.GetJTokenName(token, 2);
+				if (typeMappings.TryGetValue(dataType, out TypeMapping? typeMapping))
 				{
-					skinData.language = token["language"].ToString();
+					if (typeHandlers.TryGetValue(typeMapping.type, out var handler))
+					{
+						handler(token, false);
+					}
 				}
-				Registry.skinInfo[index] = new Visual.SkinInfo(Registry.skinInfo[index].idx, Registry.skinInfo[index].id, skinData);
 			}
 		}
-		patch.Remove("skinData");
+	}
+
+	/// <summary>
+	/// Processes the prefab registry and populates the PrefabManager with custom prefabs.
+	/// </summary>
+	internal static void ProcessPrefabs()
+	{
+		foreach (System.Collections.Generic.KeyValuePair<int, string> item in Registry.prefabNames)
+		{
+			UnitData.Type unitPrefabType = UnitData.Type.Scout;
+			string prefabId = item.Value;
+			if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
+			{
+				unitPrefabType = parsedType;
+				PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
+			}
+			else
+			{
+				KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(kv => kv.Key.name == prefabId);
+				if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
+				{
+					PrefabManager.units.TryAdd(item.Key, prefabInfo.Value);
+				}
+				else
+				{
+					PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// Processes embark overrides by mapping original embark unit types to configured overrides.
+	/// </summary>
+	internal static void ProcessEmbarkOverrides()
+	{
+		foreach (KeyValuePair<string, string> entry in Main.embarkNames)
+		{
+			try
+			{
+				UnitData.Type unit = EnumCache<UnitData.Type>.GetType(entry.Key);
+				UnitData.Type newUnit = EnumCache<UnitData.Type>.GetType(entry.Value);
+				Main.embarkOverrides[unit] = newUnit;
+				Plugin.logger.LogInfo($"Embark unit type for {entry.Key} is now {entry.Value}");
+			}
+			catch
+			{
+				Plugin.logger.LogError($"Embark unit type for {entry.Key} is not valid: {entry.Value}");
+			}
+		}
+	}
+
+	/// <summary>
+	/// Processes attract overrides by mapping improvements to resources and terrain types based on configured overrides.
+	/// </summary>
+	internal static void ProcessAttractOverrides()
+	{
+		foreach (KeyValuePair<string, string> entry in Main.attractsResourceNames)
+		{
+			try
+			{
+				ImprovementData.Type improvement = EnumCache<ImprovementData.Type>.GetType(entry.Key);
+				ResourceData.Type resource = EnumCache<ResourceData.Type>.GetType(entry.Value);
+				Main.attractsResourceOverrides[improvement] = resource;
+				Plugin.logger.LogInfo($"Improvement {entry.Key} now attracts {entry.Value}");
+			}
+			catch
+			{
+				Plugin.logger.LogError($"Improvement {entry.Key} resource type is not valid: {entry.Value}");
+			}
+		}
+		foreach (KeyValuePair<string, string> entry in Main.attractsTerrainNames)
+		{
+			try
+			{
+				ImprovementData.Type improvement = EnumCache<ImprovementData.Type>.GetType(entry.Key);
+				Polytopia.Data.TerrainData.Type terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetType(entry.Value);
+				Main.attractsTerrainOverrides[improvement] = terrain;
+				Plugin.logger.LogInfo($"Improvement {entry.Key} now attracts on {entry.Value}");
+			}
+			catch
+			{
+				Plugin.logger.LogError($"Improvement {entry.Key} terrain type is not valid: {entry.Value}");
+			}
+		}
 	}
 }

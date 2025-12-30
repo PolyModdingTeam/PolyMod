@@ -146,7 +146,7 @@ internal static class Compatibility
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnResumeButtonClick))]
     private static bool StartScreen_OnResumeButtonClick(StartScreen __instance, int id, BaseEventData eventData)
     {
-        return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, ClientBase.GetSinglePlayerSessions()[0]);
+        return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, LocalSaveFileUtils.GetSaveFiles(PolytopiaBackendBase.Game.GameType.SinglePlayer)[0]);
     }
 
     /// <summary>
@@ -154,21 +154,24 @@ internal static class Compatibility
     /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.DeletePaPGame))]
-    private static void ClientBase_DeletePassAndPlayGame(GameInfoPopup __instance)
+    private static void GameInfoPopup_DeletePaPGame(GameInfoPopup __instance)
     {
         File.Delete(Path.Combine(Application.persistentDataPath, $"{__instance.gameId}.signatures"));
     }
 
     /// <summary>
-    /// Deletes the signature files of all single-player games when they are deleted.
+    /// Deletes the signature file of all singleplayer games when they are deleted.
     /// </summary>
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(ClientBase), nameof(ClientBase.DeleteSinglePlayerGames))]
-    private static void ClientBase_DeleteSinglePlayerGames()
+    [HarmonyPatch(typeof(LocalSaveFileUtils), nameof(LocalSaveFileUtils.DeleteAllSaveFilesOfType))]
+    private static void LocalSaveFileUtils_DeleteAllSaveFilesOfType(PolytopiaBackendBase.Game.GameType gameType, bool localOnly)
     {
-        foreach (var gameId in ClientBase.GetSinglePlayerSessions())
+        if (gameType == PolytopiaBackendBase.Game.GameType.SinglePlayer)
         {
-            File.Delete(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+            foreach (var gameId in LocalSaveFileUtils.GetSaveFiles(PolytopiaBackendBase.Game.GameType.SinglePlayer))
+            {
+                File.Delete(Path.Combine(Application.persistentDataPath, $"{gameId}.signatures"));
+            }
         }
     }
 
