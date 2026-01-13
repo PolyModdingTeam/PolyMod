@@ -143,7 +143,8 @@ public static class Loader
 					if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
 						improvementPrefabType = parsedType;
 				}
-				PrefabManager.improvements.TryAdd((ImprovementData.Type)Registry.autoidx, PrefabManager.improvements[improvementPrefabType]);
+				if(token["idx"] != null)
+					PrefabManager.improvements.TryAdd((ImprovementData.Type)(int)token["idx"], PrefabManager.improvements[improvementPrefabType]);
 			}
 			else
 			{
@@ -173,7 +174,8 @@ public static class Loader
 					if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
 						resourcePrefabType = parsedType;
 				}
-				PrefabManager.resources.TryAdd((ResourceData.Type)Registry.autoidx, PrefabManager.resources[resourcePrefabType]);
+				if(token["idx"] != null)
+					PrefabManager.resources.TryAdd((ResourceData.Type)(int)token["idx"], PrefabManager.resources[resourcePrefabType]);
 			}
 		}),
 
@@ -926,13 +928,15 @@ public static class Loader
 			else
 			{
 				KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(kv => kv.Key.name == prefabId);
+				int hashKey = PrefabManager.GetSkinnedHashKey((UnitData.Type)item.Key, TribeType.None, SkinType.Default);
 				if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
 				{
-					PrefabManager.units.TryAdd(item.Key, prefabInfo.Value);
+					PrefabManager.units.TryAdd(hashKey, prefabInfo.Value);
 				}
 				else
 				{
-					PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
+					int existingPrefabKey = PrefabManager.GetSkinnedHashKey(unitPrefabType, TribeType.None, SkinType.Default);
+					PrefabManager.units.TryAdd(hashKey, PrefabManager.units[existingPrefabKey]);
 				}
 			}
 		}
