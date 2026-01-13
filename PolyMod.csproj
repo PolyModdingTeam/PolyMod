@@ -10,6 +10,7 @@
             https://polymod.dev/nuget/v3/index.json;
         </RestoreAdditionalProjectSources>
         <Configurations>IL2CPP</Configurations>
+        <RootNamespace>PolyMod</RootNamespace>
         <Version>1.2.8-pre</Version>
         <PolytopiaVersion>2.16.2.15384</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>

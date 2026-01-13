@@ -421,6 +421,7 @@ public static class Loader
 		{
 			foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
 			{
+				if (!graph.ContainsKey(dependency.id)) continue;
 				graph[dependency.id].Add(id);
 				inDegree[id]++;
 			}
@@ -475,7 +476,7 @@ public static class Loader
 			    is { } modType)
 			{
 				var modInstance = (Api.PolyScriptBase) Activator.CreateInstance(modType)!;
-				modInstance.Initialize(mod.id, BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.id}"));
+				modInstance.Initialize(mod, BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.id}"));
 				modInstance.Load();
 				return;
 			}
