@@ -208,13 +208,16 @@ public static class Visual
 		bool checkOutlines,
 		int level)
 	{
-		if (type != SkinVisualsRenderer.SkinWorldType.Unit || skinVisuals == null || transientSkinData == null)
+		if (type != SkinVisualsRenderer.SkinWorldType.Unit || skinVisuals == null ||
+			skinVisuals.visualParts == null || transientSkinData == null)
 			return;
 
 		Unit unit = skinVisuals.gameObject.GetComponent<Unit>();
-		string unitTypeName = unit?.unitData != null
-			? EnumCache<UnitData.Type>.GetName(unit.unitData.type)
-			: EnumCache<UnitData.Type>.GetName(UnitData.Type.Warrior);
+
+		string unitTypeName = EnumCache<UnitData.Type>.GetName(UnitData.Type.Warrior);
+
+		if(unit != null && unit.UnitData != null)
+			unitTypeName = EnumCache<UnitData.Type>.GetName(unit.unitData.type);
 		if (currentUnitTypeUI != UnitData.Type.None)
 			unitTypeName = EnumCache<UnitData.Type>.GetName(currentUnitTypeUI);
 
@@ -222,7 +225,8 @@ public static class Visual
 
 		foreach (var visualPart in skinVisuals.visualParts)
 		{
-			UpdateVisualPart(visualPart, $"{visualPart.visualPart.name}_{unitTypeName}", style);
+			if(visualPart.visualPart != null)
+				UpdateVisualPart(visualPart, $"{visualPart.visualPart.name}_{unitTypeName}", style);
 		}
 	}
 
@@ -662,10 +666,14 @@ public static class Visual
 	#endregion
 
 	/// <summary>Updates a visual part with a custom sprite.</summary>
-	private static void UpdateVisualPart(SkinVisualsReference.VisualPart visualPart, string name, string style)
+	private static void UpdateVisualPart(SkinVisualsReference.VisualPart? visualPart, string name, string style)
 	{
+		if(visualPart == null || visualPart.visualPart == null)
+			return;
+
 		Sprite? sprite = Registry.GetSprite(name, style) ?? Registry.GetSprite(visualPart.visualPart.name, style);
-		if (sprite != null)
+
+		if (sprite != null && visualPart.renderer != null)
 		{
 			if (visualPart.renderer.spriteRenderer != null)
 				visualPart.renderer.spriteRenderer.sprite = sprite;
@@ -674,7 +682,8 @@ public static class Visual
 		}
 
 		Sprite? outlineSprite = Registry.GetSprite($"{name}_outline", style) ?? Registry.GetSprite($"{visualPart.visualPart.name}_outline", style);
-		if (outlineSprite != null)
+
+		if (outlineSprite != null && visualPart.outlineRenderer != null)
 		{
 			if (visualPart.outlineRenderer.spriteRenderer != null)
 				visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
