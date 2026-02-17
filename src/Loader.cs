@@ -81,6 +81,22 @@ public static class Loader
 							Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
 							Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
 							Registry.autoidx++;
+							if(token["tribeAbilities"] != null)
+							{
+								JArray tribeAbilities = token["tribeAbilities"].Cast<JArray>();
+								List<JToken> tribeAbilsValues = tribeAbilities._values.ToArray().ToList();
+								foreach (var tribeAbilitity in tribeAbilsValues)
+								{
+									if(tribeAbilitity.ToString().ToLowerInvariant() == EnumCache<TribeAbility.Type>.GetName(TribeAbility.Type.Flooded).ToLowerInvariant())
+									{
+										string id = "flooded" + skinValue.ToLowerInvariant();
+										EnumCache<TileData.EffectType>.AddMapping(id, (TileData.EffectType)Registry.autoidx);
+										EnumCache<TileData.EffectType>.AddMapping(id, (TileData.EffectType)Registry.autoidx);
+										Plugin.logger.LogInfo("Created mapping for tileEffect with id " + skinValue + " and index " + Registry.autoidx);
+										Registry.autoidx++;
+									}
+								}
+							}
 						}
 					}
 					Il2CppSystem.Collections.Generic.List<JToken> modifiedSkins = skins._values;

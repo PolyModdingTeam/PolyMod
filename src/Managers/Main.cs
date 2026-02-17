@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using PolytopiaBackendBase.Common;
+using DG.Tweening.Core;
 
 namespace PolyMod.Managers;
 
@@ -364,6 +365,7 @@ public static class Main
 		Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
 		Loader.RegisterMods(Registry.mods);
 		Loader.LoadMods(Registry.mods, out var cycle);
+		Util.CacheReversedSpriteDataNames();
 		dependencyCycle = cycle;
 		stopwatch.Stop();
 	}
