@@ -53,6 +53,9 @@ public static class Visual
 
 	/// <summary>A dictionary of custom widths for basic popups.</summary>
 	public static Dictionary<int, int> basicPopupWidths = new();
+	/// <summary>Represents information about a unit prefab.</summary>
+	public record UnitPrefabInfo(string type, string tribe, string skin);
+	public static Dictionary<UnitPrefabInfo, int> skinnedHashKeys = new();
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
 	private static TribeType attackerTribe = TribeType.None;
@@ -228,6 +231,121 @@ public static class Visual
 			if(visualPart.visualPart != null)
 				UpdateVisualPart(visualPart, $"{visualPart.visualPart.name}_{unitTypeName}", style);
 		}
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.SetupData))]
+	private static void PrefabManager_SetupData(PrefabManager __instance)
+	{
+		PrefabManager.units.Clear();
+		PrefabManager.unitUIOverrides.Clear();
+
+		foreach (PrefabManager.UnitPrefabData unitPrefabData in __instance.unitPrefabs)
+		{
+			PrefabManager.units.Add(
+				PrefabManager.GetSkinnedHashKey(unitPrefabData.type, unitPrefabData.tribe, unitPrefabData.skin),
+				unitPrefabData.prefab
+			);
+		}
+
+		foreach (PrefabManager.UnitPrefabData unitUIPrefabData in __instance.unitUIOverridePrefabs)
+		{
+			PrefabManager.unitUIOverrides.Add(
+				PrefabManager.GetSkinnedHashKey(unitUIPrefabData.type, unitUIPrefabData.tribe, unitUIPrefabData.skin),
+				unitUIPrefabData.prefab
+			);
+		}
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.GetSkinnedHashKey))]
+	private static bool PrefabManager_GetSkinnedHashKey(ref int __result, UnitData.Type type, TribeType tribe, SkinType skin)
+	{
+		UnitPrefabInfo unitPrefabInfo = new(
+			EnumCache<UnitData.Type>.GetName(type),
+			EnumCache<TribeType>.GetName(tribe),
+			EnumCache<SkinType>.GetName(skin)
+		);
+		if(!skinnedHashKeys.ContainsKey(unitPrefabInfo))
+		{
+			int key = skinnedHashKeys.Keys.Count;
+			skinnedHashKeys.Add(unitPrefabInfo, key);
+		}
+		__result = skinnedHashKeys[unitPrefabInfo];
+		return false;
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.HasUIUnitOverride))]
+	public static bool PrefabManager_HasUIUnitOverride(ref bool __result, UnitData.Type unitType, TribeType tribe, SkinType skin)
+	{
+		int skinnedHashKey = PrefabManager.GetSkinnedHashKey(unitType, tribe, skin);
+		__result = PrefabManager.unitUIOverrides.ContainsKey(skinnedHashKey);
+		return false;
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.GetUnitOrUiOverride))]
+	public static bool PrefabManager_GetUnitOrUiOverride(ref Unit __result, UnitData.Type unitType, TribeType tribe, SkinType skin)
+	{
+		int skinnedHashKey = PrefabManager.GetSkinnedHashKey(unitType, tribe, skin);
+		if (PrefabManager.unitUIOverrides.TryGetValue(skinnedHashKey, out var prefab))
+		{
+			__result = prefab;
+			return false;
+		}
+		__result = PrefabManager.GetPrefab(unitType, tribe, skin);
+		return false;
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.GetPrefab), typeof(UnitData.Type), typeof(TribeType), typeof(SkinType))]
+	public static bool GetPrefab(ref Unit __result, UnitData.Type type, TribeType tribe, SkinType skin)
+	{
+		if (SeasonManager.IsChristmas())
+		{
+			Unit prefab = PrefabManager.GetPrefab(type, OverrideCondition.Christmas);
+			if (prefab != null)
+			{
+				__result = prefab;
+				return false;
+			}
+		}
+		int skinnedHashKey = PrefabManager.GetSkinnedHashKey(type, tribe, skin);
+		if (PrefabManager.units.TryGetValue(skinnedHashKey, out var value))
+		{
+			__result = value;
+			return false;
+		}
+		if (skin != SkinType.Default || tribe != TribeType.None)
+		{
+			int skinnedHashKey2 = PrefabManager.GetSkinnedHashKey(type, TribeType.None, skin);
+			int skinnedHashKey3 = PrefabManager.GetSkinnedHashKey(type, tribe, SkinType.Default);
+			int skinnedHashKey4 = PrefabManager.GetSkinnedHashKey(type, TribeType.None, SkinType.Default);
+			int num = 0;
+			if (PrefabManager.units.ContainsKey(skinnedHashKey2))
+			{
+				num = skinnedHashKey2;
+			}
+			else if (PrefabManager.units.ContainsKey(skinnedHashKey3))
+			{
+				num = skinnedHashKey3;
+			}
+			else if (PrefabManager.units.ContainsKey(skinnedHashKey4))
+			{
+				num = skinnedHashKey4;
+			}
+			if (num != 0)
+			{
+				Unit unit = PrefabManager.units[num];
+				PrefabManager.units.Add(skinnedHashKey, unit);
+				__result = unit;
+				return false;
+			}
+		}
+		Plugin.logger.LogInfo($"Couldn't find prefab for type: {type}");
+		__result = PrefabManager.units[0];
+		return false;
 	}
 
 	#endregion
