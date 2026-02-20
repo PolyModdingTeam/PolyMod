@@ -41,6 +41,8 @@ public abstract class PolyScript<TConfig, TExposedConfig> : PolyScriptBase where
         return Registry.mods[Mod.id].files.FirstOrDefault(f => f.name == fileName)?.bytes;
     }
 
+    public override void Unload() {}
+
     public Mod Mod { get; private set; } = null!;
     protected Config<TConfig> Config { get; private set; } = null!;
     protected Config<TExposedConfig> ExposedConfig { get; private set; } = null!;
