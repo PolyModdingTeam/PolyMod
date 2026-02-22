@@ -16,6 +16,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using PolytopiaBackendBase.Common;
+using MoonSharp.Interpreter;
+using MoonSharp.Interpreter.Interop;
 
 namespace PolyMod;
 
@@ -342,6 +344,10 @@ public static class Loader
 				{
 					LoadAssemblyFile(mod, file);
 				}
+				if (Path.GetExtension(file.name) == ".lua")
+				{
+					LoadLuaFile(mod, file);
+				}
 				if (Path.GetFileName(file.name) == "sprites.json")
 				{
 					LoadSpriteInfoFile(mod, file);
@@ -507,6 +513,34 @@ public static class Loader
 				mod.status = Mod.Status.Error;
 			}
 		}
+	}
+
+	/// <summary>
+	/// Loads a lua file from a mod.
+	/// </summary>
+	/// <param name="mod">The mod the assembly belongs to.</param>
+	/// <param name="file">The assembly file to load.</param>
+	public static void LoadLuaFile(Mod mod, Mod.File file)
+	{
+		UserData.RegistrationPolicy = InteropRegistrationPolicy.Automatic;
+		Script script = new();
+		script.Globals["import"] = (Func<string, object>)(typeName =>
+		{
+			var type = AppDomain.CurrentDomain
+				.GetAssemblies()
+				.Select(a => a.GetType(typeName))
+				.FirstOrDefault(t => t != null);
+
+			if (type == null)
+				throw new Exception($"Type not found: {typeName}");
+
+			UserData.RegisterType(type);
+
+			return UserData.CreateStatic(type);
+		});
+		script.DoString(Encoding.UTF8.GetString(file.bytes));
+		DynValue load = script.Globals.Get("load");
+		script.Call(load);
 	}
 
 	/// <summary>
