@@ -3,6 +3,7 @@
   <Costura>
     <IncludeAssemblies>
             Scriban
-        </IncludeAssemblies>
+            MoonSharp.Interpreter
+    </IncludeAssemblies>
   </Costura>
 </Weavers>
