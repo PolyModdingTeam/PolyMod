@@ -113,7 +113,7 @@ public static class Loader
 			{
 				if (token["prefab"] != null)
 				{
-					Registry.prefabNames.Add((int)(UnitData.Type)(int)token["idx"], CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString()));
+					Registry.prefabNames.Add((int)(UnitData.Type)(int)token["idx"], token["prefab"]!.ToString());
 				}
 				if (token["embarksTo"] != null)
 				{
@@ -921,25 +921,27 @@ public static class Loader
 		{
 			UnitData.Type unitPrefabType = UnitData.Type.Scout;
 			string prefabId = item.Value;
-			if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
+			int hashKey = PrefabManager.GetSkinnedHashKey((UnitData.Type)item.Key, TribeType.None, SkinType.Default);
+			if (!Enum.TryParse(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(prefabId), out unitPrefabType)) // Existing unit prefabs
 			{
-				unitPrefabType = parsedType;
-				PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
-			}
-			else
-			{
-				KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(kv => kv.Key.name == prefabId);
-				int hashKey = PrefabManager.GetSkinnedHashKey((UnitData.Type)item.Key, TribeType.None, SkinType.Default);
+				KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(
+					kv => kv.Key.name == prefabId
+				);
 				if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
 				{
+					Visual.UnitPrefabInfo unitPrefabInfo = new(
+						EnumCache<UnitData.Type>.GetName((UnitData.Type)item.Key),
+						EnumCache<TribeType>.GetName(TribeType.None),
+						EnumCache<SkinType>.GetName(SkinType.Default)
+					);
 					PrefabManager.units.TryAdd(hashKey, prefabInfo.Value);
-				}
-				else
-				{
-					int existingPrefabKey = PrefabManager.GetSkinnedHashKey(unitPrefabType, TribeType.None, SkinType.Default);
-					PrefabManager.units.TryAdd(hashKey, PrefabManager.units[existingPrefabKey]);
+					return;
 				}
 			}
+			PrefabManager.units.TryAdd(
+				hashKey,
+				PrefabManager.units[PrefabManager.GetSkinnedHashKey(unitPrefabType, TribeType.None, SkinType.Default)]
+			);
 		}
 	}
 
