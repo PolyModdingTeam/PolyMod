@@ -241,9 +241,10 @@ public static class Loader
 
 	public static void AddTypeHandler(Type type, Action<JObject, bool> handler)
 	{
+		string typeString = type.ToString();
 		if(!typeMappings.ContainsValue(new TypeMapping(type, true)) && !typeMappings.ContainsValue(new TypeMapping(type, false)))
 		{
-			Plugin.logger.LogWarning($"Tried adding TypeHandler for type: {type.ToString()} with missing TypeMapping. Please, add TypeMapping first.");
+			Plugin.logger.LogWarning($"Tried adding TypeHandler for type: {typeString} with missing TypeMapping. Please, add TypeMapping first.");
 			return;
 		}
 		if(!typeHandlers.ContainsKey(type))
@@ -251,7 +252,7 @@ public static class Loader
 		
 		typeHandlers[type].Add(handler);
 
-		Plugin.logger.LogWarning($"Added TypeHandler for type: {type.ToString()}.");
+		Plugin.logger.LogInfo($"Added TypeHandler for type: {typeString}.");
 	}
 
 	/// <summary>
