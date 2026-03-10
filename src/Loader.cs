@@ -54,85 +54,89 @@ public static class Loader
 	/// <summary>
 	/// Handlers for processing specific data types during mod loading.
 	/// </summary>
-	internal static readonly Dictionary<Type, Action<JObject, bool>> typeHandlers = new()
+	internal static readonly Dictionary<Type, List<Action<JObject, bool>>> typeHandlers = new()
 	{
-		[typeof(TribeType)] = new((token, duringEnumCacheCreation) =>
-		{
-			if (duringEnumCacheCreation)
+		[typeof(TribeType)] = new List<Action<JObject, bool>>() {
+			new((token, duringEnumCacheCreation) =>
 			{
-				Registry.customTribes.Add((TribeType)Registry.autoidx);
-				token["style"] = Registry.climateAutoidx;
-				token["climate"] = Registry.climateAutoidx;
-				Registry.climateAutoidx++;
-			}
-			else
-			{
-				if (token["skins"] != null)
+				if (duringEnumCacheCreation)
 				{
-					JArray skins = token["skins"].Cast<JArray>();
-					List<JToken> skinValues = skins._values.ToArray().ToList();
-					foreach (var skin in skinValues)
+					Registry.customTribes.Add((TribeType)Registry.autoidx);
+					token["style"] = Registry.climateAutoidx;
+					token["climate"] = Registry.climateAutoidx;
+					Registry.climateAutoidx++;
+				}
+				else
+				{
+					if (token["skins"] != null)
 					{
-						string skinValue = skin.ToString();
-						if (!Enum.TryParse<SkinType>(skinValue, ignoreCase: true, out _))
+						JArray skins = token["skins"].Cast<JArray>();
+						List<JToken> skinValues = skins._values.ToArray().ToList();
+						foreach (var skin in skinValues)
 						{
-							EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
-							EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
-							Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
-							Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
-							Registry.autoidx++;
+							string skinValue = skin.ToString();
+							if (!Enum.TryParse<SkinType>(skinValue, ignoreCase: true, out _))
+							{
+								EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
+								EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
+								Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
+								Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
+								Registry.autoidx++;
+							}
+						}
+						Il2CppSystem.Collections.Generic.List<JToken> modifiedSkins = skins._values;
+						foreach (var skin in Registry.skinInfo)
+						{
+							if (modifiedSkins.Contains(skin.id))
+							{
+								modifiedSkins.Remove(skin.id);
+								modifiedSkins.Add(skin.idx.ToString());
+							}
+						}
+						JArray newSkins = new JArray();
+						foreach (var item in modifiedSkins)
+						{
+							newSkins.Add(item);
+						}
+						token["skins"] = newSkins;
+					}
+					if (token["preview"] != null)
+					{
+						Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
+						Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
+					}
+				}
+			})
+		},
+		[typeof(UnitData.Type)] = new List<Action<JObject, bool>>() {
+			new((token, duringEnumCacheCreation) =>
+			{
+				if (!duringEnumCacheCreation)
+				{
+					if (token["prefab"] != null)
+					{
+						Registry.prefabNames.Add((int)(UnitData.Type)(int)token["idx"], token["prefab"]!.ToString());
+					}
+					if (token["embarksTo"] != null)
+					{
+						string unitId = Util.GetJTokenName(token);
+						string embarkUnitId = token["embarksTo"].ToString();
+						Main.embarkNames[unitId] = embarkUnitId;
+					}
+					if (token["weapon"] != null)
+					{
+						string weaponString = token["weapon"].ToString();
+						if (EnumCache<UnitData.WeaponEnum>.TryGetType(weaponString, out UnitData.WeaponEnum type))
+						{
+							token["weapon"] = (int)type;
 						}
 					}
-					Il2CppSystem.Collections.Generic.List<JToken> modifiedSkins = skins._values;
-					foreach (var skin in Registry.skinInfo)
-					{
-						if (modifiedSkins.Contains(skin.id))
-						{
-							modifiedSkins.Remove(skin.id);
-							modifiedSkins.Add(skin.idx.ToString());
-						}
-					}
-					JArray newSkins = new JArray();
-					foreach (var item in modifiedSkins)
-					{
-						newSkins.Add(item);
-					}
-					token["skins"] = newSkins;
 				}
-				if (token["preview"] != null)
-				{
-					Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
-					Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
-				}
-			}
-		}),
+			})
+		},
 
-		[typeof(UnitData.Type)] = new((token, duringEnumCacheCreation) =>
-		{
-			if (!duringEnumCacheCreation)
-			{
-				if (token["prefab"] != null)
-				{
-					Registry.prefabNames.Add((int)(UnitData.Type)(int)token["idx"], token["prefab"]!.ToString());
-				}
-				if (token["embarksTo"] != null)
-				{
-					string unitId = Util.GetJTokenName(token);
-					string embarkUnitId = token["embarksTo"].ToString();
-					Main.embarkNames[unitId] = embarkUnitId;
-				}
-				if (token["weapon"] != null)
-				{
-					string weaponString = token["weapon"].ToString();
-					if (EnumCache<UnitData.WeaponEnum>.TryGetType(weaponString, out UnitData.WeaponEnum type))
-					{
-						token["weapon"] = (int)type;
-					}
-				}
-			}
-		}),
-
-		[typeof(ImprovementData.Type)] = new((token, duringEnumCacheCreation) =>
+		[typeof(ImprovementData.Type)] = new List<Action<JObject, bool>>() {
+		new((token, duringEnumCacheCreation) =>
 		{
 			if (duringEnumCacheCreation)
 			{
@@ -161,29 +165,34 @@ public static class Loader
 					Main.attractsTerrainNames[improvementId] = attractsId;
 				}
 			}
-		}),
+		})
+		},
 
-		[typeof(ResourceData.Type)] = new((token, duringEnumCacheCreation) =>
-		{
-			if (duringEnumCacheCreation)
+		[typeof(ResourceData.Type)] = new List<Action<JObject, bool>>() {
+			new((token, duringEnumCacheCreation) =>
 			{
-				ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
-				if (token["prefab"] != null)
+				if (duringEnumCacheCreation)
 				{
-					string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
-					if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
-						resourcePrefabType = parsedType;
+					ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
+					if (token["prefab"] != null)
+					{
+						string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
+						if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
+							resourcePrefabType = parsedType;
+					}
+					if(token["idx"] != null)
+						PrefabManager.resources.TryAdd((ResourceData.Type)(int)token["idx"], PrefabManager.resources[resourcePrefabType]);
 				}
-				if(token["idx"] != null)
-					PrefabManager.resources.TryAdd((ResourceData.Type)(int)token["idx"], PrefabManager.resources[resourcePrefabType]);
-			}
-		}),
+			})
+		},
 
-		[typeof(SkinData)] = new((token, duringEnumCacheCreation) =>
-		{
-			var prop = token.Parent.Cast<JProperty>();
-			prop.Replace(new JProperty(prop.Name.ToLower(), prop.Value));
-		}),
+		[typeof(SkinData)] = new List<Action<JObject, bool>>() {
+			new((token, duringEnumCacheCreation) =>
+			{
+				var prop = token.Parent.Cast<JProperty>();
+				prop.Replace(new JProperty(prop.Name.ToLower(), prop.Value));
+			})
+		},
 	};
 
 	/// <summary>
@@ -217,7 +226,7 @@ public static class Loader
 	/// Adds a new data type for patching.
 	/// </summary>
 	/// <param name="typeId">The identifier for the data type in JSON.</param>
-	/// <param name="type">The C# type corresponding to the identifier.</param>
+	/// <param name="type">"The C# type corresponding to the identifier.</param>
 	public static void AddPatchDataType(string typeId, Type type)
 	{
 		if (!typeMappings.ContainsKey(typeId))
@@ -228,6 +237,22 @@ public static class Loader
 	{
 		if (!typeMappings.ContainsKey(typeId))
 			typeMappings.Add(typeId, new TypeMapping(type, shouldCreateCache));
+	}
+
+	public static void AddTypeHandler(Type type, Action<JObject, bool> handler)
+	{
+		string typeString = type.ToString();
+		if(!typeMappings.ContainsValue(new TypeMapping(type, true)) && !typeMappings.ContainsValue(new TypeMapping(type, false)))
+		{
+			Plugin.logger.LogWarning($"Tried adding TypeHandler for type: {typeString} with missing TypeMapping. Please, add TypeMapping first.");
+			return;
+		}
+		if(!typeHandlers.ContainsKey(type))
+			typeHandlers[type] = new();
+		
+		typeHandlers[type].Add(handler);
+
+		Plugin.logger.LogInfo($"Added TypeHandler for type: {typeString}.");
 	}
 
 	/// <summary>
@@ -889,9 +914,12 @@ public static class Loader
 			methodInfo.Invoke(null, new object[] { id, (int)token["idx"] });
 			methodInfo.Invoke(null, new object[] { id, (int)token["idx"] });
 
-			if (typeHandlers.TryGetValue(targetType, out var handler))
+			if (typeHandlers.TryGetValue(targetType, out var handlers))
 			{
-				handler(token, true);
+				foreach(var handler in handlers)
+				{
+					handler(token, true);
+				}
 			}
 			Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + (int)token["idx"]);
 		}
@@ -903,9 +931,12 @@ public static class Loader
 				string dataType = Util.GetJTokenName(token, 2);
 				if (typeMappings.TryGetValue(dataType, out TypeMapping? typeMapping))
 				{
-					if (typeHandlers.TryGetValue(typeMapping.type, out var handler))
+					if (typeHandlers.TryGetValue(typeMapping.type, out var handlers))
 					{
-						handler(token, false);
+						foreach(var handler in handlers)
+						{
+							handler(token, false);
+						}
 					}
 				}
 			}
