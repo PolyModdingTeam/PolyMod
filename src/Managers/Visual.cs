@@ -273,7 +273,7 @@ public static class Visual
 	{
 		if (__instance.data != null)
 		{
-			string style = Util.GetStyle(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(__instance.tile.data.climate), __instance.tile.data.Skin);
+			string style = Util.GetStyle(__instance.tile.data.climate, __instance.tile.data.Skin);
 			string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
 
 			foreach (SkinVisualsReference.VisualPart visualPart in __instance.GetSkinVisualsReference().visualParts)
@@ -304,7 +304,7 @@ public static class Visual
 	{
 		string terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain) ?? string.Empty;
 
-		TribeType tribe = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate);
+		TribeType tribe = tile.data.climate;
 		SkinType skinType = tile.data.Skin;
 
 		string flood = "";

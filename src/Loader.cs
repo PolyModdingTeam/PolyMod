@@ -111,7 +111,14 @@ public static class Loader
 		[typeof(UnitData.Type)] = new List<Action<JObject, bool>>() {
 			new((token, duringEnumCacheCreation) =>
 			{
-				if (!duringEnumCacheCreation)
+				if(duringEnumCacheCreation)
+				{
+					if (token["prefab"] == null)
+					{
+						Registry.prefabNames.Add((int)(UnitData.Type)(int)token["idx"], EnumCache<UnitData.Type>.GetName(UnitData.Type.Scout));
+					}
+				}
+				else
 				{
 					if (token["prefab"] != null)
 					{

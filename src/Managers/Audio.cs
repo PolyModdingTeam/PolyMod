@@ -11,22 +11,6 @@ namespace PolyMod.Managers;
 public static class Audio
 {
     /// <summary>
-    /// Patches the audio manager to set up data for custom tribes.
-    /// </summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(AudioManager), nameof(AudioManager.SetupData))]
-    private static void AudioManager_SetupData()
-    {
-        foreach (var item in PolytopiaDataManager.GetLatestGameLogicData().AllTribeData)
-        {
-            if((int)item.Key >= Plugin.AUTOIDX_STARTS_FROM)
-            {
-                AudioManager.instance.climateTribeMap.Add(item.Value.climate, item.Key);
-            }
-        }
-    }
-
-    /// <summary>
     /// Patches the music data to get custom nature audio clips.
     /// </summary>
     [HarmonyPrefix]
