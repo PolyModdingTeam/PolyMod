@@ -16,6 +16,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using PolytopiaBackendBase.Common;
+using TMPro;
+using UnityEngine.TextCore.LowLevel;
 
 namespace PolyMod;
 
@@ -402,6 +404,10 @@ public static class Loader
 				{
 					LoadSpriteInfoFile(mod, file);
 				}
+				if (Path.GetExtension(file.name) == ".ttf")
+				{
+					LoadFontFile(mod, file);
+				}
 				Match languageMatch = Regex.Match(Path.GetFileName(file.name), @"^language(?:_(.*))?\.json$");
 				if (languageMatch.Success)
 				{
@@ -761,6 +767,49 @@ public static class Loader
 		catch (Exception e)
 		{
 			Plugin.logger.LogError($"Error on loading prefab info from {mod.id} mod: {e.StackTrace}");
+		}
+	}
+
+	public static void LoadFontFile(Mod mod, Mod.File file)
+	{
+		Plugin.logger.LogInfo($"-------Loading font {Path.GetFileNameWithoutExtension(file.name)}-------");
+
+		byte[] ttfBytes = file.bytes;
+		string path = Path.Combine(Application.persistentDataPath, "runtimeFont.ttf");
+
+		File.WriteAllBytes(path, ttfBytes);
+
+		if (!File.Exists(path)) {
+			Plugin.logger.LogInfo("Font file missing: " + path);
+			return;
+		}
+
+		Plugin.logger.LogInfo($"Font file exists at: {path} ({ttfBytes.Length} bytes)");
+
+		try
+		{
+			TMP_FontAsset tmpFont = TMP_FontAsset.CreateFontAsset(
+				path, 0, 90, 9, GlyphRenderMode.SDFAA, 2048, 2048,
+				AtlasPopulationMode.Dynamic, true
+			);
+
+			if (tmpFont == null)
+			{
+				Plugin.logger.LogInfo("TMP_CreateFontAsset returned null!");
+				return;
+			}
+
+			Plugin.logger.LogInfo("TMP font asset created: " + tmpFont.name);
+
+			if (!TMP_Settings.fallbackFontAssets.Contains(tmpFont))
+			{
+				TMP_Settings.fallbackFontAssets.Add(tmpFont);
+				Plugin.logger.LogInfo("Added fallback font");
+			}
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading font from {mod.id} mod: {e.StackTrace}");
 		}
 	}
 
