@@ -11,6 +11,7 @@ namespace PolyMod.Managers;
 /// </summary>
 public static class Loc
 {
+	internal static Dictionary<string, Dictionary<string, string>> languagesToAdd = new();
 	/// <summary>
 	/// Patches the localization getter to handle custom enum values.
 	/// </summary>
@@ -87,6 +88,48 @@ public static class Loc
 			}
 			term.Languages = new Il2CppStringArray(strings.ToArray());
 		}
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(Localization), nameof(Localization.Init))]
+	public static bool Localization_Init()
+	{
+		if (Localization.initialized)
+			return true;
+
+		if (LocalizationManager.Sources.Count == 0)
+			LocalizationManager.UpdateSources();
+
+		foreach(var name in languagesToAdd.Keys)
+		{
+			Dictionary<string, string> terms = languagesToAdd[name];
+
+			LanguageSourceData source = LocalizationManager.Sources[0];
+			int languageIndex = source.GetLanguageIndex(name);
+			string languageName = terms["language"];
+			if (languageIndex == -1)
+			{
+				source.AddLanguage(languageName, name);
+				languageIndex = source.GetLanguageIndex(languageName);
+			}
+
+			foreach (var kvp in terms)
+			{
+				TermData term = source.GetTermData(kvp.Key);
+				if (term == null)
+				{
+					source.AddTerm(kvp.Key);
+					term = source.GetTermData(kvp.Key);
+				}
+
+				term.Languages[languageIndex] = kvp.Value;
+			}
+
+			LocalizationManager.UpdateSources();
+
+			Plugin.logger.LogInfo($"{name} language added and loaded!");
+		}
+		return true;
 	}
 
 	/// <summary>

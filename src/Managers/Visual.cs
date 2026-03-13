@@ -70,6 +70,10 @@ public static class Visual
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
 	private static TribeType attackerTribe = TribeType.None;
+	/// <summary>
+	/// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
+	/// </summary>
+	internal static Dictionary<TileData.EffectType, SkinType> customFloodingSkins = new();
 
 	/// <summary>The type of a custom prefab.</summary>
 	public enum PrefabType
@@ -312,9 +316,9 @@ public static class Visual
 		{
 			foreach (var effect in tile.data.effects)
 			{
-				if(Loader.customFloodingSkins.ContainsKey(effect))
+				if(customFloodingSkins.ContainsKey(effect))
 				{
-					skinType = Loader.customFloodingSkins[effect];
+					skinType = customFloodingSkins[effect];
 					break;
 				}
 			}
@@ -355,9 +359,9 @@ public static class Visual
 	[HarmonyPatch(typeof(TileData), nameof(TileData.Flood))]
 	private static void TileData_Flood(TileData __instance, PlayerState playerState)
 	{
-		if(Loader.customFloodingSkins.ContainsValue(playerState.skinType))
+		if(customFloodingSkins.ContainsValue(playerState.skinType))
 		{
-			TileData.EffectType effectType = Loader.customFloodingSkins.FirstOrDefault(x => x.Value == playerState.skinType).Key;
+			TileData.EffectType effectType = customFloodingSkins.FirstOrDefault(x => x.Value == playerState.skinType).Key;
 			__instance.AddEffect(effectType);	
 		}
 	}

@@ -52,11 +52,6 @@ public static class Loader
 	internal static List<GameModeButtonsInformation> gamemodes = new();
 
 	/// <summary>
-	/// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
-	/// </summary>
-	internal static Dictionary<TileData.EffectType, SkinType> customFloodingSkins = new();
-
-	/// <summary>
 	/// Handlers for processing specific data types during mod loading.
 	/// </summary>
 	internal static readonly Dictionary<Type, List<Action<JObject, bool>>> typeHandlers = new()
@@ -105,7 +100,7 @@ public static class Loader
 											string tileEffectId = skinId.ToLowerInvariant() + "_flood";
 											EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
 											EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
-                                            customFloodingSkins.Add((TileData.EffectType)Registry.autoidx, skinValue);
+                                            Visual.customFloodingSkins.Add((TileData.EffectType)Registry.autoidx, skinValue);
 											Plugin.logger.LogInfo("Created mapping for tileEffect with id " + tileEffectId + " and index " + Registry.autoidx);
 											Registry.autoidx++;
 										}
@@ -407,6 +402,17 @@ public static class Loader
 				{
 					LoadSpriteInfoFile(mod, file);
 				}
+				Match languageMatch = Regex.Match(Path.GetFileName(file.name), @"^language(?:_(.*))?\.json$");
+				if (languageMatch.Success)
+				{
+					string languageName = languageMatch.Groups[1].Value;
+					LoadLanguageFile(
+						mod,
+						file,
+						languageName
+					);
+					continue;
+				}
 			}
 			if (!mod.client && id != "polytopia")
 			{
@@ -586,6 +592,23 @@ public static class Loader
 		catch (Exception e)
 		{
 			Plugin.logger.LogError($"Error on loading locatization from {mod.id} mod: {e.StackTrace}");
+		}
+	}
+
+	public static void LoadLanguageFile(Mod mod, Mod.File file, string languageName)
+	{
+		try
+		{
+			var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(file.bytes);
+			if(dict != null)
+			{
+				Loc.languagesToAdd.Add(languageName, dict);
+				Plugin.logger.LogInfo($"Registered language from {mod.id} mod");
+			}
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading language file from {mod.id} mod: {e.StackTrace}");
 		}
 	}
 
