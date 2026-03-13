@@ -52,6 +52,11 @@ public static class Loader
 	internal static List<GameModeButtonsInformation> gamemodes = new();
 
 	/// <summary>
+	/// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
+	/// </summary>
+	internal static Dictionary<TileData.EffectType, SkinType> customFloodingSkins = new();
+
+	/// <summary>
 	/// Handlers for processing specific data types during mod loading.
 	/// </summary>
 	internal static readonly Dictionary<Type, List<Action<JObject, bool>>> typeHandlers = new()
@@ -74,14 +79,38 @@ public static class Loader
 						List<JToken> skinValues = skins._values.ToArray().ToList();
 						foreach (var skin in skinValues)
 						{
-							string skinValue = skin.ToString();
-							if (!Enum.TryParse<SkinType>(skinValue, ignoreCase: true, out _))
+							string skinId = skin.ToString();
+							if (!Enum.TryParse<SkinType>(skinId, ignoreCase: true, out _))
 							{
-								EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
-								EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
-								Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
-								Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
+								SkinType skinValue = (SkinType)Registry.autoidx;
+								EnumCache<SkinType>.AddMapping(skinId.ToLowerInvariant(), skinValue);
+								EnumCache<SkinType>.AddMapping(skinId.ToLowerInvariant(), skinValue);
+								Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinId, null));
+								Plugin.logger.LogInfo("Created mapping for skinType with id " + skinId + " and index " + Registry.autoidx);
 								Registry.autoidx++;
+								if(token["tribeAbilities"] != null)
+								{
+									JArray tribeAbilities = token["tribeAbilities"].Cast<JArray>();
+									List<JToken> tribeAbilitiesValues = tribeAbilities._values.ToArray().ToList();
+
+									foreach(JToken ability in tribeAbilitiesValues)
+									{
+										string abilityValue = ability.ToString();
+
+										if (Enum.TryParse<TribeAbility.Type>(
+												abilityValue, ignoreCase: true,
+												out TribeAbility.Type tribeAbilityType
+											) && tribeAbilityType == TribeAbility.Type.Flooded)
+										{
+											string tileEffectId = skinId.ToLowerInvariant() + "_flood";
+											EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
+											EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
+                                            customFloodingSkins.Add((TileData.EffectType)Registry.autoidx, skinValue);
+											Plugin.logger.LogInfo("Created mapping for tileEffect with id " + tileEffectId + " and index " + Registry.autoidx);
+											Registry.autoidx++;
+										}
+									}
+								}
 							}
 						}
 						Il2CppSystem.Collections.Generic.List<JToken> modifiedSkins = skins._values;

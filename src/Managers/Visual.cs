@@ -310,25 +310,12 @@ public static class Visual
 		string flood = "";
 		if (tile.data.effects.Contains(TileData.EffectType.Flooded) || (tribe == TribeType.Aquarion && tile.data.terrain == Polytopia.Data.TerrainData.Type.Mountain))
 		{
-			Il2CppSystem.Collections.Generic.List<CommandBase> newStack = new Il2CppSystem.Collections.Generic.List<CommandBase>();
-			foreach (CommandBase command in GameManager.GameState.CommandStack)
+			foreach (var effect in tile.data.effects)
 			{
-				newStack.Add(command);
-			}
-			newStack.Reverse();
-			foreach (CommandBase command in GameManager.GameState.CommandStack)
-			{
-				if (command.GetCommandType() == CommandType.Flood)
+				if(Loader.customFloodingSkins.ContainsKey(effect))
 				{
-					FloodCommand floodCommand = command.Cast<FloodCommand>();
-					if (floodCommand.Coordinates == tile.Coordinates)
-					{
-						if (GameManager.GameState.TryGetPlayer(floodCommand.PlayerId, out PlayerState playerState))
-						{
-							skinType = playerState.skinType;
-						}
-						break;
-					}
+					skinType = Loader.customFloodingSkins[effect];
+					break;
 				}
 			}
 			flood = "_flooded";
@@ -363,24 +350,16 @@ public static class Visual
 		}
 	}
 
-	/// <summary>Executes a flood command when a tile is flooded.</summary>
+	/// <summary>Adds custom flood tile effect when tile is flooded for custom aqua skins.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(TileData), nameof(TileData.Flood))]
 	private static void TileData_Flood(TileData __instance, PlayerState playerState)
 	{
-		if (GameManager.Instance.isLevelLoaded)
+		if(Loader.customFloodingSkins.ContainsValue(playerState.skinType))
 		{
-			GameManager.Client.ActionManager.ExecuteCommand(new FloodCommand(playerState.Id, __instance.coordinates), out string error);
+			TileData.EffectType effectType = Loader.customFloodingSkins.FirstOrDefault(x => x.Value == playerState.skinType).Key;
+			__instance.AddEffect(effectType);	
 		}
-	}
-
-	/// <summary>Ensures that flood commands are always considered valid.</summary>
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(FloodCommand), nameof(FloodCommand.IsValid))]
-	private static bool FloodCommand_IsValid(ref bool __result, FloodCommand __instance, GameState state, ref string validationError)
-	{
-		__result = true;
-		return false;
 	}
 
 	/// <summary>Forces an update of the mesh for a PolytopiaSpriteRenderer with a custom sprite.</summary>
