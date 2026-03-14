@@ -9,6 +9,10 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using static PopupBase;
 using PolytopiaBackendBase.Common;
+using System.Text.Encodings.Web;
+using Il2CppSystem.Linq;
+using System.Text.RegularExpressions;
+
 
 namespace PolyMod.Managers;
 
@@ -180,27 +184,60 @@ internal static class Hub
                     callback: (UIButtonBase.ButtonAction)((_, _) =>
                     {
                         Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
+                        Directory.CreateDirectory(Plugin.LOGIC_DUMP_PATH);
+                        Directory.CreateDirectory(Plugin.LOCALIZATION_DUMP_PATH);
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, "gameLogicData.json"),
+                            Path.Combine(Plugin.LOGIC_DUMP_PATH, "gameLogicData.json"),
                             PolytopiaDataManager.provider.LoadGameLogicData(VersionManager.GameLogicDataVersion)
                         );
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, "avatarData.json"),
+                            Path.Combine(Plugin.LOGIC_DUMP_PATH, "avatarData.json"),
                             PolytopiaDataManager.provider.LoadAvatarData(1337)
                         );
-                        foreach (var category in LocalizationManager.Sources[0].GetCategories())
+                        var source = LocalizationManager.Sources[0];
+                        foreach (var language in source.GetLanguages())
+                        {
+                            int languageIndex = source.GetLanguageIndex(language);
+                            var dict = new Dictionary<string, string>();
+
+                            foreach (var term in source.mTerms)
+                            {
+                                var translation = term.GetTranslation(languageIndex);
+
+                                if (!string.IsNullOrEmpty(translation))
+                                    dict[term.Term] = translation;
+                            }
+                            var options = new JsonSerializerOptions
+                            {
+                                WriteIndented = true,
+                                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                            };
+
+                            string json = JsonSerializer.Serialize(dict, options);
+
+                            File.WriteAllText(
+                                Path.Combine(Plugin.LOCALIZATION_DUMP_PATH, $"language_{source.mLanguages[languageIndex].Code}.json"),
+                                json
+                            );
+                        }
+                        foreach (var category in source.GetCategories())
                             File.WriteAllTextAsync(
-                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"localization_{category}.csv"),
-                                LocalizationManager.Sources[0].Export_CSV(category)
+                                Path.Combine(Plugin.LOCALIZATION_DUMP_PATH, $"localization_{category}.csv"),
+                                source.Export_CSV(category)
                             );
                         foreach (KeyValuePair<string, Mod> entry in Registry.mods)
                         {
                             foreach (Mod.File file in entry.Value.files)
                             {
-                                if (Path.GetFileName(file.name) == "sprites.json")
-                                {
-                                    File.WriteAllBytes(Path.Combine(Plugin.DUMPED_DATA_PATH, $"sprites_{entry.Key}.json"), file.bytes);
-                                }
+                                Match spritesMatch = Regex.Match(Path.GetFileName(file.name), @"^sprites(?:_(.*))?\.json$");
+                                if (spritesMatch.Success)
+                                    File.WriteAllBytes(
+                                        Path.Combine(
+                                                Plugin.DUMPED_DATA_PATH,
+                                                $"{Path.GetFileNameWithoutExtension(file.name)}_{entry.Key}.json"
+                                        ),
+                                        file.bytes
+                                    );
                             }
                         }
                         foreach (TribeType type in Enum.GetValues(typeof(TribeType)))

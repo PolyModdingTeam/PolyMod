@@ -389,7 +389,8 @@ public static class Main
 			foreach (var file in mod.files)
 			{
 				if (mod.status != Mod.Status.Success) break;
-				if (Path.GetFileName(file.name) == "localization.json")
+				Match localizationMatch = Regex.Match(Path.GetFileName(file.name), @"^localization(_.*)?\.json$");
+				if (localizationMatch.Success)
 				{
 					Loader.LoadLocalizationFile(mod, file);
 					continue;

@@ -307,38 +307,26 @@ public static class Loader
 			// Load mod from directory or zip archive
 			if (Directory.Exists(modContainer))
 			{
-				foreach (var file in Directory.GetFiles(modContainer))
+				foreach (var file in Directory.GetFiles(modContainer, "*", SearchOption.AllDirectories))
 				{
-					if (Path.GetFileName(file) == "manifest.json")
-					{
-						manifest = JsonSerializer.Deserialize<Mod.Manifest>(
-							File.ReadAllBytes(file),
-							new JsonSerializerOptions()
-							{
-								Converters = { new VersionJson() },
-							}
-						);
-						continue;
-					}
-					files.Add(new(Path.GetFileName(file), File.ReadAllBytes(file)));
+					ProcessModFile(
+						Path.GetRelativePath(modContainer, file),
+						File.ReadAllBytes(file),
+						files,
+						ref manifest
+					);
 				}
 			}
 			else
 			{
 				foreach (var entry in new ZipArchive(File.OpenRead(modContainer)).Entries)
 				{
-					if (entry.FullName == "manifest.json")
-					{
-						manifest = JsonSerializer.Deserialize<Mod.Manifest>(
-							entry.ReadBytes(),
-							new JsonSerializerOptions()
-							{
-								Converters = { new VersionJson() },
-							}
-						);
-						continue;
-					}
-					files.Add(new(entry.FullName, entry.ReadBytes()));
+					ProcessModFile(
+						entry.FullName,
+						entry.ReadBytes(),
+						files,
+						ref manifest
+					);
 				}
 			}
 			#region ValidateManifest()
@@ -384,6 +372,22 @@ public static class Loader
 		CheckDependencies(mods);
 	}
 
+	private static void ProcessModFile(string fullName, byte[] bytes, List<Mod.File> files, ref Mod.Manifest? manifest)
+	{
+		if (fullName == "manifest.json")
+		{
+			manifest = JsonSerializer.Deserialize<Mod.Manifest>(
+				bytes,
+				new JsonSerializerOptions()
+				{
+					Converters = { new VersionJson() },
+				}
+			);
+			return;
+		}
+		files.Add(new(fullName, bytes));
+	}
+
 	internal static void LoadMods(Dictionary<string, Mod> mods, out bool dependencyCycle)
 	{
 		dependencyCycle = !SortMods(Registry.mods);
@@ -400,7 +404,8 @@ public static class Loader
 				{
 					LoadAssemblyFile(mod, file);
 				}
-				if (Path.GetFileName(file.name) == "sprites.json")
+				Match spritesMatch = Regex.Match(Path.GetFileName(file.name), @"^sprites(?:_(.*))?\.json$");
+				if (spritesMatch.Success)
 				{
 					LoadSpriteInfoFile(mod, file);
 				}
@@ -417,7 +422,6 @@ public static class Loader
 						file,
 						languageName
 					);
-					continue;
 				}
 			}
 			if (!mod.client && id != "polytopia")

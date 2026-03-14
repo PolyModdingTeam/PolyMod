@@ -312,7 +312,10 @@ public static class Visual
 		SkinType skinType = tile.data.Skin;
 
 		string flood = "";
-		if (tile.data.effects.Contains(TileData.EffectType.Flooded) || (tribe == TribeType.Aquarion && tile.data.terrain == Polytopia.Data.TerrainData.Type.Mountain))
+		if (
+			tile.data.effects.Contains(TileData.EffectType.Flooded) ||
+			(tribe == TribeType.Aquarion && tile.data.terrain == Polytopia.Data.TerrainData.Type.Mountain)
+		) // TODO: Check all tribes with flooded abil instead of Aquarion only.
 		{
 			foreach (var effect in tile.data.effects)
 			{
@@ -363,6 +366,22 @@ public static class Visual
 		{
 			TileData.EffectType effectType = customFloodingSkins.FirstOrDefault(x => x.Value == playerState.skinType).Key;
 			__instance.AddEffect(effectType);	
+		}
+	}
+
+	/// <summary>Removes custom flood effect loc from tile tip header.</summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(TileTipGenerator), nameof(TileTipGenerator.GetTileTipHeader))]
+	public static void GetTileTipHeader(ref string __result, TileData tileData, SkinType skin,
+											PlayerState playerState, GameState gameState, GameLogicData gameLogicData)
+	{
+		foreach(var effect in tileData.effects)
+		{
+			if(customFloodingSkins.ContainsKey(effect))
+			{
+				string localizedEffect = Localization.GetSkinned(skin, playerState.tribe, $"tile.effect.{effect.GetName()}");
+				__result = __result.Replace($", {localizedEffect}", string.Empty);
+			}
 		}
 	}
 

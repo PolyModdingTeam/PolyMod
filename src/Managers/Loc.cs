@@ -100,16 +100,21 @@ public static class Loc
 		if (LocalizationManager.Sources.Count == 0)
 			LocalizationManager.UpdateSources();
 
-		foreach(var name in languagesToAdd.Keys)
-		{
-			Dictionary<string, string> terms = languagesToAdd[name];
+		LanguageSourceData source = LocalizationManager.Sources[0];
 
-			LanguageSourceData source = LocalizationManager.Sources[0];
-			int languageIndex = source.GetLanguageIndex(name);
+		// Elyrion has no language code. I am almost completely sure it is a bug, by looking at the code.
+		LanguageData elyrionLanguage = source.GetLanguageData("Elyrion");
+		elyrionLanguage.Code = Localization.LANG_CODE_ELYRION;
+
+		foreach(var languageCode in languagesToAdd.Keys)
+		{
+			Dictionary<string, string> terms = languagesToAdd[languageCode];
+
+			int languageIndex = source.GetLanguageIndexFromCode(languageCode);
 			string languageName = terms["language"];
 			if (languageIndex == -1)
 			{
-				source.AddLanguage(languageName, name);
+				source.AddLanguage(languageName, languageCode);
 				languageIndex = source.GetLanguageIndex(languageName);
 			}
 
@@ -127,7 +132,7 @@ public static class Loc
 
 			LocalizationManager.UpdateSources();
 
-			Plugin.logger.LogInfo($"{name} language added and loaded!");
+			Plugin.logger.LogInfo($"{languageCode} language terms added.");
 		}
 		return true;
 	}
