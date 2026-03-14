@@ -100,11 +100,16 @@ public static class Loc
 		if (LocalizationManager.Sources.Count == 0)
 			LocalizationManager.UpdateSources();
 
+		LanguageSourceData source = LocalizationManager.Sources[0];
+
+		// Elyrion has no language code. I am almost completely sure it is a bug, by looking at the code.
+		LanguageData elyrionLanguage = source.GetLanguageData("Elyrion");
+		elyrionLanguage.Code = Localization.LANG_CODE_ELYRION;
+
 		foreach(var languageCode in languagesToAdd.Keys)
 		{
 			Dictionary<string, string> terms = languagesToAdd[languageCode];
 
-			LanguageSourceData source = LocalizationManager.Sources[0];
 			int languageIndex = source.GetLanguageIndexFromCode(languageCode);
 			string languageName = terms["language"];
 			if (languageIndex == -1)
