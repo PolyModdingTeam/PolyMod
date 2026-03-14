@@ -100,16 +100,16 @@ public static class Loc
 		if (LocalizationManager.Sources.Count == 0)
 			LocalizationManager.UpdateSources();
 
-		foreach(var name in languagesToAdd.Keys)
+		foreach(var languageCode in languagesToAdd.Keys)
 		{
-			Dictionary<string, string> terms = languagesToAdd[name];
+			Dictionary<string, string> terms = languagesToAdd[languageCode];
 
 			LanguageSourceData source = LocalizationManager.Sources[0];
-			int languageIndex = source.GetLanguageIndex(name);
+			int languageIndex = source.GetLanguageIndexFromCode(languageCode);
 			string languageName = terms["language"];
 			if (languageIndex == -1)
 			{
-				source.AddLanguage(languageName, name);
+				source.AddLanguage(languageName, languageCode);
 				languageIndex = source.GetLanguageIndex(languageName);
 			}
 
@@ -127,7 +127,7 @@ public static class Loc
 
 			LocalizationManager.UpdateSources();
 
-			Plugin.logger.LogInfo($"{name} language added and loaded!");
+			Plugin.logger.LogInfo($"{languageCode} language terms added.");
 		}
 		return true;
 	}
