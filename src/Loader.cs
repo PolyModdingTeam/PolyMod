@@ -307,14 +307,24 @@ public static class Loader
 			{
 				foreach (var file in Directory.GetFiles(modContainer, "*", SearchOption.AllDirectories))
 				{
-					ProcessModFile(Path.GetFileName(file), File.ReadAllBytes(file), files, ref manifest);
+					ProcessModFile(
+						Path.GetRelativePath(modContainer, file),
+						File.ReadAllBytes(file),
+						files,
+						ref manifest
+					);
 				}
 			}
 			else
 			{
 				foreach (var entry in new ZipArchive(File.OpenRead(modContainer)).Entries)
 				{
-					ProcessModFile(Path.GetFileName(entry.FullName), entry.ReadBytes(), files, ref manifest);
+					ProcessModFile(
+						entry.FullName,
+						entry.ReadBytes(),
+						files,
+						ref manifest
+					);
 				}
 			}
 			#region ValidateManifest()
@@ -392,7 +402,8 @@ public static class Loader
 				{
 					LoadAssemblyFile(mod, file);
 				}
-				if (Path.GetFileName(file.name) == "sprites.json")
+				Match spritesMatch = Regex.Match(Path.GetFileName(file.name), @"^sprites(?:_(.*))?\.json$");
+				if (spritesMatch.Success)
 				{
 					LoadSpriteInfoFile(mod, file);
 				}
@@ -405,7 +416,6 @@ public static class Loader
 						file,
 						languageName
 					);
-					continue;
 				}
 			}
 			if (!mod.client && id != "polytopia")
