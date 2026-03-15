@@ -139,14 +139,14 @@ public static class Loader
 				{
 					if (token["prefab"] == null)
 					{
-						Registry.prefabNames.Add((int)(UnitData.Type)(int)token["idx"], EnumCache<UnitData.Type>.GetName(UnitData.Type.Scout));
+						Registry.prefabNames.Add((int)token["idx"], EnumCache<UnitData.Type>.GetName(UnitData.Type.Scout).ToLowerInvariant());
 					}
 				}
 				else
 				{
 					if (token["prefab"] != null)
 					{
-						Registry.prefabNames.Add((int)(UnitData.Type)(int)token["idx"], token["prefab"]!.ToString());
+						Registry.prefabNames.Add((int)token["idx"], token["prefab"].ToString().ToLowerInvariant());
 					}
 					if (token["embarksTo"] != null)
 					{
@@ -729,6 +729,10 @@ public static class Loader
 			if (prefab == null || prefab.type != Visual.PrefabType.Unit || prefab.visualParts.Count == 0)
 				return;
 
+			if (Registry.unitPrefabs.Keys.Any(pref => pref.name == prefab.name))
+			{
+				Plugin.logger.LogInfo($"Prefab {prefab.name} already exists, skipping.");
+			}
 			var baseUnit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeType.Imperius, SkinType.Default);
 			if (baseUnit == null)
 				return;
@@ -760,11 +764,11 @@ public static class Loader
 			GameObject.DontDestroyOnLoad(unitInstance.gameObject);
 			Registry.unitPrefabs.Add(prefab, unitInstance.GetComponent<Unit>());
 
-			Plugin.logger.LogInfo($"Registered prefab info from {mod.id} mod");
+			Plugin.logger.LogInfo($"Registered prefab {prefab.name} info from {mod.id} mod.");
 		}
 		catch (Exception e)
 		{
-			Plugin.logger.LogError($"Error on loading prefab info from {mod.id} mod: {e.StackTrace}");
+			Plugin.logger.LogError($"Error on loading prefab {Path.GetFileNameWithoutExtension(file.name)} info from {mod.id} mod: {e.StackTrace}.");
 		}
 	}
 
@@ -1011,7 +1015,8 @@ public static class Loader
 	/// </summary>
 	internal static void ProcessPrefabs()
 	{
-		foreach (System.Collections.Generic.KeyValuePair<int, string> item in Registry.prefabNames)
+		Plugin.logger.LogInfo($"Processing prefabs, count: {Registry.prefabNames.Count}.");
+		foreach (KeyValuePair<int, string> item in Registry.prefabNames)
 		{
 			UnitData.Type unitPrefabType = UnitData.Type.Scout;
 			string prefabId = item.Value;
@@ -1028,10 +1033,12 @@ public static class Loader
 						EnumCache<TribeType>.GetName(TribeType.None),
 						EnumCache<SkinType>.GetName(SkinType.Default)
 					);
-					PrefabManager.units.TryAdd(hashKey, prefabInfo.Value);
-					return;
+					Visual.customPrefabs.Add(unitPrefabInfo, prefabInfo.Value);
+					Plugin.logger.LogInfo($"Using custom prefab {prefabId} for unit {item.Key}.");
+					continue;
 				}
 			}
+			Plugin.logger.LogInfo($"Using existing prefab {EnumCache<UnitData.Type>.GetName(unitPrefabType)} for unit {item.Key}.");
 			PrefabManager.units.TryAdd(
 				hashKey,
 				PrefabManager.units[PrefabManager.GetSkinnedHashKey(unitPrefabType, TribeType.None, SkinType.Default)]

@@ -84,12 +84,26 @@ public static class Visual
 	}
 
 	/// <summary>Represents information about a custom prefab.</summary>
-	public record PrefabInfo(
-		PrefabType type,
-		string name,
-		List<VisualPartInfo> visualParts,
-		string headPositionMarker = ""
-	);
+	public record PrefabInfo
+	{
+		public PrefabType type { get; init; }
+		public string name { get; init; }
+		public List<VisualPartInfo> visualParts { get; init; }
+		public string headPositionMarker { get; init; }
+
+		[JsonConstructor]
+		public PrefabInfo(
+			PrefabType type,
+			List<VisualPartInfo> visualParts,
+			string name = "",
+			string headPositionMarker = "")
+		{
+			this.type = type;
+			this.name = name.ToLowerInvariant();
+			this.visualParts = visualParts;
+			this.headPositionMarker = headPositionMarker;
+		}
+	}
 
 	/// <summary>Represents information about a visual part of a prefab.</summary>
 	public record VisualPartInfo(
@@ -256,8 +270,8 @@ public static class Visual
 	{
 		UnitPrefabInfo unitPrefabInfo = new(
 			EnumCache<UnitData.Type>.GetName(type),
-			EnumCache<TribeType>.GetName(tribe),
-			EnumCache<SkinType>.GetName(skin)
+			EnumCache<TribeType>.GetName(TribeType.None),
+			EnumCache<SkinType>.GetName(SkinType.Default)
 		);
 		if(customPrefabs.ContainsKey(
 			unitPrefabInfo
