@@ -22,7 +22,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	/// <param name="updatePrerelease">Whether to include pre-release versions when updating.</param>
 	internal record PolyConfig(
 		bool debug = false,
-		string backendUrl = "http://127.0.0.1:8090",
+		string backendUrl = Multiplayer.DEFAULT_SERVER_URL,
 		bool autoUpdate = true,
 		bool updatePrerelease = false,
 		bool allowUnsafeIndexes = false
