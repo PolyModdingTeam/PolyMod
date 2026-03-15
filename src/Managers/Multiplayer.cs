@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using BepInEx.Logging;
 using HarmonyLib;
 using Polytopia.Data;
 
@@ -12,6 +7,7 @@ public static class Multiplayer
 {
     internal const string DEFAULT_SERVER_URL = "https://dev.polydystopia.xyz";
     private const string GldMarker = "##GLD:";
+    internal static bool allowGldMods = false;
 
     // Cache parsed GLD by game Seed to handle rewinds/reloads
     private static readonly Dictionary<int, GameLogicData> _gldCache = new();
@@ -35,13 +31,6 @@ public static class Multiplayer
         __instance.multiplayerSelectionScreen.TournamentsButton.gameObject.SetActive(false);
     }
 
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(ProfileScreen), nameof(ProfileScreen.Start))]
-    public static void ProfileScreen_Start(ProfileScreen __instance)
-    {
-    }
-
     [HarmonyPostfix]
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
     private static void StartScreen_Start(StartScreen __instance)
@@ -58,6 +47,8 @@ public static class Multiplayer
     [HarmonyPatch(typeof(GameState), nameof(GameState.Deserialize))]
     private static void Deserialize_Postfix(GameState __instance, BinaryReader __0)
     {
+        if(!allowGldMods) return;
+
         Plugin.logger?.LogDebug("Deserialize_Postfix: Entered");
 
         try
@@ -143,6 +134,7 @@ public static class Multiplayer
     /// </summary>
     private static string? FetchGldById(int modGldVersion)
     {
+        if(!allowGldMods) return null;
         try
         {
             using var client = new HttpClient();
