@@ -6,8 +6,14 @@ using UnityEngine;
 
 namespace PolyMod.Managers;
 
+/// <summary>
+/// Manages the automatic update process for PolyMod.
+/// </summary>
 internal static class AutoUpdate
 {
+    /// <summary>
+    /// Checks for updates when the start screen is shown.
+    /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
     private static void StartScreen_Start()
@@ -22,6 +28,7 @@ internal static class AutoUpdate
         client.DefaultRequestHeaders.Add("User-Agent", "PolyMod");
         try
         {
+            // Fetch release information from GitHub API
             var json = JsonDocument.Parse(
                 client.GetAsync("https://api.github.com/repos/PolyModdingTeam/PolyMod/releases").UnwrapAsync()
                 .Content.ReadAsStringAsync().UnwrapAsync()
@@ -36,6 +43,8 @@ internal static class AutoUpdate
             }
             string newVersion = latest?.GetProperty("tag_name").GetString()!.TrimStart('v')!;
             if (newVersion.IsVersionOlderOrEqual(Plugin.VERSION)) return;
+
+            // Determine the correct BepInEx URL for the current OS
             string os = Application.platform switch
             {
                 RuntimePlatform.WindowsPlayer => "win",
@@ -52,9 +61,13 @@ internal static class AutoUpdate
                 .GetAsync("https://polymod.dev/data/bepinex.txt").UnwrapAsync()
                 .Content.ReadAsStringAsync().UnwrapAsync()
                 .Replace("{os}", os);
+
+            // The actual update logic
             void Update()
             {
                 Time.timeScale = 0;
+
+                // Download new PolyMod DLL and BepInEx files
                 File.WriteAllBytes(
                     Path.Combine(Plugin.BASE_PATH, "PolyMod.new.dll"),
                     client.GetAsync(latest?.GetProperty("assets")[0].GetProperty("browser_download_url").GetString()!).UnwrapAsync()
@@ -62,6 +75,8 @@ internal static class AutoUpdate
                 );
                 using ZipArchive bepinex = new(client.GetAsync(bepinex_url).UnwrapAsync().Content.ReadAsStream());
                 bepinex.ExtractToDirectory(Path.Combine(Plugin.BASE_PATH, "New"), overwriteFiles: true);
+
+                // Create and run the appropriate update script for the OS
                 ProcessStartInfo info = new()
                 {
                     WorkingDirectory = Path.Combine(Plugin.BASE_PATH),
@@ -137,6 +152,8 @@ internal static class AutoUpdate
                 Process.Start(info);
                 Application.Quit();
             }
+
+            // Show a popup to the user asking if they want to update
             PopupManager.GetBasicPopup(new(
                 Localization.Get("polymod.autoupdate"),
                 Localization.Get("polymod.autoupdate.description"),
@@ -155,6 +172,9 @@ internal static class AutoUpdate
         }
     }
 
+    /// <summary>
+    /// Initializes the AutoUpdate manager by patching the necessary methods.
+    /// </summary>
     internal static void Init()
     {
         Harmony.CreateAndPatchAll(typeof(AutoUpdate));

@@ -3,22 +3,36 @@ using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using I2.Loc;
 using Il2CppInterop.Runtime;
-using Polytopia.Data;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using static PopupBase;
+using PolytopiaBackendBase.Common;
+using System.Text.Encodings.Web;
+using Il2CppSystem.Linq;
+using System.Text.RegularExpressions;
+
 
 namespace PolyMod.Managers;
 
+/// <summary>
+/// Manages the PolyMod hub, including UI elements and popups.
+/// </summary>
 internal static class Hub
 {
     private const string HEADER_PREFIX = "<align=\"center\"><size=150%><b>";
     private const string HEADER_POSTFIX = "</b></size><align=\"left\">";
     private const int POPUP_WIDTH = 1400;
+
+    /// <summary>
+    /// Whether the configuration popup is currently active.
+    /// </summary>
     public static bool isConfigPopupActive = false;
 
+    /// <summary>
+    /// Patches the splash screen to play a custom intro video.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SplashController), nameof(SplashController.LoadAndPlayClip))]
     private static bool SplashController_LoadAndPlayClip(SplashController __instance)
@@ -32,6 +46,9 @@ internal static class Hub
         return false;
     }
 
+    /// <summary>
+    /// Patches the popup button container to correctly anchor buttons.
+    /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PopupButtonContainer), nameof(PopupButtonContainer.SetButtonData))]
     private static void PopupButtonContainer_SetButtonData(PopupButtonContainer __instance)
@@ -47,9 +64,12 @@ internal static class Hub
         }
     }
 
+    /// <summary>
+    /// Patches the start screen to add the PolyMod hub button and version text.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-    private static void StartScreen_Start()
+    private static void StartScreen_Start(StartScreen __instance)
     {
         Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<UnityEngine.Object> allLocalizers = GameObject.FindObjectsOfTypeAll(Il2CppType.From(typeof(TMPLocalizer)));
 
@@ -109,6 +129,10 @@ internal static class Hub
                 GameObject.Destroy(buttonComponent.icon.gameObject);
                 GameObject.Destroy(buttonComponent.outline.gameObject);
 
+                Transform descriptionText = button.transform.Find("DescriptionText");
+                descriptionText.gameObject.SetActive(true);
+                descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
+
                 buttonComponent.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
             }
         }
@@ -160,30 +184,63 @@ internal static class Hub
                     callback: (UIButtonBase.ButtonAction)((_, _) =>
                     {
                         Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
+                        Directory.CreateDirectory(Plugin.LOGIC_DUMP_PATH);
+                        Directory.CreateDirectory(Plugin.LOCALIZATION_DUMP_PATH);
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, "gameLogicData.json"),
+                            Path.Combine(Plugin.LOGIC_DUMP_PATH, "gameLogicData.json"),
                             PolytopiaDataManager.provider.LoadGameLogicData(VersionManager.GameLogicDataVersion)
                         );
                         File.WriteAllTextAsync(
-                            Path.Combine(Plugin.DUMPED_DATA_PATH, "avatarData.json"),
+                            Path.Combine(Plugin.LOGIC_DUMP_PATH, "avatarData.json"),
                             PolytopiaDataManager.provider.LoadAvatarData(1337)
                         );
-                        foreach (var category in LocalizationManager.Sources[0].GetCategories())
+                        var source = LocalizationManager.Sources[0];
+                        foreach (var language in source.GetLanguages())
+                        {
+                            int languageIndex = source.GetLanguageIndex(language);
+                            var dict = new Dictionary<string, string>();
+
+                            foreach (var term in source.mTerms)
+                            {
+                                var translation = term.GetTranslation(languageIndex);
+
+                                if (!string.IsNullOrEmpty(translation))
+                                    dict[term.Term] = translation;
+                            }
+                            var options = new JsonSerializerOptions
+                            {
+                                WriteIndented = true,
+                                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                            };
+
+                            string json = JsonSerializer.Serialize(dict, options);
+
+                            File.WriteAllText(
+                                Path.Combine(Plugin.LOCALIZATION_DUMP_PATH, $"language_{source.mLanguages[languageIndex].Code}.json"),
+                                json
+                            );
+                        }
+                        foreach (var category in source.GetCategories())
                             File.WriteAllTextAsync(
-                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"localization_{category}.csv"),
-                                LocalizationManager.Sources[0].Export_CSV(category)
+                                Path.Combine(Plugin.LOCALIZATION_DUMP_PATH, $"localization_{category}.csv"),
+                                source.Export_CSV(category)
                             );
                         foreach (KeyValuePair<string, Mod> entry in Registry.mods)
                         {
                             foreach (Mod.File file in entry.Value.files)
                             {
-                                if (Path.GetFileName(file.name) == "sprites.json")
-                                {
-                                    File.WriteAllBytes(Path.Combine(Plugin.DUMPED_DATA_PATH, $"sprites_{entry.Key}.json"), file.bytes);
-                                }
+                                Match spritesMatch = Regex.Match(Path.GetFileName(file.name), @"^sprites(?:_(.*))?\.json$");
+                                if (spritesMatch.Success)
+                                    File.WriteAllBytes(
+                                        Path.Combine(
+                                                Plugin.DUMPED_DATA_PATH,
+                                                $"{Path.GetFileNameWithoutExtension(file.name)}_{entry.Key}.json"
+                                        ),
+                                        file.bytes
+                                    );
                             }
                         }
-                        foreach (TribeData.Type type in Enum.GetValues(typeof(TribeData.Type)))
+                        foreach (TribeType type in Enum.GetValues(typeof(TribeType)))
                         {
                             List<Visual.PreviewTile> previewTiles = new();
                             SelectTribePopup popup = PopupManager.GetSelectTribePopup();
@@ -249,6 +306,9 @@ internal static class Hub
         }
     }
 
+    /// <summary>
+    /// Patches the game manager to handle key presses for the config popup.
+    /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
     private static void GameManager_Update()
@@ -259,6 +319,9 @@ internal static class Hub
         }
     }
 
+    /// <summary>
+    /// Updates sprite information from dumped files.
+    /// </summary>
     internal static void UpdateSpriteInfos()
     {
         string message = string.Empty;
@@ -290,6 +353,9 @@ internal static class Hub
         NotificationManager.Notify(message);
     }
 
+    /// <summary>
+    /// Shows the configuration popup.
+    /// </summary>
     internal static void ShowConfigPopup()
     {
         BasicPopup polymodPopup = PopupManager.GetBasicPopup();
@@ -302,6 +368,10 @@ internal static class Hub
         polymodPopup.Show();
     }
 
+    /// <summary>
+    /// Creates the button data for the configuration popup.
+    /// </summary>
+    /// <returns>An array of popup button data.</returns>
     internal static PopupButtonData[] CreateConfigPopupButtonData()
     {
         List<PopupButtonData> popupButtons = new()
@@ -387,6 +457,9 @@ internal static class Hub
         }
     }
 
+    /// <summary>
+    /// Initializes the Hub manager by patching the necessary methods.
+    /// </summary>
     internal static void Init()
     {
         Harmony.CreateAndPatchAll(typeof(Hub));

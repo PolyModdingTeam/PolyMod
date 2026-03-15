@@ -7,43 +7,105 @@ using UnityEngine.UI;
 using Il2CppSystem.Linq;
 using PolyMod.Json;
 using System.Text.Json.Serialization;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod.Managers;
 
+/// <summary>
+/// Manages visual aspects of the game, including sprites, UI, and in-game objects.
+/// </summary>
 public static class Visual
 {
+	/// <summary>
+	/// Represents a tile in a tribe preview.
+	/// </summary>
 	public class PreviewTile
 	{
+		/// <summary>The x-coordinate of the tile.</summary>
 		[JsonInclude]
 		public int? x = null;
+		/// <summary>The y-coordinate of the tile.</summary>
 		[JsonInclude]
 		public int? y = null;
+		/// <summary>The terrain type of the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<Polytopia.Data.TerrainData.Type>))]
 		public Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.Ocean;
+		/// <summary>The resource type on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<ResourceData.Type>))]
 		public ResourceData.Type resourceType = ResourceData.Type.None;
+		/// <summary>The unit type on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<UnitData.Type>))]
 		public UnitData.Type unitType = UnitData.Type.None;
+		/// <summary>The improvement type on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<ImprovementData.Type>))]
 		public ImprovementData.Type improvementType = ImprovementData.Type.None;
 	}
+
+	/// <summary>Represents information about a sprite, such as its pivot and pixels per unit.</summary>
 	public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot);
+
+	/// <summary>Represents information about a custom skin.</summary>
 	public record SkinInfo(int idx, string id, SkinData? skinData);
+
+	/// <summary>A dictionary of custom widths for basic popups.</summary>
 	public static Dictionary<int, int> basicPopupWidths = new();
+	/// <summary>Represents information about a unit prefab.</summary>
+	public struct UnitPrefabInfo
+	{
+		public UnitPrefabInfo(string type, string tribe, string skin)
+		{
+			this.type = type;
+			this.tribe = tribe;
+			this.skin = skin;
+		}
+		public string type;
+		public string tribe;
+		public string skin;
+	}
+	public static Dictionary<UnitPrefabInfo, Unit> customPrefabs = new();
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
-	private static TribeData.Type attackerTribe = TribeData.Type.None;
+	private static TribeType attackerTribe = TribeType.None;
+	/// <summary>
+	/// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
+	/// </summary>
+	internal static Dictionary<TileData.EffectType, SkinType> customFloodingSkins = new();
+
+	/// <summary>The type of a custom prefab.</summary>
 	public enum PrefabType
 	{
 		Unit,
 		Improvement,
 		Resource
 	}
-	public record PrefabInfo(PrefabType type, string name, List<VisualPartInfo> visualParts);
+
+	/// <summary>Represents information about a custom prefab.</summary>
+	public record PrefabInfo
+	{
+		public PrefabType type { get; init; }
+		public string name { get; init; }
+		public List<VisualPartInfo> visualParts { get; init; }
+		public string headPositionMarker { get; init; }
+
+		[JsonConstructor]
+		public PrefabInfo(
+			PrefabType type,
+			List<VisualPartInfo> visualParts,
+			string name = "",
+			string headPositionMarker = "")
+		{
+			this.type = type;
+			this.name = name.ToLowerInvariant();
+			this.visualParts = visualParts;
+			this.headPositionMarker = headPositionMarker;
+		}
+	}
+
+	/// <summary>Represents information about a visual part of a prefab.</summary>
 	public record VisualPartInfo(
 		string gameObjectName,
 		string baseName,
@@ -53,15 +115,18 @@ public static class Visual
 		bool tintable = false
 	);
 	private static bool enableOutlines = false;
+	private static bool seenWarningWCPopup = false;
 
 	#region General
 
+	/// <summary>A placeholder patch for the TechItem.SetupComplete method.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(TechItem), nameof(TechItem.SetupComplete))]
 	private static void TechItem_SetupComplete()
 	{
 	}
 
+	/// <summary>Resets the firstTimeOpeningPreview flag when the start screen is shown.</summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
 	private static void StartScreen_Start()
@@ -69,6 +134,7 @@ public static class Visual
 		firstTimeOpeningPreview = true;
 	}
 
+	/// <summary>Patches the sprite atlas manager to load custom sprites.</summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), typeof(string), typeof(string), typeof(SpriteCallback))]
 	private static bool SpriteAtlasManager_LoadSprite(SpriteAtlasManager __instance, string atlas, string sprite, SpriteCallback completion)
@@ -88,8 +154,8 @@ public static class Visual
 				foreach (string item in names)
 				{
 					string upperitem = char.ToUpper(item[0]) + item[1..];
-					if (EnumCache<TribeData.Type>.TryGetType(item, out TribeData.Type tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
-					|| EnumCache<TribeData.Type>.TryGetType(upperitem, out TribeData.Type tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
+					if (EnumCache<TribeType>.TryGetType(item, out TribeType tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
+					|| EnumCache<TribeType>.TryGetType(upperitem, out TribeType tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
 					{
 						filteredNames.Remove(item);
 						style = item;
@@ -107,9 +173,10 @@ public static class Visual
 		}
 	}
 
+	/// <summary>Patches the sprite atlas manager to look up custom sprites.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
-	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeData.Type tribe, SkinType skin, bool checkForOutline, int level)
+	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeType tribe, SkinType skin, bool checkForOutline, int level)
 	{
 		baseName = Util.FormatSpriteName(baseName);
 
@@ -121,8 +188,7 @@ public static class Visual
 	#endregion
 	#region Units
 
-	// lobotomy
-
+	/// <summary>Enables outlines when the interaction bar is shown.</summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.Show))]
 	private static bool InteractionBar_Show(InteractionBar __instance, bool instant, bool force)
@@ -131,6 +197,7 @@ public static class Visual
 		return true;
 	}
 
+	/// <summary>Prevents outlines from being created when they are disabled.</summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(UISpriteDuplicator), nameof(UISpriteDuplicator.CreateImage), typeof(SpriteRenderer), typeof(Transform), typeof(Transform), typeof(float), typeof(Vector2), typeof(bool))]
 	private static bool UISpriteDuplicator_CreateImage(SpriteRenderer spriteRenderer, Transform source, Transform destination, float scale, Vector2 offset, bool forceFullAlpha)
@@ -138,6 +205,7 @@ public static class Visual
 		return !(spriteRenderer.sortingOrder == -1 && !enableOutlines);
 	}
 
+	/// <summary>Disables outlines after the interaction bar is shown.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.Show))]
 	private static void InteractionBar_Show_Postfix(InteractionBar __instance, bool instant, bool force)
@@ -145,6 +213,7 @@ public static class Visual
 		enableOutlines = false;
 	}
 
+	/// <summary>Sets the current unit type being rendered in the UI.</summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
 	private static bool UIUnitRenderer_CreateUnit_Prefix(UIUnitRenderer __instance)
@@ -153,6 +222,7 @@ public static class Visual
 		return true;
 	}
 
+	/// <summary>Resets the current unit type being rendered in the UI.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
 	private static void UIUnitRenderer_CreateUnit_Postfix(UIUnitRenderer __instance)
@@ -160,6 +230,7 @@ public static class Visual
 		currentUnitTypeUI = UnitData.Type.None;
 	}
 
+	/// <summary>Skins the visual parts of a unit with custom sprites.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(SkinVisualsRenderer), nameof(SkinVisualsRenderer.SkinWorldObject))]
 	private static void SkinVisualsRenderer_SkinWorldObject(
@@ -169,13 +240,16 @@ public static class Visual
 		bool checkOutlines,
 		int level)
 	{
-		if (type != SkinVisualsRenderer.SkinWorldType.Unit || skinVisuals == null || transientSkinData == null)
+		if (type != SkinVisualsRenderer.SkinWorldType.Unit || skinVisuals == null ||
+			skinVisuals.visualParts == null || transientSkinData == null)
 			return;
 
 		Unit unit = skinVisuals.gameObject.GetComponent<Unit>();
-		string unitTypeName = unit?.unitData != null
-			? EnumCache<UnitData.Type>.GetName(unit.unitData.type)
-			: EnumCache<UnitData.Type>.GetName(UnitData.Type.Warrior);
+
+		string unitTypeName = EnumCache<UnitData.Type>.GetName(UnitData.Type.Warrior);
+
+		if(unit != null && unit.UnitData != null)
+			unitTypeName = EnumCache<UnitData.Type>.GetName(unit.unitData.type);
 		if (currentUnitTypeUI != UnitData.Type.None)
 			unitTypeName = EnumCache<UnitData.Type>.GetName(currentUnitTypeUI);
 
@@ -183,20 +257,41 @@ public static class Visual
 
 		foreach (var visualPart in skinVisuals.visualParts)
 		{
-			UpdateVisualPart(visualPart, $"{visualPart.visualPart.name}_{unitTypeName}", style);
+			if(visualPart.visualPart != null)
+				UpdateVisualPart(visualPart, $"{visualPart.visualPart.name}_{unitTypeName}", style);
+		}
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.GetPrefab),
+		typeof(UnitData.Type), typeof(TribeType), typeof(SkinType)
+	)]
+	private static void PrefabManager_GetPrefab(ref Unit __result, UnitData.Type type, TribeType tribe, SkinType skin)
+	{
+		UnitPrefabInfo unitPrefabInfo = new(
+			EnumCache<UnitData.Type>.GetName(type),
+			EnumCache<TribeType>.GetName(TribeType.None),
+			EnumCache<SkinType>.GetName(SkinType.Default)
+		);
+		if(customPrefabs.ContainsKey(
+			unitPrefabInfo
+		))
+		{
+			__result = customPrefabs[unitPrefabInfo];
 		}
 	}
 
 	#endregion
 	#region Level
 
+	/// <summary>Updates the visual parts of a resource with custom sprites.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(SkinVisualsTransientData))]
-	private static void Resource_UpdateObject(Resource __instance, SkinVisualsTransientData transientSkinData)
+	[HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(MapRenderContext), typeof(SkinVisualsTransientData))]
+	private static void Resource_UpdateObject(Resource __instance, MapRenderContext ctx, SkinVisualsTransientData transientSkinData)
 	{
 		if (__instance.data != null)
 		{
-			string style = Util.GetStyle(GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(__instance.tile.data.climate), __instance.tile.data.Skin);
+			string style = Util.GetStyle(__instance.tile.data.climate, __instance.tile.data.Skin);
 			string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
 
 			foreach (SkinVisualsReference.VisualPart visualPart in __instance.GetSkinVisualsReference().visualParts)
@@ -206,9 +301,10 @@ public static class Visual
 		}
 	}
 
+	/// <summary>Updates a building with a custom sprite.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(Building), nameof(Building.UpdateObject), typeof(SkinVisualsTransientData))]
-	private static void Building_UpdateObject(Building __instance, SkinVisualsTransientData transientSkinData)
+	[HarmonyPatch(typeof(Building), nameof(Building.UpdateObject), typeof(MapRenderContext), typeof(SkinVisualsTransientData))]
+	private static void Building_UpdateObject(Building __instance, MapRenderContext ctx, SkinVisualsTransientData transientSkinData)
 	{
 		string style = Util.GetStyle(transientSkinData.foundingTribeSettings.tribe, transientSkinData.foundingTribeSettings.skin);
 		string name = EnumCache<ImprovementData.Type>.GetName(__instance.tile.data.improvement.type);
@@ -219,37 +315,28 @@ public static class Visual
 		}
 	}
 
+	/// <summary>Updates the terrain graphics with custom sprites.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))]
 	private static void TerrainRenderer_UpdateGraphics(TerrainRenderer __instance, Tile tile)
 	{
 		string terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain) ?? string.Empty;
 
-		TribeData.Type tribe = GameManager.GameState.GameLogicData.GetTribeTypeFromStyle(tile.data.climate);
+		TribeType tribe = tile.data.climate;
 		SkinType skinType = tile.data.Skin;
 
 		string flood = "";
-		if (tile.data.effects.Contains(TileData.EffectType.Flooded))
+		if (
+			tile.data.effects.Contains(TileData.EffectType.Flooded) ||
+			(tribe == TribeType.Aquarion && tile.data.terrain == Polytopia.Data.TerrainData.Type.Mountain)
+		) // TODO: Check all tribes with flooded abil instead of Aquarion only.
 		{
-			Il2CppSystem.Collections.Generic.List<CommandBase> newStack = new Il2CppSystem.Collections.Generic.List<CommandBase>();
-			foreach (CommandBase command in GameManager.GameState.CommandStack)
+			foreach (var effect in tile.data.effects)
 			{
-				newStack.Add(command);
-			}
-			newStack.Reverse();
-			foreach (CommandBase command in GameManager.GameState.CommandStack)
-			{
-				if (command.GetCommandType() == CommandType.Flood)
+				if(customFloodingSkins.ContainsKey(effect))
 				{
-					FloodCommand floodCommand = command.Cast<FloodCommand>();
-					if (floodCommand.Coordinates == tile.Coordinates)
-					{
-						if (GameManager.GameState.TryGetPlayer(floodCommand.PlayerId, out PlayerState playerState))
-						{
-							skinType = playerState.skinType;
-						}
-						break;
-					}
+					skinType = customFloodingSkins[effect];
+					break;
 				}
 			}
 			flood = "_flooded";
@@ -284,24 +371,35 @@ public static class Visual
 		}
 	}
 
+	/// <summary>Adds custom flood tile effect when tile is flooded for custom aqua skins.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(TileData), nameof(TileData.Flood))]
 	private static void TileData_Flood(TileData __instance, PlayerState playerState)
 	{
-		if (GameManager.Instance.isLevelLoaded)
+		if(customFloodingSkins.ContainsValue(playerState.skinType))
 		{
-			GameManager.Client.ActionManager.ExecuteCommand(new FloodCommand(playerState.Id, __instance.coordinates), out string error);
+			TileData.EffectType effectType = customFloodingSkins.FirstOrDefault(x => x.Value == playerState.skinType).Key;
+			__instance.AddEffect(effectType);	
 		}
 	}
 
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(FloodCommand), nameof(FloodCommand.IsValid))]
-	private static bool FloodCommand_IsValid(ref bool __result, FloodCommand __instance, GameState state, ref string validationError)
+	/// <summary>Removes custom flood effect loc from tile tip header.</summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(TileTipGenerator), nameof(TileTipGenerator.GetTileTipHeader))]
+	public static void GetTileTipHeader(ref string __result, TileData tileData, SkinType skin,
+											PlayerState playerState, GameState gameState, GameLogicData gameLogicData)
 	{
-		__result = true;
-		return false;
+		foreach(var effect in tileData.effects)
+		{
+			if(customFloodingSkins.ContainsKey(effect))
+			{
+				string localizedEffect = Localization.GetSkinned(skin, playerState.tribe, $"tile.effect.{effect.GetName()}");
+				__result = __result.Replace($", {localizedEffect}", string.Empty);
+			}
+		}
 	}
 
+	/// <summary>Forces an update of the mesh for a PolytopiaSpriteRenderer with a custom sprite.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PolytopiaSpriteRenderer), nameof(PolytopiaSpriteRenderer.ForceUpdateMesh))]
 	private static void PolytopiaSpriteRenderer_ForceUpdateMesh(PolytopiaSpriteRenderer __instance)
@@ -318,14 +416,15 @@ public static class Visual
 	#endregion
 	#region TribePreview
 
+	/// <summary>Provides custom data for the tribe preview.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(UIWorldPreviewData), nameof(UIWorldPreviewData.TryGetData))]
-	private static void UIWorldPreviewData_TryGetData(ref bool __result, UIWorldPreviewData __instance, Vector2Int position, TribeData.Type tribeType, ref UITileData uiTile)
+	private static void UIWorldPreviewData_TryGetData(ref bool __result, UIWorldPreviewData __instance, Vector2Int position, TribeType tribeType, ref UITileData uiTile)
 	{
 		PreviewTile[]? preview = null;
-		if (Registry.tribePreviews.ContainsKey(EnumCache<TribeData.Type>.GetName(tribeType).ToLower()))
+		if (Registry.tribePreviews.ContainsKey(EnumCache<TribeType>.GetName(tribeType).ToLower()))
 		{
-			preview = Registry.tribePreviews[EnumCache<TribeData.Type>.GetName(tribeType).ToLower()];
+			preview = Registry.tribePreviews[EnumCache<TribeType>.GetName(tribeType).ToLower()];
 		}
 		if (preview != null)
 		{
@@ -346,6 +445,7 @@ public static class Visual
 		}
 	}
 
+	/// <summary>Modifies the tribe preview for debugging purposes.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(UIWorldPreview), nameof(UIWorldPreview.SetPreview), new Type[] { })]
 	private static void UIWorldPreview_SetPreview(UIWorldPreview __instance)
@@ -370,9 +470,10 @@ public static class Visual
 	#endregion
 	#region UI
 
+	/// <summary>Provides custom sprites for improvements in the UI.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteAtlasManager))]
-	private static void UIUtils_GetImprovementSprite(ref Sprite __result, ImprovementData.Type improvement, TribeData.Type tribe, SkinType skin, SpriteAtlasManager atlasManager)
+	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeType), typeof(SkinType), typeof(SpriteAtlasManager))]
+	private static void UIUtils_GetImprovementSprite(ref Sprite __result, ImprovementData.Type improvement, TribeType tribe, SkinType skin, SpriteAtlasManager atlasManager)
 	{
 		Sprite? sprite = Registry.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvement), Util.GetStyle(tribe, skin));
 		if (sprite != null)
@@ -381,6 +482,7 @@ public static class Visual
 		}
 	}
 
+	/// <summary>Provides custom sprites for improvements in the UI.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(SkinVisualsTransientData), typeof(ImprovementData.Type), typeof(SpriteAtlasManager))]
 	private static void UIUtils_GetImprovementSprite_2(ref Sprite __result, SkinVisualsTransientData data, ImprovementData.Type improvement, SpriteAtlasManager atlasManager)
@@ -388,6 +490,7 @@ public static class Visual
 		UIUtils_GetImprovementSprite(ref __result, improvement, data.foundingTribeSettings.tribe, data.foundingTribeSettings.skin, atlasManager);
 	}
 
+	/// <summary>Provides custom sprites for resources in the UI.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetResourceSprite))]
 	private static void UIUtils_GetResourceSprite(ref Sprite __result, SkinVisualsTransientData data, ResourceData.Type resource, SpriteAtlasManager atlasManager)
@@ -402,9 +505,10 @@ public static class Visual
 	#endregion
 	#region Houses
 
+	/// <summary>Provides custom sprites for houses in the city view.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(CityRenderer), nameof(CityRenderer.GetHouse))]
-	private static void CityRenderer_GetHouse(ref PolytopiaSpriteRenderer __result, CityRenderer __instance, TribeData.Type tribe, int type, SkinType skinType)
+	private static void CityRenderer_GetHouse(ref PolytopiaSpriteRenderer __result, CityRenderer __instance, TribeType tribe, int type, SkinType skinType)
 	{
 		PolytopiaSpriteRenderer polytopiaSpriteRenderer = __result;
 
@@ -420,9 +524,10 @@ public static class Visual
 		}
 	}
 
+	/// <summary>Provides custom sprites for houses in the UI city renderer.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(UICityRenderer), nameof(UICityRenderer.GetResource))]
-	private static void UICityRenderer_GetResource(ref GameObject __result, string baseName, Polytopia.Data.TribeData.Type tribe, Polytopia.Data.SkinType skin)
+	private static void UICityRenderer_GetResource(ref GameObject __result, string baseName, TribeType tribe, SkinType skin)
 	{
 		Image imageComponent = __result.GetComponent<Image>();
 		string[] tokens = baseName.Split('_');
@@ -450,6 +555,7 @@ public static class Visual
 	#endregion
 	#region Icons
 
+	/// <summary>Provides custom sprites for UI icons.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(UIIconData), nameof(UIIconData.GetImage))]
 	private static void UIIconData_GetImage(ref Image __result, string id)
@@ -471,18 +577,19 @@ public static class Visual
 		}
 	}
 
+	/// <summary>Provides custom sprites for face icons in the game info row.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(GameInfoRow), nameof(GameInfoRow.LoadFaceIcon), typeof(TribeData.Type), typeof(SkinType))]
-	private static void GameInfoRow_LoadFaceIcon(GameInfoRow __instance, TribeData.Type type, SkinType skinType)
+	[HarmonyPatch(typeof(GameInfoRow), nameof(GameInfoRow.LoadFaceIcon), typeof(TribeType), typeof(SkinType))]
+	private static void GameInfoRow_LoadFaceIcon(GameInfoRow __instance, TribeType type, SkinType skinType)
 	{
-		string style = EnumCache<TribeData.Type>.GetName(type);
+		string style = EnumCache<TribeType>.GetName(type);
 
 		if (style == "None")
 		{
 			for (int i = 0; i < 20; i++)
 			{
 				type += byte.MaxValue + 1;
-				style = EnumCache<TribeData.Type>.GetName(type);
+				style = EnumCache<TribeType>.GetName(type);
 
 				if (style != "None")
 				{
@@ -504,9 +611,10 @@ public static class Visual
 		}
 	}
 
+	/// <summary>Provides custom sprites for player info icons.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(PlayerInfoIcon), nameof(PlayerInfoIcon.SetData), typeof(TribeData.Type), typeof(SkinType), typeof(SpriteData.SpecialFaceIcon), typeof(Color), typeof(DiplomacyRelationState), typeof(PlayerInfoIcon.Mood))]
-	private static void PlayerInfoIcon_SetData(PlayerInfoIcon __instance, TribeData.Type tribe, SkinType skin, SpriteData.SpecialFaceIcon face, Color color, DiplomacyRelationState diplomacyState, PlayerInfoIcon.Mood mood)
+	[HarmonyPatch(typeof(PlayerInfoIcon), nameof(PlayerInfoIcon.SetData), typeof(TribeType), typeof(SkinType), typeof(SpriteData.SpecialFaceIcon), typeof(Color), typeof(DiplomacyRelationState), typeof(PlayerInfoIcon.Mood))]
+	private static void PlayerInfoIcon_SetData(PlayerInfoIcon __instance, TribeType tribe, SkinType skin, SpriteData.SpecialFaceIcon face, Color color, DiplomacyRelationState diplomacyState, PlayerInfoIcon.Mood mood)
 	{
 		if (face == SpriteData.SpecialFaceIcon.tribe)
 		{
@@ -523,6 +631,7 @@ public static class Visual
 	#endregion
 	#region Popups
 
+	/// <summary>Updates the width of a basic popup if a custom width is set.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.Update))]
 	private static void BasicPopup_Update(BasicPopup __instance)
@@ -532,6 +641,7 @@ public static class Visual
 			__instance.rectTransform.SetWidth(basicPopupWidths[id]);
 	}
 
+	/// <summary>Sets the attacker's tribe before a unit attacks.</summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(Unit), nameof(Unit.Attack))]
 	private static bool Unit_Attack(Unit __instance, WorldCoordinates target, bool moveToTarget, Il2CppSystem.Action onComplete)
@@ -543,21 +653,23 @@ public static class Visual
 		return true;
 	}
 
+	/// <summary>Sets the skin of a weapon's graphics, using custom sprites if available.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.SetSkin))]
 	private static void WeaponGFX_SetSkin(WeaponGFX __instance, SkinType skinType)
 	{
-		if (attackerTribe != TribeData.Type.None)
+		if (attackerTribe != TribeType.None)
 		{
 			Sprite? sprite = Registry.GetSprite(__instance.defaultSprite.name, Util.GetStyle(attackerTribe, skinType));
 			if (sprite != null)
 			{
 				__instance.spriteRenderer.sprite = sprite;
 			}
-			attackerTribe = TribeData.Type.None;
+			attackerTribe = TribeType.None;
 		}
 	}
 
+	/// <summary>Removes a popup's custom width when it is hidden.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
 	private static void PopupBase_Hide(PopupBase __instance)
@@ -565,6 +677,35 @@ public static class Visual
 		basicPopupWidths.Remove(__instance.GetInstanceID());
 	}
 
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnWeeklyChallengedButtonClick))]
+	private static bool StartScreen_OnWeeklyChallengedButtonClick(StartScreen __instance)
+	{
+		if(seenWarningWCPopup)
+			return true;
+		BasicPopup popup = PopupManager.GetBasicPopup();
+		popup.Header = Localization.Get("polymod.hub");
+		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", new Il2CppSystem.Object[] { }) });
+		List<PopupBase.PopupButtonData> popupButtons = new()
+		{
+			new("buttons.back"),
+			new(
+				"polymod.wc.proceed",
+				PopupBase.PopupButtonData.States.None,
+				callback: (UIButtonBase.ButtonAction)((_, _) =>
+				{
+					seenWarningWCPopup = true;
+					__instance.OnWeeklyChallengedButtonClick();
+				}),
+				customColorStates: ColorConstants.redButtonColorStates
+			)
+		};
+		popup.buttonData = popupButtons.ToArray();
+		popup.Show();
+		return false;
+	}
+
+	/// <summary>Shows a basic popup with a custom width.</summary>
 	public static void ShowSetWidth(this BasicPopup self, int width)
 	{
 		basicPopupWidths.Add(self.GetInstanceID(), width);
@@ -573,10 +714,15 @@ public static class Visual
 
 	#endregion
 
-	private static void UpdateVisualPart(SkinVisualsReference.VisualPart visualPart, string name, string style)
+	/// <summary>Updates a visual part with a custom sprite.</summary>
+	private static void UpdateVisualPart(SkinVisualsReference.VisualPart? visualPart, string name, string style)
 	{
+		if(visualPart == null || visualPart.visualPart == null)
+			return;
+
 		Sprite? sprite = Registry.GetSprite(name, style) ?? Registry.GetSprite(visualPart.visualPart.name, style);
-		if (sprite != null)
+
+		if (sprite != null && visualPart.renderer != null)
 		{
 			if (visualPart.renderer.spriteRenderer != null)
 				visualPart.renderer.spriteRenderer.sprite = sprite;
@@ -585,7 +731,8 @@ public static class Visual
 		}
 
 		Sprite? outlineSprite = Registry.GetSprite($"{name}_outline", style) ?? Registry.GetSprite($"{visualPart.visualPart.name}_outline", style);
-		if (outlineSprite != null)
+
+		if (outlineSprite != null && visualPart.outlineRenderer != null)
 		{
 			if (visualPart.outlineRenderer.spriteRenderer != null)
 				visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
@@ -594,6 +741,11 @@ public static class Visual
 		}
 	}
 
+	/// <summary>Builds a sprite from raw byte data.</summary>
+	/// <param name="data">The raw byte data of the image.</param>
+	/// <param name="pivot">The pivot point of the sprite.</param>
+	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
+	/// <returns>The created sprite.</returns>
 	public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
 	{
 		Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
@@ -609,6 +761,11 @@ public static class Visual
 		return BuildSpriteWithTexture(texture, pivot, pixelsPerUnit);
 	}
 
+	/// <summary>Builds a sprite from a texture.</summary>
+	/// <param name="texture">The texture to create the sprite from.</param>
+	/// <param name="pivot">The pivot point of the sprite.</param>
+	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
+	/// <returns>The created sprite.</returns>
 	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f)
 	{
 		return Sprite.Create(
@@ -619,6 +776,7 @@ public static class Visual
 		);
 	}
 
+	/// <summary>Initializes the Visual manager by patching the necessary methods.</summary>
 	internal static void Init()
 	{
 		Harmony.CreateAndPatchAll(typeof(Visual));

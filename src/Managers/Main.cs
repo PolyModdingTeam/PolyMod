@@ -1,110 +1,91 @@
 using BepInEx.Unity.IL2CPP.Logging;
 using HarmonyLib;
+using Il2CppSystem.Linq;
 using Newtonsoft.Json.Linq;
 using Polytopia.Data;
 using PolytopiaBackendBase.Game;
 using System.Diagnostics;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod.Managers;
 
+/// <summary>
+/// The main manager for PolyMod, responsible for initializing the mod and patching game logic.
+/// </summary>
 public static class Main
 {
-	internal const int MAX_TECH_TIER = 100;
-	internal static readonly Stopwatch stopwatch = new();
-	internal static bool fullyInitialized;
 	internal static bool dependencyCycle;
+
+	/// <summary>
+	/// The maximum tier for technology, used to extend the tech tree.
+	/// </summary>
+	internal const int MAX_TECH_TIER = 100;
+
+	/// <summary>
+	/// A stopwatch to measure the time taken to load mods.
+	/// </summary>
+	internal static readonly Stopwatch stopwatch = new();
+
+	/// <summary>
+	/// Whether the mod has been fully initialized.
+	/// </summary>
+	internal static bool fullyInitialized;
+	
+	/// <summary>
+	/// A dictionary mapping unit IDs to the IDs of the units they embark into.
+	/// </summary>
 	internal static Dictionary<string, string> embarkNames = new();
+
+	/// <summary>
+	/// A dictionary mapping unit types to the types of the units they embark into.
+	/// </summary>
 	internal static Dictionary<UnitData.Type, UnitData.Type> embarkOverrides = new();
+
+	/// <summary>
+	/// Whether an embark action is currently being executed.
+	/// </summary>
 	internal static bool currentlyEmbarking = false;
+
+	/// <summary>
+	/// A dictionary mapping improvement IDs to the IDs of the resources they attract.
+	/// </summary>
 	internal static Dictionary<string, string> attractsResourceNames = new();
+
+	/// <summary>
+	/// A dictionary mapping improvement IDs to the IDs of the terrain types they attract resources on.
+	/// </summary>
 	internal static Dictionary<string, string> attractsTerrainNames = new();
+
+	/// <summary>
+	/// A dictionary mapping improvement types to the types of the resources they attract.
+	/// </summary>
 	internal static Dictionary<ImprovementData.Type, ResourceData.Type> attractsResourceOverrides = new();
+
+	/// <summary>
+	/// A dictionary mapping improvement types to the types of the terrain they attract resources on.
+	/// </summary>
 	internal static Dictionary<ImprovementData.Type, Polytopia.Data.TerrainData.Type> attractsTerrainOverrides = new();
 
+	/// <summary>
+	/// Patches the game logic data parsing to load PolyMod content.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(GameLogicData), nameof(GameLogicData.AddGameLogicPlaceholders))]
-	private static void GameLogicData_Parse(GameLogicData __instance, JObject rootObject)
+	private static void GameLogicData_AddGameLogicPlaceholders(GameLogicData __instance, ref JObject rootObject)
 	{
 		if (!fullyInitialized)
 		{
-			Load(rootObject);
-			foreach (System.Collections.Generic.KeyValuePair<int, string> item in Registry.prefabNames)
-			{
-				UnitData.Type unitPrefabType = UnitData.Type.Scout;
-				string prefabId = item.Value;
-				if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
-				{
-					unitPrefabType = parsedType;
-					PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
-				}
-				else
-				{
-					KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(kv => kv.Key.name == prefabId);
-					if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
-					{
-						PrefabManager.units.TryAdd(item.Key, prefabInfo.Value);
-					}
-					else
-					{
-						PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
-					}
-				}
-			}
-			foreach (Visual.SkinInfo skin in Registry.skinInfo)
-			{
-				if (skin.skinData != null)
-					__instance.skinData[(SkinType)skin.idx] = skin.skinData;
-			}
-			foreach (KeyValuePair<string, string> entry in embarkNames)
-			{
-				try
-				{
-					UnitData.Type unit = EnumCache<UnitData.Type>.GetType(entry.Key);
-					UnitData.Type newUnit = EnumCache<UnitData.Type>.GetType(entry.Value);
-					embarkOverrides[unit] = newUnit;
-					Plugin.logger.LogInfo($"Embark unit type for {entry.Key} is now {entry.Value}");
-				}
-				catch
-				{
-					Plugin.logger.LogError($"Embark unit type for {entry.Key} is not valid: {entry.Value}");
-				}
-			}
-			foreach (KeyValuePair<string, string> entry in attractsResourceNames)
-			{
-				try
-				{
-					ImprovementData.Type improvement = EnumCache<ImprovementData.Type>.GetType(entry.Key);
-					ResourceData.Type resource = EnumCache<ResourceData.Type>.GetType(entry.Value);
-					attractsResourceOverrides[improvement] = resource;
-					Plugin.logger.LogInfo($"Improvement {entry.Key} now attracts {entry.Value}");
-				}
-				catch
-				{
-					Plugin.logger.LogError($"Improvement {entry.Key} resource type is not valid: {entry.Value}");
-				}
-			}
-			foreach (KeyValuePair<string, string> entry in attractsTerrainNames)
-			{
-				try
-				{
-					ImprovementData.Type improvement = EnumCache<ImprovementData.Type>.GetType(entry.Key);
-					Polytopia.Data.TerrainData.Type terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetType(entry.Value);
-					attractsTerrainOverrides[improvement] = terrain;
-					Plugin.logger.LogInfo($"Improvement {entry.Key} now attracts on {entry.Value}");
-				}
-				catch
-				{
-					Plugin.logger.LogError($"Improvement {entry.Key} terrain type is not valid: {entry.Value}");
-				}
-			}
+			Load(__instance, rootObject);
 			fullyInitialized = true;
 		}
 	}
 
+	/// <summary>
+	/// Patches the purchase manager to unlock custom skins.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlocked))]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlockedInternal))]
@@ -114,23 +95,43 @@ public static class Main
 		return !__result;
 	}
 
+	/// <summary>
+	/// Patches the purchase manager to unlock custom tribes.
+	/// </summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsTribeUnlocked))]
-	private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeData.Type type)
+	private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeType type)
 	{
 		__result = (int)type >= Plugin.AUTOIDX_STARTS_FROM || __result;
 	}
 
+	/// <summary>
+	/// Patches the steam purchase manager to unlock custom content.
+	/// </summary>
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(SteamPlatformPurchaseManager), nameof(SteamPlatformPurchaseManager.IsProductUnlocked))]
+	private static bool SteamPlatformPurchaseManager_IsProductUnlocked(ref bool __result, IAPProduct iapProduct)
+	{
+		__result = iapProduct == null;
+		return iapProduct != null;
+	}
+
+	/// <summary>
+	/// Patches the purchase manager to add custom tribes to the list of unlocked tribes.
+	/// </summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.GetUnlockedTribes))]
 	private static void PurchaseManager_GetUnlockedTribes(
-		ref Il2CppSystem.Collections.Generic.List<TribeData.Type> __result,
+		ref Il2CppSystem.Collections.Generic.List<TribeType> __result,
 		bool forceUpdate = false
 	)
 	{
 		foreach (var tribe in Registry.customTribes) __result.Add(tribe);
 	}
 
+	/// <summary>
+	/// Patches the Unity log callback to filter out spammy messages.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(IL2CPPUnityLogSource), nameof(IL2CPPUnityLogSource.UnityLogCallback))]
 	private static bool IL2CPPUnityLogSource_UnityLogCallback(string logLine, string exception, LogType type)
@@ -143,6 +144,9 @@ public static class Main
 		return true;
 	}
 
+	/// <summary>
+	/// Patches the game mode screen to add custom game modes.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(GameModeScreen), nameof(GameModeScreen.Init))]
 	private static void GameModeScreen_Init(GameModeScreen __instance)
@@ -153,7 +157,12 @@ public static class Main
 			var item = Loader.gamemodes[i];
 			var button = GameObject.Instantiate(__instance.buttons[2]);
 			list.Add(button);
-			Loader.gamemodes[i] = new Loader.GameModeButtonsInformation(item.gameModeIndex, item.action, __instance.buttons.Length, item.sprite);
+			Sprite? sprite = item.sprite;
+			if (item.sprite == null && item.spriteName != null)
+			{
+				sprite = Registry.GetSprite(item.spriteName);
+			}
+			Loader.gamemodes[i] = new Loader.GameModeButtonsInformation(item.gameModeIndex, item.action, __instance.buttons.Length, sprite, item.spriteName);
 		}
 
 		var newArray = list.ToArray();
@@ -200,10 +209,15 @@ public static class Main
 		}
 	}
 
+	/// <summary>
+	/// Patches the tech view to correctly display the tech tree with custom technologies.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(TechView), nameof(TechView.CreateNode))]
 	public static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle)
 	{
+		// This patch is a reimplementation of the original CreateNode method to fix layout issues with custom techs.
+		// It recalculates the angles for each node to ensure they are displayed correctly.
 		GameLogicData gameLogicData = GameManager.GameState.GameLogicData;
 		TribeData tribeData = gameLogicData.GetTribeData(GameManager.LocalPlayer.tribe);
 		float baseAngle = 360 / gameLogicData.GetOverride(gameLogicData.GetTechData(TechData.Type.Basic), tribeData).techUnlocks.Count;
@@ -231,6 +245,9 @@ public static class Main
 		return false;
 	}
 
+	/// <summary>
+	/// Patches the embark action to set a flag indicating that an embark is in progress.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(EmbarkAction), nameof(EmbarkAction.Execute))]
 	private static bool EmbarkAction_Execute_Prefix(EmbarkAction __instance, GameState gameState)
@@ -239,18 +256,18 @@ public static class Main
 		return true;
 	}
 
+	/// <summary>
+	/// Patches the unit training method to handle custom embark units.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(ActionUtils), nameof(ActionUtils.TrainUnit))]
 	private static bool ActionUtils_TrainUnit(ref UnitState __result, GameState gameState, PlayerState playerState, TileData tile, ref UnitData unitData)
 	{
-		if (tile == null)
+		if (tile == null || tile.unit == null)
 		{
 			return true;
 		}
-		if (tile.unit == null)
-		{
-			return true;
-		}
+
 		if (currentlyEmbarking)
 		{
 			if (embarkOverrides.TryGetValue(tile.unit.type, out UnitData.Type newType))
@@ -262,10 +279,14 @@ public static class Main
 		return true;
 	}
 
+	/// <summary>
+	/// Patches the start turn action to handle the 'Attract' ability for custom improvements.
+	/// </summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(StartTurnAction), nameof(StartTurnAction.Execute))]
 	private static void StartTurnAction_Execute(StartTurnAction __instance, GameState state)
 	{
+		// Clear any existing CreateResource actions to prevent duplicates.
 		for (int i = state.ActionStack.Count - 1; i >= 0; i--)
 		{
 			if (state.ActionStack[i].GetActionType() == ActionType.CreateResource)
@@ -273,6 +294,8 @@ public static class Main
 				state.ActionStack.RemoveAt(i);
 			}
 		}
+
+		// Iterate through all tiles owned by the current player.
 		for (int i = 0; i < state.Map.Tiles.Length; i++)
 		{
 			TileData tileData = state.Map.Tiles[i];
@@ -282,6 +305,7 @@ public static class Main
 				state.GameLogicData.TryGetData(tileData.improvement.type, out improvementData);
 				if (improvementData != null)
 				{
+					// If the improvement has the 'Attract' ability and is ready to spawn a resource.
 					if (improvementData.HasAbility(ImprovementAbility.Type.Attract) && tileData.improvement.GetAge(state) % improvementData.growthRate == 0)
 					{
 						ResourceData.Type resourceType = ResourceData.Type.Game;
@@ -294,6 +318,8 @@ public static class Main
 						{
 							targetTerrain = newTerrain;
 						}
+
+						// Find a valid tile to spawn the resource on.
 						foreach (TileData tileData2 in state.Map.GetArea(tileData.coordinates, 1, true, false))
 						{
 							if (tileData2.owner == __instance.PlayerId && tileData2.improvement == null && tileData2.resource == null && tileData2.terrain == targetTerrain)
@@ -308,15 +334,21 @@ public static class Main
 		}
 	}
 
+	/// <summary>
+	/// Patches the unit creation method to handle custom unit prefabs.
+	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(Unit), nameof(Unit.CreateUnit))]
-	private static bool Unit_CreateUnit(Unit __instance, UnitData unitData, TribeData.Type tribe, SkinType unitSkin)
+	private static bool Unit_CreateUnit(Unit __instance, UnitData unitData, TribeType tribe, SkinType unitSkin)
 	{
 		Unit unit = PrefabManager.GetPrefab(unitData.type, tribe, unitSkin);
 		if (unit == null) Console.Write("THIS FUCKING SHIT IS NULL WHAT THE FUCK");
 		return true;
 	}
 
+	/// <summary>
+	/// Initializes the Main manager.
+	/// </summary>
 	internal static void Init()
 	{
 		stopwatch.Start();
@@ -330,38 +362,18 @@ public static class Main
 			Array.Empty<Mod.Dependency>()
 		);
 		Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
-		Loader.LoadMods(Registry.mods);
-		dependencyCycle = !Loader.SortMods(Registry.mods);
-		if (dependencyCycle) return;
-
-		StringBuilder checksumString = new();
-		foreach (var (id, mod) in Registry.mods)
-		{
-			if (mod.status != Mod.Status.Success) continue;
-			foreach (var file in mod.files)
-			{
-				checksumString.Append(JsonSerializer.Serialize(file));
-				if (Path.GetExtension(file.name) == ".dll")
-				{
-					Loader.LoadAssemblyFile(mod, file);
-				}
-				if (Path.GetFileName(file.name) == "sprites.json")
-				{
-					Loader.LoadSpriteInfoFile(mod, file);
-				}
-			}
-			if (!mod.client && id != "polytopia")
-			{
-				checksumString.Append(id);
-				checksumString.Append(mod.version.ToString());
-			}
-		}
-		Compatibility.HashSignatures(checksumString);
-
+		Loader.RegisterMods(Registry.mods);
+		Loader.LoadMods(Registry.mods, out var cycle);
+		dependencyCycle = cycle;
 		stopwatch.Stop();
 	}
 
-	internal static void Load(JObject gameLogicdata)
+	/// <summary>
+	/// Loads all mod content.
+	/// </summary>
+	/// <param name="gameLogicdata">The game logic data to patch.</param>
+	/// <param name="json">The JSON object representing the game logic data.</param>
+	internal static void Load(GameLogicData gameLogicData, JObject json)
 	{
 		stopwatch.Start();
 		Loc.BuildAndLoadLocalization(
@@ -376,21 +388,33 @@ public static class Main
 			if (mod.status != Mod.Status.Success) continue;
 			foreach (var file in mod.files)
 			{
-				if (Path.GetFileName(file.name) == "localization.json")
+				if (mod.status != Mod.Status.Success) break;
+				Match localizationMatch = Regex.Match(Path.GetFileName(file.name), @"^localization(_.*)?\.json$");
+				if (localizationMatch.Success)
 				{
 					Loader.LoadLocalizationFile(mod, file);
 					continue;
 				}
-				if (Regex.IsMatch(Path.GetFileName(file.name), @"^patch(_.*)?\.json$"))
+				Match patchMatch = Regex.Match(Path.GetFileName(file.name), @"^patch(_.*)?\.json$");
+				if (patchMatch.Success)
 				{
+					var patchText = new StreamReader(new MemoryStream(file.bytes)).ReadToEnd();
+					var template = new Api.GldConfigTemplate(patchText, mod.id);
+					var text = template.Render();
+					if (text is null)
+					{
+						mod.status = Mod.Status.Error;
+						continue;
+					}
 					Loader.LoadGameLogicDataPatch(
 						mod,
-						gameLogicdata,
-						JObject.Parse(new StreamReader(new MemoryStream(file.bytes)).ReadToEnd())
+						json,
+						JObject.Parse(text)
 					);
 					continue;
 				}
-				if (Regex.IsMatch(Path.GetFileName(file.name), @"^prefab(_.*)?\.json$"))
+				Match prefabMatch = Regex.Match(Path.GetFileName(file.name), @"^prefab(?:_(.*))?\.json$");
+				if (prefabMatch.Success)
 				{
 					Loader.LoadPrefabInfoFile(
 						mod,
@@ -418,6 +442,7 @@ public static class Main
 		{
 			TechItem.techTierFirebaseId.Add($"tech_research_{i}");
 		}
+		Loader.ProcessGameLogicData(gameLogicData, json);
 		stopwatch.Stop();
 		Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
 	}
