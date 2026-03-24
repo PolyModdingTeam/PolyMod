@@ -313,10 +313,11 @@ public static class Multiplayer
             PlayerData player = settings.GetPlayer(index);
             if (player.type != PlayerDataType.Bot)
             {
-                Il2CppSystem.Nullable<Il2CppSystem.Guid> nullableGuid = new()
+                var nullableGuid = new Il2CppSystem.Nullable<Il2CppSystem.Guid>(player.profile.id);
+                if (!nullableGuid.HasValue)
                 {
-                    value = player.profile.id
-                };
+                    throw new Exception("GUID was not set properly!");
+                }
                 PlayerState playerState = new PlayerState()
                 {
                     Id = (byte)(index + 1),
