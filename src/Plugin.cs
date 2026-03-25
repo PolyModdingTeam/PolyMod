@@ -25,7 +25,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		bool autoUpdate = true,
 		bool updatePrerelease = false,
 		bool allowUnsafeIndexes = false,
-		string backendUrl = Multiplayer.DEFAULT_SERVER_URL,
+		string backendUrl = Multiplayer.Client.DEFAULT_SERVER_URL,
 		string overrideDeviceId = ""
 	);
 
@@ -134,7 +134,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		Hub.Init();
 
 		Main.Init();
-		Multiplayer.Init();
+		Multiplayer.Client.Init();
 	}
 
 	/// <summary>

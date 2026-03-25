@@ -1,5 +1,5 @@
 
-namespace PolyMod.ViewModels;
+namespace PolyMod.Multiplayer.ViewModels;
 public class SetupGameDataViewModel : IMonoServerResponseData
 {
     public string lobbyId { get; set; }
