@@ -2,13 +2,26 @@
 Hi! This page will teach you the very basics of modding Polytopia.
 
 # How do I make a mod?
-Polytopia mods are essentially a folder/`.zip` file/`.polymod` file that contains a `manifest.json` file and other components of the mod. Mods are stored in the `Mods` folder of the Polytopia root folder.
+Polytopia mods can be 3 things: folders, `.zip` files and `.polymod` files. 
 
-In order to make a new mod, you have to create a new folder inside the `Mods` folder, name it whatever, and then put a `manifest.json` file in it (more on this later). You can also zip this folder to turn it into a distributable mod, and you can rename the extention to .polymod so you can properly distribute it on the [polymod.dev](https://polymod.dev/) website.
+Mods also have a `manifest.json` file, aswell as other components. Mods are stored in the `Mods` folder of the Polytopia root folder (Polytopia root folder is the folder that holds all the information about the game). 
+
+> [!TIP]
+> You can access the root folder in the following ways:
+> 
+> **On steam:**
+> 
+> Go to Library --> Polytopia, click on the little gear icon on the right side of the screen, then go Manage --> Browse local files.
+>
+> **On epic**
+>
+> [I HAVE NO CLUE LMAO TO FIX!!!!!!!!!!!!]
+
+In order to make a new mod, you have to create a new folder inside the `Mods` folder, name it, and then put a `manifest.json` file in it (more on this later). You can also zip this folder and rename the extention to `.polymod` so you can properly distribute it on the [polymod.dev](https://polymod.dev/) website.
 
 How your file hierarchy should look like:
 ```
-The Battle of Polytopia
+The Battle of Polytopia      (this is your "polytopia root" folder)
 --> Mods
     --> ExampleMod1
         --> manifest.json
@@ -17,7 +30,7 @@ The Battle of Polytopia
 ```
 
 # Manifest
-The `manifest.json` file contains basic information about your mod, like its id, name, description, authors, dependencies, so on. This file is a json file, and looks something like this:
+The `manifest.json` file contains the metadata (basic information) of your mod, things like its id, name, authors, dependencies, so on. This file is a json file, and looks something like this:
 ```json
 {
     "id": "docs_mod",
@@ -41,13 +54,13 @@ The `manifest.json` file contains basic information about your mod, like its id,
 }
 ```
 > [!TIP]
-> If you aren't familiar with the JSON format, try reading a bit about it first.
+> If you aren't familiar with the JSON format, try [reading](https://json.org/) a bit about it first.
 
 > [!NOTE]
 We advise you use some code editor app like Visual Studio Code or Notepad++ (or anything, just be comfortable writing JSON).
 ## Components of a manifest file:
 ### `id`:
-The id of the mod, it's used by other mods to add your mod as a dependency. You can only use lowercase letters. [TO FIX IDFK LMAO]
+The id of the mod, it's used by other mods to add your mod as a dependency. You can only use lowercase letters and underscores.
 ### `name`:
 The user friendly name of the mod. This is what regular users are going to see. You can put almost anything here.
 ### `version`:
@@ -62,6 +75,8 @@ You can tell PolyMod if your mod depends on any other mod using this field. If y
 > There exists a "pseudo-mod" with the id of `polytopia`. In this example, we showcase how you can use that in order to set a minimum game version for your mod so it doesn't cause unexpected behavior on older versions! You don't need this for your mod to function, though.
 ### `description`:
 Here you can tell users what your mod is about! When publishing, try to be descriptive cause this is whats going to show up the mod catalogue!
+> [!TIP]
+> It's generally a good idea to tell your users what dependencies your mod needs.
 
 # Patch
 
