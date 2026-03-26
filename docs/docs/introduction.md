@@ -17,7 +17,7 @@ Mods also have a `manifest.json` file, aswell as other components. Mods are stor
 >
 > [I HAVE NO CLUE LMAO TO FIX!!!!!!!!!!!!]
 
-In order to make a new mod, you have to create a new folder inside the `Mods` folder, name it, and then put a `manifest.json` file in it (more on this later). You can also zip this folder and rename the extention to `.polymod` so you can properly distribute it on the [polymod.dev](https://polymod.dev/) website.
+In order to make a new mod, you have to create a new folder inside the `Mods` folder, name it, and then put a `manifest.json` file in it (more on this later). You can also zip this folder and rename the extension to `.polymod` so you can properly distribute it on the [polymod.dev](https://polymod.dev/) website.
 
 How your file hierarchy should look like:
 ```
