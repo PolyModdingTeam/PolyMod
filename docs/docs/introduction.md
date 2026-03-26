@@ -74,7 +74,7 @@ You can tell PolyMod if your mod depends on any other mod using this field. If y
 > [!TIP]
 > There exists a "pseudo-mod" with the id of `polytopia`. In this example, we showcase how you can use that in order to set a minimum game version for your mod so it doesn't cause unexpected behavior on older versions! You don't need this for your mod to function, though.
 ### `description`:
-Here you can tell users what your mod is about! When publishing, try to be descriptive cause this is whats going to show up the mod catalogue!
+Here you can tell users what your mod is about! When publishing, try to be descriptive because this is what's going to show up in the mod catalogue!
 > [!TIP]
 > It's generally a good idea to tell your users what dependencies your mod needs.
 
