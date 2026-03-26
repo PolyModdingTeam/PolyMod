@@ -43,7 +43,7 @@ The `manifest.json` file contains the metadata (basic information) of your mod, 
     "dependencies": [
         {
             "id": "polytopia",
-            "min": "2.0.0",
+            "min": "2.0.0"
         },
         {
             "id": "another_cool_mod",
@@ -57,7 +57,7 @@ The `manifest.json` file contains the metadata (basic information) of your mod, 
 > If you aren't familiar with the JSON format, try [reading](https://json.org/) a bit about it first.
 
 > [!NOTE]
-We advise you use some code editor app like Visual Studio Code or Notepad++ (or anything, just be comfortable writing JSON).
+> We advise you use some code editor app like Visual Studio Code or Notepad++ (or anything, just be comfortable writing JSON).
 ## Components of a manifest file:
 ### `id`:
 The id of the mod, it's used by other mods to add your mod as a dependency. You can only use lowercase letters and underscores.
