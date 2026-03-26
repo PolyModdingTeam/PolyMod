@@ -62,7 +62,7 @@ The `manifest.json` file contains the metadata (basic information) of your mod, 
 ### `id`:
 The id of the mod, it's used by other mods to add your mod as a dependency. You can only use lowercase letters and underscores.
 ### `name`:
-The user friendly name of the mod. This is what regular users are going to see. You can put almost anything here.
+The user-friendly name of the mod. This is what regular users are going to see. You can put almost anything here.
 ### `version`:
 Tells the user, aswell as the [polymod.dev](https://polymod.dev/) website what version of your mod this is. It only accepts numbers, and you format is so: `x.y.z.w` (`z` and `w` are optional, though `x` and `y` are not).
 > [!NOTE]
