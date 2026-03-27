@@ -27,7 +27,7 @@ public static class Client
         Harmony.CreateAndPatchAll(typeof(Client));
         BuildConfig buildConfig = BuildConfigHelper.GetSelectedBuildConfig();
         buildConfig.buildServerURL = BuildServerURL.Custom;
-        buildConfig.customServerURL = LOCAL_SERVER_URL;
+        buildConfig.customServerURL = Plugin.config.backendUrl;
 
         Plugin.logger.LogInfo($"Multiplayer> Server URL set to: {Plugin.config.backendUrl}");
         Plugin.logger.LogInfo("Multiplayer> GLD patches applied");
