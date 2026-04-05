@@ -134,6 +134,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		Hub.Init();
 
 		Main.Init();
+		Multiplayer.SerializationUtils.Init();
 		Multiplayer.Client.Init();
 	}
 
