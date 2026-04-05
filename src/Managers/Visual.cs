@@ -413,6 +413,19 @@ public static class Visual
 		}
 	}
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Tile), nameof(Tile.Render), typeof(MapRenderContext), typeof(SkinVisualsTransientData))]
+    private static void Tile_Render(Tile __instance, MapRenderContext ctx, SkinVisualsTransientData transientSkinningData)
+    {
+        Sprite? sprite = Registry.GetSprite("hidden");
+		if(sprite != null)
+		{
+			__instance.fogOfWarRenderer.atlasName = "";
+			__instance.fogOfWarRenderer.sprite = sprite;
+			__instance.fogOfWarRenderer.spriteRenderer.sprite = sprite;
+		}
+    }
+
 	#endregion
 	#region TribePreview
 
