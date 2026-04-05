@@ -61,7 +61,7 @@ public static class Loader
 			{
 				if (duringEnumCacheCreation)
 				{
-					Registry.customTribes.Add((TribeType)Registry.autoidx);
+					Registry.customTribes.Add((TribeType)(int)token["idx"]);
 					token["style"] = Registry.climateAutoidx;
 					token["climate"] = Registry.climateAutoidx;
 					Registry.climateAutoidx++;
@@ -912,6 +912,7 @@ public static class Loader
 		try
 		{
 			CreateMappings(rootObject);
+			ProcessCustomTribes();
 			ProcessPrefabs();
 			ProcessEmbarkOverrides();
 			ProcessAttractOverrides();
@@ -919,6 +920,17 @@ public static class Loader
 		catch (Exception e)
 		{
 			Plugin.logger.LogError($"Error on processing modified game logic data : {e.StackTrace}");
+		}
+	}
+
+	internal static void ProcessCustomTribes()
+	{
+		foreach (var tribe in Registry.customTribes)
+		{
+			if(!GameLogicData.legacyTribeTypesOrder.Contains(tribe))
+			{
+				GameLogicData.legacyTribeTypesOrder.Add(tribe);
+			}
 		}
 	}
 
