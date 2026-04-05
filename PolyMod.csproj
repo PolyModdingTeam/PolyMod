@@ -11,8 +11,8 @@
         </RestoreAdditionalProjectSources>
         <Configurations>IL2CPP</Configurations>
         <RootNamespace>PolyMod</RootNamespace>
-        <Version>1.2.11</Version>
-        <PolytopiaVersion>2.16.4.15698</PolytopiaVersion>
+        <Version>1.2.12</Version>
+        <PolytopiaVersion>2.16.5.15700</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
         <NoWarn>IDE0130</NoWarn>
@@ -24,7 +24,7 @@
         <PackageReference Include="Costura.Fody" Version="6.0.0">
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Scriban" Version="6.6.0" />
+        <PackageReference Include="Scriban" Version="6.2.1" />
         <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)" />
         <EmbeddedResource Include="resources\*.*" />
     </ItemGroup>
