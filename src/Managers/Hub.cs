@@ -71,71 +71,57 @@ internal static class Hub
     [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
     private static void StartScreen_Start(StartScreen __instance)
     {
-        Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<UnityEngine.Object> allLocalizers = GameObject.FindObjectsOfTypeAll(Il2CppType.From(typeof(TMPLocalizer)));
+        var bottomBar = __instance.settingsButton.transform.parent;
+        var bottomBarHorizontalLayoutGroup = bottomBar.GetComponent<HorizontalLayoutGroup>();
+        bottomBarHorizontalLayoutGroup.childAlignment = TextAnchor.LowerCenter;
+        bottomBarHorizontalLayoutGroup.childForceExpandWidth = false;
+        bottomBarHorizontalLayoutGroup.childForceExpandHeight = false;
+        bottomBarHorizontalLayoutGroup.padding.left = 120;
+        bottomBarHorizontalLayoutGroup.padding.right = bottomBarHorizontalLayoutGroup.padding.left;
 
-        foreach (UnityEngine.Object item in allLocalizers)
-        {
-            TMPLocalizer? localizer = item.TryCast<TMPLocalizer>();
-            if (localizer == null)
-            {
-                continue;
-            }
+        GameObject versionTextObject = GameObject.Instantiate(__instance.settingsButton.label.gameObject, bottomBar);
+        versionTextObject.name = "PolyModVersion";
+        versionTextObject.SetActive(true);
 
-            Transform? parent = localizer?.gameObject?.transform?.parent;
-            if (parent == null)
-            {
-                continue;
-            }
+        LayoutElement versionTextLayoutElement = versionTextObject.GetComponent<LayoutElement>()
+                                            ?? versionTextObject.AddComponent<LayoutElement>();
+        versionTextLayoutElement.ignoreLayout = true;
 
-            string parentName = parent.name;
+        RectTransform versionTextRectTransform = versionTextObject.GetComponent<RectTransform>();
+        versionTextRectTransform.anchorMin = Vector2.zero;
+        versionTextRectTransform.anchorMax = Vector2.zero;
+        versionTextRectTransform.pivot = Vector2.zero;
+        versionTextRectTransform.anchoredPosition = new Vector2(5f, 5f);
 
-            if (parentName == "SettingsButton")
-            {
-                Transform? textTransform = parent.FindChild("DescriptionText");
-                if (textTransform == null)
-                {
-                    return;
-                }
+        TextMeshProUGUI versionTextComponent = versionTextObject.GetComponent<TextMeshProUGUI>();
+        versionTextComponent.fontSize  = 18f;
+        versionTextComponent.alignment = TextAlignmentOptions.MidlineLeft;
+        versionTextComponent.enableWordWrapping = true;
 
-                GameObject originalText = textTransform.gameObject;
-                GameObject text = GameObject.Instantiate(originalText, originalText.transform.parent.parent.parent);
-                text.name = "PolyModVersion";
+        versionTextRectTransform.sizeDelta = new Vector2(110f, 50f);
 
-                RectTransform rect = text.GetComponent<RectTransform>();
-                rect.anchoredPosition = new Vector2(265, 40);
-                rect.sizeDelta = new Vector2(500, rect.sizeDelta.y);
-                rect.anchorMax = Vector2.zero;
-                rect.anchorMin = Vector2.zero;
+        versionTextObject.GetComponent<TMPLocalizer>().Text = $"PolyMod {Plugin.VERSION}";
 
-                TextMeshProUGUI textComponent = text.GetComponent<TextMeshProUGUI>();
-                textComponent.fontSize = 18;
-                textComponent.alignment = TextAlignmentOptions.BottomLeft;
+        GameObject originalButton = __instance.newsButton.gameObject;
+        GameObject button = GameObject.Instantiate(originalButton, originalButton.transform.parent);
+        button.name = "PolyModHubButton";
 
-                text.GetComponent<TMPLocalizer>().Text = $"PolyMod {Plugin.VERSION}";
-                text.AddComponent<LayoutElement>().ignoreLayout = true;
-            }
-            else if (parentName == "NewsButton")
-            {
-                GameObject originalButton = parent.gameObject;
-                GameObject button = GameObject.Instantiate(originalButton, originalButton.transform.parent);
-                button.name = "PolyModHubButton";
-                button.transform.position = originalButton.transform.position - new Vector3(90, 0, 0);
+        RectTransform originalButtonRectTransform = originalButton.GetComponent<RectTransform>(); 
+        button.transform.position = originalButton.transform.position - new Vector3(originalButtonRectTransform.rect.width * 1.5f, 0, 0);
 
-                UIRoundButton buttonComponent = button.GetComponent<UIRoundButton>();
-                buttonComponent.bg.sprite = Visual.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
-                buttonComponent.bg.transform.localScale = new Vector3(1.2f, 1.2f, 0);
-                buttonComponent.bg.color = Color.white;
+        UIRoundButton buttonComponent = button.GetComponent<UIRoundButton>();
+        buttonComponent.bg.sprite = Visual.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
+        buttonComponent.bg.transform.localScale = buttonComponent.bg.transform.localScale * 1.2f;
+        buttonComponent.bg.color = Color.white;
 
-                GameObject.Destroy(buttonComponent.icon.gameObject);
-                GameObject.Destroy(buttonComponent.outline.gameObject);
+        GameObject.Destroy(buttonComponent.icon.gameObject);
+        GameObject.Destroy(buttonComponent.outline.gameObject);
 
-                Transform descriptionText = button.transform.Find("DescriptionText");
-                descriptionText.gameObject.SetActive(true);
-                descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
+        Transform descriptionText = button.transform.Find("DescriptionText");
+        descriptionText.gameObject.SetActive(true);
+        descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
 
-                buttonComponent.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
-            }
-        }
+        buttonComponent.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
 
         static void PolyModHubButtonClicked(int buttonId, BaseEventData eventData)
         {
