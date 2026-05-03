@@ -234,13 +234,24 @@ public static class Client
 
             var serializedGameSummary = SerializationHelpers.ToByteArray(stateSummary, gameState.Version);
 
-            var setupGameDataViewModel = new SetupGameStateViewModel
+
+            client.GameState.TryGetPlayer(client.GameState.CurrentPlayer, out PlayerState playerState);
+            var currentPlayerId = "";
+            if(playerState.AccountId.HasValue)
+            {
+                currentPlayerId = playerState.AccountId.Value.ToString();
+            }
+            var setupGameDataViewModel = new ModdedGameStateViewModel
             {
                 gameId = client.gameId.ToString(),
                 serializedGameState = serializedGameState,
                 serializedGameSummary = serializedGameSummary,
-                gameSettingsJson = ""
+                gameSettingsJson = "",
+                currentPlayerId = currentPlayerId,
+                IsEndTurnCommand = command.GetCommandType() == CommandType.EndTurn
             };
+
+
 
             var setupData = System.Text.Json.JsonSerializer.Serialize(setupGameDataViewModel);
 
@@ -303,7 +314,7 @@ public static class Client
                 out GameStateSummary stateSummary, out var gameState);
 
             var serializedGameSummary = SerializationHelpers.ToByteArray(stateSummary, gameState.Version);
-            var setupGameDataViewModel = new SetupGameStateViewModel
+            var setupGameDataViewModel = new ModdedGameStateViewModel
             {
                 lobbyId = lobbyGameViewModel.Id.ToString(),
                 serializedGameState = serializedGameState,
@@ -346,7 +357,7 @@ public static class Client
                 state = PlayerDataFriendshipState.Accepted,
                 knownTribe = true,
                 tribe = (TribeType)participatorViewModel.SelectedTribe,
-                tribeMix = (TribeType)participatorViewModel.SelectedTribe,
+                tribeMix = TribeType.None, // TribeMix is byte too
                 skinType = (SkinType)participatorViewModel.SelectedTribeSkin,
                 defaultName = participatorViewModel.GetNameInternal()
             };
@@ -454,4 +465,36 @@ public static class Client
         return (serializedGameState,
             JsonConvert.SerializeObject(gameState.Settings));
     }
+
+    // FIX FOR NATURE PLAYER. BOTS ARENT IMPLEMENTED YET
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GameState), nameof(GameState.EndPlayerTurn))]
+	private static bool GameState_EndPlayerTurn(GameState __instance, bool newTurn = false)
+	{
+        Console.Write("GameState_EndPlayerTurn");
+		__instance.CurrentPlayerIndex++;
+		if (__instance.CurrentPlayerIndex >=__instance. PlayerStates.Count)
+		{
+			__instance.CurrentPlayerIndex = 0;
+			newTurn = true;
+		}
+
+        var currentPlayer = __instance.PlayerStates[__instance.CurrentPlayerIndex];
+		if (!currentPlayer.IsAlive(__instance))
+		{
+			__instance.EndPlayerTurn(newTurn);
+		}
+		else if (newTurn)
+		{
+			__instance.CurrentTurn++;
+		}
+
+        if(currentPlayer.AutoPlay)
+        {
+            __instance.CommandStack.Add(new EndTurnCommand(currentPlayer.Id));
+        }
+        Console.Write("finished");
+        return false;
+	}
 }

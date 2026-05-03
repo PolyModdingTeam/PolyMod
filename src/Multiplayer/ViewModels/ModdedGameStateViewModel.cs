@@ -1,8 +1,5 @@
-
-using Tesla;
-
 namespace PolyMod.Multiplayer.ViewModels;
-public class SetupGameStateViewModel : IMonoServerResponseData
+public class ModdedGameStateViewModel
 {
 	public string gameId { get; set; } = "";
     public string lobbyId { get; set; } = "";
@@ -11,4 +8,6 @@ public class SetupGameStateViewModel : IMonoServerResponseData
 	public byte[] serializedGameSummary { get; set; } = new byte[0];
 
 	public string gameSettingsJson { get; set; } = "";
+	public string currentPlayerId { get; set; } = "";
+	public bool IsEndTurnCommand { get; set; } = false;
 }
