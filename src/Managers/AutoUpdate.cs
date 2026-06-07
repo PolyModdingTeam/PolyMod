@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Text.Json;
 using HarmonyLib;
 using UnityEngine;
+using static PopupManager;
 
 namespace PolyMod.Managers;
 
@@ -15,8 +16,8 @@ internal static class AutoUpdate
     /// Checks for updates when the start screen is shown.
     /// </summary>
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-    private static void StartScreen_Start()
+    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
+    private static void StartScreen_UI2_OnShow()
     {
         if (!Plugin.config.autoUpdate) return;
         if (Environment.GetEnvironmentVariable("WINEPREFIX") != null)
@@ -154,17 +155,19 @@ internal static class AutoUpdate
             }
 
             // Show a popup to the user asking if they want to update
-            PopupManager.GetBasicPopup(new(
-                Localization.Get("polymod.autoupdate"),
-                Localization.Get("polymod.autoupdate.description"),
-                new(new PopupBase.PopupButtonData[] {
+            BasicPopup popup = PopupManager.GetBasicPopup();
+            popup.Header = Localization.Get("polymod.autoupdate");
+            popup.Description = Localization.Get("polymod.autoupdate.description");
+            popup.buttonData = new PopupBase.PopupButtonData[] {
                     new(
                         "polymod.autoupdate.update",
                         PopupBase.PopupButtonData.States.None,
                         (Il2CppSystem.Action)Update
                     )
-                }))
-            ).Show();
+            };
+
+            popup.Show();
+            
         }
         catch (Exception e)
         {

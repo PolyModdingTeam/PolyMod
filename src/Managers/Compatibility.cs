@@ -34,7 +34,7 @@ internal static class Compatibility
     /// Checks the signature of a saved game to ensure it is compatible with the current mods.
     /// </summary>
     /// <returns>True if the signatures match or if the check is ignored, false otherwise.</returns>
-    private static bool CheckSignatures(Action<int, BaseEventData> action, int id, BaseEventData eventData, Il2CppSystem.Guid gameId)
+    private static bool CheckSignatures(Action action, Il2CppSystem.Guid gameId)
     {
         if (sawSignatureWarning)
         {
@@ -67,13 +67,15 @@ internal static class Compatibility
         }
         if (!doChecksumsMatch)
         {
-            PopupManager.GetBasicPopup(new(
-                Localization.Get("polymod.signature.mismatch"),
-                Localization.Get("polymod.signature.incompatible"),
-                new(new PopupBase.PopupButtonData[] {
-                    new("OK")
-                })
-            )).Show();
+            BasicPopup popup = PopupManager.GetBasicPopup();
+            popup.Header = Localization.Get("polymod.signature.mismatch");
+            popup.Description = Localization.Get("polymod.signature.incompatible");
+            popup.buttonData = new PopupBase.PopupButtonData[] {
+                new("OK")
+            };
+
+            popup.Show();
+
             return false;
         }
         return true;
@@ -83,8 +85,8 @@ internal static class Compatibility
     /// Performs compatibility checks when the start screen is shown.
     /// </summary>
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-    private static void StartScreen_Start()
+    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
+    private static void StartScreen_UI2_OnShow()
     {
         string lastChecksum = checksum;
         try
@@ -113,10 +115,11 @@ internal static class Compatibility
                 VersionManager.SemanticVersion.Cast().CutRevision().ToString()
             );
             PlayerPrefs.Save();
-            PopupManager.GetBasicPopup(new(
-                Localization.Get("polymod.version.mismatch"),
-                Localization.Get("polymod.version.mismatch.description"),
-                new(new PopupBase.PopupButtonData[] {
+
+            BasicPopup popup = PopupManager.GetBasicPopup();
+            popup.Header = Localization.Get("polymod.version.mismatch");
+            popup.Description = Localization.Get("polymod.version.mismatch.description");
+            popup.buttonData = new PopupBase.PopupButtonData[] {
                     new("buttons.stay", customColorStates: ColorConstants.redButtonColorStates),
                     new(
                         "buttons.exitgame",
@@ -124,8 +127,9 @@ internal static class Compatibility
                         (Il2CppSystem.Action)Application.Quit,
                         closesPopup: false
                     )
-                }))
-            ).Show();
+            };
+
+            popup.Show();
         }
     }
 
@@ -134,19 +138,19 @@ internal static class Compatibility
     /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.OnMainButtonClicked))]
-    private static bool GameInfoPopup_OnMainButtonClicked(GameInfoPopup __instance, int id, BaseEventData eventData)
+    private static bool GameInfoPopup_OnMainButtonClicked(GameInfoPopup __instance)
     {
-        return CheckSignatures(__instance.OnMainButtonClicked, id, eventData, __instance.gameId);
+        return CheckSignatures(__instance.OnMainButtonClicked, __instance.gameId);
     }
 
     /// <summary>
     /// Checks the signature of a single-player game before resuming it.
     /// </summary>
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnResumeButtonClick))]
-    private static bool StartScreen_OnResumeButtonClick(StartScreen __instance, int id, BaseEventData eventData)
+    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnResumeButtonLongPress))]
+    private static bool StartScreen_OnResumeButtonClick(StartScreen_UI2 __instance)
     {
-        return CheckSignatures(__instance.OnResumeButtonClick, id, eventData, LocalSaveFileUtils.GetSaveFiles(PolytopiaBackendBase.Game.GameType.SinglePlayer)[0]);
+        return CheckSignatures(__instance.OnResumeButtonLongPress, LocalSaveFileUtils.GetSaveFiles(PolytopiaBackendBase.Game.GameType.SinglePlayer)[0]);
     }
 
     /// <summary>

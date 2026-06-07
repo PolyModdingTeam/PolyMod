@@ -8,6 +8,7 @@ using Il2CppSystem.Linq;
 using PolyMod.Json;
 using System.Text.Json.Serialization;
 using PolytopiaBackendBase.Common;
+using Il2CppInterop.Runtime;
 
 namespace PolyMod.Managers;
 
@@ -128,8 +129,8 @@ public static class Visual
 
 	/// <summary>Resets the firstTimeOpeningPreview flag when the start screen is shown.</summary>
 	[HarmonyPrefix]
-	[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-	private static void StartScreen_Start()
+	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
+	private static void StartScreen_UI2_OnShow()
 	{
 		firstTimeOpeningPreview = true;
 	}
@@ -176,7 +177,7 @@ public static class Visual
 	/// <summary>Patches the sprite atlas manager to look up custom sprites.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
-	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeType tribe, SkinType skin, bool checkForOutline, int level)
+	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeType tribe, SkinType skin, int level)
 	{
 		baseName = Util.FormatSpriteName(baseName);
 
@@ -463,7 +464,7 @@ public static class Visual
 	[HarmonyPatch(typeof(UIWorldPreview), nameof(UIWorldPreview.SetPreview), new Type[] { })]
 	private static void UIWorldPreview_SetPreview(UIWorldPreview __instance)
 	{
-		if (Plugin.config.debug && UIManager.Instance.CurrentScreen == UIConstants.Screens.TribeSelector)
+		if (Plugin.config.debug && UIManager.Instance.CurrentScreen == UIConstants.Screens.TribePicker)
 		{
 			if (firstTimeOpeningPreview)
 			{
@@ -646,8 +647,8 @@ public static class Visual
 
 	/// <summary>Updates the width of a basic popup if a custom width is set.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.Update))]
-	private static void BasicPopup_Update(BasicPopup __instance)
+	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeight))]
+	private static void BasicPopup_RefreshHeight(ref Il2CppSystem.Collections.IEnumerator __result, PopupBase __instance, Il2CppSystem.Action OnComplete)
 	{
 		int id = __instance.GetInstanceID();
 		if (basicPopupWidths.ContainsKey(id))
@@ -691,25 +692,28 @@ public static class Visual
 	}
 
 	[HarmonyPrefix]
-	[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnWeeklyChallengedButtonClick))]
-	private static bool StartScreen_OnWeeklyChallengedButtonClick(StartScreen __instance)
+	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnWeeklyChallengeClicked))]
+	private static bool StartScreen_OnWeeklyChallengeClicked(StartScreen_UI2 __instance)
 	{
 		if(seenWarningWCPopup)
 			return true;
+
 		BasicPopup popup = PopupManager.GetBasicPopup();
 		popup.Header = Localization.Get("polymod.hub");
 		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", new Il2CppSystem.Object[] { }) });
+
+		void WCProceed()
+		{
+			seenWarningWCPopup = true;
+			__instance.OnWeeklyChallengeClicked();
+		}
 		List<PopupBase.PopupButtonData> popupButtons = new()
 		{
 			new("buttons.back"),
 			new(
 				"polymod.wc.proceed",
 				PopupBase.PopupButtonData.States.None,
-				callback: (UIButtonBase.ButtonAction)((_, _) =>
-				{
-					seenWarningWCPopup = true;
-					__instance.OnWeeklyChallengedButtonClick();
-				}),
+				callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(WCProceed),
 				customColorStates: ColorConstants.redButtonColorStates
 			)
 		};
