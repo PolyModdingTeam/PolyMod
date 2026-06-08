@@ -114,7 +114,6 @@ internal static class Compatibility
                 VersionManager.SemanticVersion.Cast().CutRevision().ToString()
             );
             PlayerPrefs.Save();
-
             PopupManager.GetBasicPopupWithData(
                 new(
                     Localization.Get("polymod.version.mismatch"),
