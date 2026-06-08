@@ -67,14 +67,13 @@ internal static class Compatibility
         }
         if (!doChecksumsMatch)
         {
-            BasicPopup popup = PopupManager.GetBasicPopup();
-            popup.Header = Localization.Get("polymod.signature.mismatch");
-            popup.Description = Localization.Get("polymod.signature.incompatible");
-            popup.buttonData = new PopupBase.PopupButtonData[] {
-                new("OK")
-            };
-
-            popup.Show();
+            PopupManager.GetBasicPopupWithData(new(
+                Localization.Get("polymod.signature.mismatch"),
+                Localization.Get("polymod.signature.incompatible"),
+                new(new PopupBase.PopupButtonData[] {
+                    new("OK")
+                })
+            )).Show();
 
             return false;
         }
@@ -116,20 +115,21 @@ internal static class Compatibility
             );
             PlayerPrefs.Save();
 
-            BasicPopup popup = PopupManager.GetBasicPopup();
-            popup.Header = Localization.Get("polymod.version.mismatch");
-            popup.Description = Localization.Get("polymod.version.mismatch.description");
-            popup.buttonData = new PopupBase.PopupButtonData[] {
-                    new("buttons.stay", customColorStates: ColorConstants.redButtonColorStates),
-                    new(
-                        "buttons.exitgame",
-                        PopupBase.PopupButtonData.States.None,
-                        (Il2CppSystem.Action)Application.Quit,
-                        closesPopup: false
-                    )
-            };
-
-            popup.Show();
+            PopupManager.GetBasicPopupWithData(
+                new(
+                    Localization.Get("polymod.version.mismatch"),
+                    Localization.Get("polymod.version.mismatch.description"),
+                    new PopupBase.PopupButtonData[] {
+                        new("buttons.stay", customColorStates: ColorConstants.redButtonColorStates),
+                        new(
+                            "buttons.exitgame",
+                            PopupBase.PopupButtonData.States.None,
+                            (Il2CppSystem.Action)Application.Quit,
+                            closesPopup: false
+                        )
+                    }
+                )
+            ).Show();
         }
     }
 

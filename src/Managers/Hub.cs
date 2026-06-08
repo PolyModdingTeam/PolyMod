@@ -196,18 +196,21 @@ internal static class Hub
 
         if (Main.dependencyCycle)
         {
-            BasicPopup popup = PopupManager.GetBasicPopup();
-            popup.Header = Localization.Get("polymod.cycle");
-            popup.Description = Localization.Get("polymod.cycle.description");
-            popup.buttonData = new PopupBase.PopupButtonData[] {
+            BasicPopup popup = PopupManager.GetBasicPopupWithData(
                 new(
-                    "buttons.exitgame",
-                    PopupBase.PopupButtonData.States.None,
-                    (Il2CppSystem.Action)Application.Quit,
-                    closesPopup: false,
-                    customColorStates: ColorConstants.redButtonColorStates
+                    Localization.Get("polymod.cycle"),
+                    Localization.Get("polymod.cycle.description"),
+                    new PopupBase.PopupButtonData[] {
+                        new(
+                            "buttons.exitgame",
+                            PopupBase.PopupButtonData.States.None,
+                            (Il2CppSystem.Action)Application.Quit,
+                            closesPopup: false,
+                            customColorStates: ColorConstants.redButtonColorStates
+                        )
+                    }
                 )
-            };
+            );
 
             popup.IsUnskippable = true;
             popup.Show();

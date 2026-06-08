@@ -3,7 +3,6 @@ using System.IO.Compression;
 using System.Text.Json;
 using HarmonyLib;
 using UnityEngine;
-using static PopupManager;
 
 namespace PolyMod.Managers;
 
@@ -155,19 +154,17 @@ internal static class AutoUpdate
             }
 
             // Show a popup to the user asking if they want to update
-            BasicPopup popup = PopupManager.GetBasicPopup();
-            popup.Header = Localization.Get("polymod.autoupdate");
-            popup.Description = Localization.Get("polymod.autoupdate.description");
-            popup.buttonData = new PopupBase.PopupButtonData[] {
+            PopupManager.GetBasicPopupWithData(new(
+                Localization.Get("polymod.autoupdate"),
+                Localization.Get("polymod.autoupdate.description"),
+                new(new PopupBase.PopupButtonData[] {
                     new(
                         "polymod.autoupdate.update",
                         PopupBase.PopupButtonData.States.None,
                         (Il2CppSystem.Action)Update
                     )
-            };
-
-            popup.Show();
-            
+                }))
+            ).Show();
         }
         catch (Exception e)
         {
