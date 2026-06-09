@@ -8,6 +8,8 @@ using Il2CppSystem.Linq;
 using PolyMod.Json;
 using System.Text.Json.Serialization;
 using PolytopiaBackendBase.Common;
+using Il2CppInterop.Runtime;
+using TMPro;
 
 namespace PolyMod.Managers;
 
@@ -30,7 +32,7 @@ public static class Visual
 		/// <summary>The terrain type of the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<Polytopia.Data.TerrainData.Type>))]
-		public Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.Ocean;
+		public Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.None;
 		/// <summary>The resource type on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<ResourceData.Type>))]
@@ -74,6 +76,8 @@ public static class Visual
 	/// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
 	/// </summary>
 	internal static Dictionary<TileData.EffectType, SkinType> customFloodingSkins = new();
+	private static bool isTakingSnapshot = false;
+	private static float? baseOrthographicCameraSize = null;
 
 	/// <summary>The type of a custom prefab.</summary>
 	public enum PrefabType
@@ -128,8 +132,8 @@ public static class Visual
 
 	/// <summary>Resets the firstTimeOpeningPreview flag when the start screen is shown.</summary>
 	[HarmonyPrefix]
-	[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-	private static void StartScreen_Start()
+	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
+	private static void StartScreen_UI2_OnShow()
 	{
 		firstTimeOpeningPreview = true;
 	}
@@ -176,7 +180,7 @@ public static class Visual
 	/// <summary>Patches the sprite atlas manager to look up custom sprites.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
-	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeType tribe, SkinType skin, bool checkForOutline, int level)
+	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeType tribe, SkinType skin, int level)
 	{
 		baseName = Util.FormatSpriteName(baseName);
 
@@ -463,7 +467,7 @@ public static class Visual
 	[HarmonyPatch(typeof(UIWorldPreview), nameof(UIWorldPreview.SetPreview), new Type[] { })]
 	private static void UIWorldPreview_SetPreview(UIWorldPreview __instance)
 	{
-		if (Plugin.config.debug && UIManager.Instance.CurrentScreen == UIConstants.Screens.TribeSelector)
+		if (Plugin.config.debug && UIManager.Instance.CurrentScreen == UIConstants.Screens.TribePicker)
 		{
 			if (firstTimeOpeningPreview)
 			{
@@ -478,6 +482,117 @@ public static class Visual
 				tile.DebugText.gameObject.SetActive(true);
 			}
 		}
+	}
+
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(TribePreviewRegistry), nameof(TribePreviewRegistry.GetTribePreviewData))]
+	private static void TribePreviewRegistry_GetTribePreviewData(ref SaveStateData __result, TribeType tribeType, SkinType skinType)
+	{
+		string tribeName = EnumCache<TribeType>.GetName(tribeType).ToLower();
+		if (!Registry.tribePreviews.ContainsKey(tribeName))
+			return;
+
+		PreviewTile[]? preview = Registry.tribePreviews[tribeName];
+		if (preview == null)
+			return;
+
+		ClientSerializationWrapper result = new ClientSerializationWrapper(null);
+		int version;
+		bool num = DiskSerializationHelpers.FromLZ4CompressedByteArray<ClientSerializationWrapper>(__result.byteArray, out result, out version);
+		if (num)
+		{
+			GameState currentGameState = result.GetCurrentGameState();
+			foreach (var previewTile in preview)
+			{
+				if(previewTile.x == null || previewTile.y == null)
+					continue;
+
+				WorldCoordinates coordinates = new((int)previewTile.x, (int)previewTile.y);
+				TileData? tileData = currentGameState.Map.GetTile(coordinates);
+				if(tileData == null)
+					continue;
+
+				if(previewTile.terrainType != Polytopia.Data.TerrainData.Type.None)
+					tileData.terrain = previewTile.terrainType;
+
+				if(previewTile.resourceType != Polytopia.Data.ResourceData.Type.None)
+					tileData.resource = new ResourceState { type = previewTile.resourceType };
+
+				if(previewTile.unitType != Polytopia.Data.UnitData.Type.None &&
+					currentGameState.TryGetPlayer(currentGameState.CurrentPlayer, out PlayerState playerState) &&
+					currentGameState.GameLogicData.TryGetData(previewTile.unitType, out UnitData unitData))
+				{
+					ActionUtils.TrainUnit(currentGameState, playerState, tileData, unitData);
+				}
+
+				if(previewTile.improvementType != Polytopia.Data.ImprovementData.Type.None &&
+					currentGameState.GameLogicData.TryGetData(previewTile.improvementType, out var improvementData))
+				{
+					tileData.improvement = new ImprovementState
+					{
+						type = previewTile.improvementType,
+						borderSize = (ushort)improvementData.borderSize,
+						level = 0,
+						xp = 0,
+						production = 1,
+						founded = (ushort)currentGameState.CurrentTurn,
+						baseScore = (ushort)improvementData.GetScoreReward(),
+						founder = currentGameState.CurrentPlayer
+					};
+				}
+			}
+			__result.byteArray = DiskSerializationHelpers.ToLZ4CompressedByteArray(result, version);
+		}
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(SpriteCamera), nameof(SpriteCamera.TakeSnapshotOfMapState))]
+	private static bool SpriteCamera_TakeSnapshotOfMapState(ref Texture2D __result, SpriteCamera.SnapshotMapData mapSnapshot,
+		float w, float h, TribeType tribe, SkinType skin, TribeType climate, int color, bool clearMapAfterwards)
+	{
+		if(!Plugin.config.debug)
+			return true;
+
+		var instance = SpriteCamera.instance;
+		if(baseOrthographicCameraSize == null)
+			baseOrthographicCameraSize = instance.spriteCamera.orthographicSize;
+
+		instance.spriteCamera.orthographicSize = (float)baseOrthographicCameraSize * 2;
+		isTakingSnapshot = true;
+
+		return true;
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteCamera), nameof(SpriteCamera.TakeSnapshotOfMapState))]
+	private static void SpriteCamera_TakeSnapshotOfMapState_Postfix(ref Texture2D __result, SpriteCamera.SnapshotMapData mapSnapshot,
+		float w, float h, TribeType tribe, SkinType skin, TribeType climate, int color, bool clearMapAfterwards)
+	{
+		if(isTakingSnapshot)
+			isTakingSnapshot = false;
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(Tile), nameof(Tile.RenderDebug))]
+	public static void Tile_RenderDebug(Tile __instance)
+	{
+		if(!isTakingSnapshot)
+			return;
+
+		GameObject textObj = new GameObject("CoordinateText");
+		textObj.transform.SetParent(__instance.transform);
+		textObj.transform.localPosition = new Vector3(0, 0.0f, 0);
+
+		TextMeshPro textMesh = textObj.AddComponent<TextMeshPro>();
+		textMesh.text = __instance.Data.coordinates.ToString();
+		textMesh.fontSize = 3;
+		textMesh.alignment = TextAlignmentOptions.Center;
+		textMesh.color = Color.white;
+
+		MeshRenderer renderer = textObj.GetComponent<MeshRenderer>();
+		renderer.sortingLayerID = MeshCache.TERRAIN_LAYER_ID;
+		renderer.sortingOrder = __instance.Depth + 10;
 	}
 
 	#endregion
@@ -646,8 +761,21 @@ public static class Visual
 
 	/// <summary>Updates the width of a basic popup if a custom width is set.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.Update))]
-	private static void BasicPopup_Update(BasicPopup __instance)
+	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeight))]
+	private static void BasicPopup_RefreshHeight(ref Il2CppSystem.Collections.IEnumerator __result, PopupBase __instance, Il2CppSystem.Action OnComplete)
+	{
+		UpdateWidth(__instance);
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.OnShowComplete))]
+	private static bool BasicPopup_ShowInternal(PopupBase __instance)
+	{
+		UpdateWidth(__instance);
+		return true;
+	}
+
+	private static void UpdateWidth(PopupBase __instance)
 	{
 		int id = __instance.GetInstanceID();
 		if (basicPopupWidths.ContainsKey(id))
@@ -691,25 +819,28 @@ public static class Visual
 	}
 
 	[HarmonyPrefix]
-	[HarmonyPatch(typeof(StartScreen), nameof(StartScreen.OnWeeklyChallengedButtonClick))]
-	private static bool StartScreen_OnWeeklyChallengedButtonClick(StartScreen __instance)
+	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnWeeklyChallengeClicked))]
+	private static bool StartScreen_OnWeeklyChallengeClicked(StartScreen_UI2 __instance)
 	{
 		if(seenWarningWCPopup)
 			return true;
+
 		BasicPopup popup = PopupManager.GetBasicPopup();
 		popup.Header = Localization.Get("polymod.hub");
 		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", new Il2CppSystem.Object[] { }) });
+
+		void WCProceed()
+		{
+			seenWarningWCPopup = true;
+			__instance.OnWeeklyChallengeClicked();
+		}
 		List<PopupBase.PopupButtonData> popupButtons = new()
 		{
 			new("buttons.back"),
 			new(
 				"polymod.wc.proceed",
 				PopupBase.PopupButtonData.States.None,
-				callback: (UIButtonBase.ButtonAction)((_, _) =>
-				{
-					seenWarningWCPopup = true;
-					__instance.OnWeeklyChallengedButtonClick();
-				}),
+				callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(WCProceed),
 				customColorStates: ColorConstants.redButtonColorStates
 			)
 		};
@@ -719,11 +850,29 @@ public static class Visual
 	}
 
 	/// <summary>Shows a basic popup with a custom width.</summary>
-	public static void ShowSetWidth(this BasicPopup self, int width)
+	public static void ShowSetWidth(this BasicPopupLegacy self, int width)
 	{
 		basicPopupWidths.Add(self.GetInstanceID(), width);
 		self.Show();
 	}
+
+	// [HarmonyPrefix]
+	// [HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.SetButtonData))]
+	// public static bool SetButtonData(BasicPopup __instance, PopupBase.PopupButtonData[] buttonDatas, bool updateOmniCursor)
+	// {
+	// 	if (buttonDatas == null)
+	// 	{
+	// 		__instance.SetDefaultOkbutton();
+	// 		return false;
+	// 	}
+	// 	foreach (var buttonData in buttonDatas)
+	// 	{
+	// 		var MainButton = __instance.createButton(buttonData.text, buttonData.callback, UIButtonBase_UI2.ButtonStyle.Suggested);
+	// 		MainButton.OnClickedSignal.Add(DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(__instance.Hide));
+	// 	}
+	// 	__instance.RunLayout();
+	// 	return false;
+	// }
 
 	#endregion
 

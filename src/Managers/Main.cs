@@ -88,7 +88,6 @@ public static class Main
 	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlocked))]
-	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlockedInternal))]
 	private static bool PurchaseManager_IsSkinUnlockedInternal(ref bool __result, SkinType skinType)
 	{
 		__result = (int)skinType >= Plugin.AUTOIDX_STARTS_FROM && skinType != SkinType.Test;
