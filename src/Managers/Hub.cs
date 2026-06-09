@@ -137,7 +137,8 @@ internal static class Hub
         // Console.Write(6);
         static void PolyModHubButtonClicked(int buttonId, BaseEventData eventData)
         {
-            BasicPopup popup = PopupManager.GetBasicPopup();
+            WhatsNewPopup popup = PopupManager.GetWhatsNewPopup();
+
             popup.Header = Localization.Get("polymod.hub");
             popup.Description = Localization.Get("polymod.hub.header", new Il2CppSystem.Object[] {
                 HEADER_PREFIX,
@@ -191,7 +192,8 @@ internal static class Hub
                 ));
             }
             popup.buttonData = popupButtons.ToArray();
-            popup.ShowSetWidth(POPUP_WIDTH);
+            popup.Show();
+            // popup.ShowSetWidth(POPUP_WIDTH);
         }
 
         if (Main.dependencyCycle)
@@ -363,13 +365,13 @@ internal static class Hub
     /// </summary>
     internal static void ShowConfigPopup()
     {
-        BasicPopup polymodPopup = PopupManager.GetBasicPopup();
+        WhatsNewPopup polymodPopup = PopupManager.GetWhatsNewPopup();
 
         polymodPopup.Header = Localization.Get("polymod.hub.config");
         polymodPopup.Description = "";
 
         polymodPopup.buttonData = CreateConfigPopupButtonData();
-        polymodPopup.ShowSetWidth(POPUP_WIDTH);
+        // polymodPopup.ShowSetWidth(POPUP_WIDTH);
         polymodPopup.Show();
     }
 
@@ -411,7 +413,7 @@ internal static class Hub
         }
         return popupButtons.ToArray();
 
-        void OnDebugButtonClicked(int buttonId, BaseEventData eventData)
+        void OnDebugButtonClicked()
         {
             Plugin.config = new(debug: !Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
             Plugin.WriteConfig();
@@ -424,7 +426,7 @@ internal static class Hub
             isConfigPopupActive = false;
         }
 
-        void OnAutoUpdateButtonClicked(int buttonId, BaseEventData eventData)
+        void OnAutoUpdateButtonClicked()
         {
             Plugin.config = new(debug: Plugin.config.debug, autoUpdate: !Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
             Plugin.WriteConfig();
@@ -437,7 +439,7 @@ internal static class Hub
             isConfigPopupActive = false;
         }
 
-        void OnIncludeAlphasButtonClicked(int buttonId, BaseEventData eventData)
+        void OnIncludeAlphasButtonClicked()
         {
             Plugin.config = new(debug: Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: !Plugin.config.updatePrerelease);
             Plugin.WriteConfig();
@@ -450,13 +452,13 @@ internal static class Hub
             isConfigPopupActive = false;
         }
 
-        void OnUpdateSpritesButtonClicked(int buttonId, BaseEventData eventData)
+        void OnUpdateSpritesButtonClicked()
         {
             UpdateSpriteInfos();
             isConfigPopupActive = false;
         }
 
-        void OnBackButtonClicked(int buttonId, BaseEventData eventData)
+        void OnBackButtonClicked()
         {
             isConfigPopupActive = false;
         }

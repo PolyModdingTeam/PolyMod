@@ -32,7 +32,7 @@ public static class Visual
 		/// <summary>The terrain type of the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<Polytopia.Data.TerrainData.Type>))]
-		public Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.Ocean;
+		public Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.None;
 		/// <summary>The resource type on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<ResourceData.Type>))]
@@ -503,21 +503,45 @@ public static class Visual
 		if (num)
 		{
 			GameState currentGameState = result.GetCurrentGameState();
-			Console.Write(currentGameState.Map.tiles.Count);
 			foreach (var previewTile in preview)
 			{
 				if(previewTile.x == null || previewTile.y == null)
 					continue;
 
 				WorldCoordinates coordinates = new((int)previewTile.x, (int)previewTile.y);
-				TileData tileData = currentGameState.Map.GetTile(coordinates);
-				tileData.terrain = previewTile.terrainType;
-				// DO THE STATES AND MAYBE THE EFFECTS
-				//tileData.resource = previewTile.resourceType;
-				// tileData.unitType = previewTile.unitType;
-				// tileData.improvement = previewTile.improvementType;
+				TileData? tileData = currentGameState.Map.GetTile(coordinates);
+				if(tileData == null)
+					continue;
+
+				if(previewTile.terrainType != Polytopia.Data.TerrainData.Type.None)
+					tileData.terrain = previewTile.terrainType;
+
+				if(previewTile.resourceType != Polytopia.Data.ResourceData.Type.None)
+					tileData.resource = new ResourceState { type = previewTile.resourceType };
+
+				if(previewTile.unitType != Polytopia.Data.UnitData.Type.None &&
+					currentGameState.TryGetPlayer(currentGameState.CurrentPlayer, out PlayerState playerState) &&
+					currentGameState.GameLogicData.TryGetData(previewTile.unitType, out UnitData unitData))
+				{
+					ActionUtils.TrainUnit(currentGameState, playerState, tileData, unitData);
+				}
+
+				if(previewTile.improvementType != Polytopia.Data.ImprovementData.Type.None &&
+					currentGameState.GameLogicData.TryGetData(previewTile.improvementType, out var improvementData))
+				{
+					tileData.improvement = new ImprovementState
+					{
+						type = previewTile.improvementType,
+						borderSize = (ushort)improvementData.borderSize,
+						level = 0,
+						xp = 0,
+						production = 1,
+						founded = (ushort)currentGameState.CurrentTurn,
+						baseScore = (ushort)improvementData.GetScoreReward(),
+						founder = currentGameState.CurrentPlayer
+					};
+				}
 			}
-			// TODO: override tiles based on gld stuff
 		}
 	}
 
@@ -739,9 +763,7 @@ public static class Visual
 	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeight))]
 	private static void BasicPopup_RefreshHeight(ref Il2CppSystem.Collections.IEnumerator __result, PopupBase __instance, Il2CppSystem.Action OnComplete)
 	{
-		int id = __instance.GetInstanceID();
-		if (basicPopupWidths.ContainsKey(id))
-			__instance.rectTransform.SetWidth(basicPopupWidths[id]);
+		__instance.rectTransform.sizeDelta = new Vector2(2000, __instance.rectTransform.sizeDelta.y);
 	}
 
 	/// <summary>Sets the attacker's tribe before a unit attacks.</summary>
@@ -812,10 +834,28 @@ public static class Visual
 	}
 
 	/// <summary>Shows a basic popup with a custom width.</summary>
-	public static void ShowSetWidth(this BasicPopup self, int width)
+	public static void ShowSetWidth(this BasicPopupLegacy self, int width)
 	{
 		basicPopupWidths.Add(self.GetInstanceID(), width);
 		self.Show();
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.SetButtonData))]
+	public static bool SetButtonData(BasicPopup __instance, PopupBase.PopupButtonData[] buttonDatas, bool updateOmniCursor)
+	{
+		if (buttonDatas == null)
+		{
+			__instance.SetDefaultOkbutton();
+			return false;
+		}
+		foreach (var buttonData in buttonDatas)
+		{
+			var MainButton = __instance.createButton(buttonData.text, buttonData.callback, UIButtonBase_UI2.ButtonStyle.Suggested);
+			MainButton.OnClickedSignal.Add(DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(__instance.Hide));
+		}
+		__instance.RunLayout();
+		return false;
 	}
 
 	#endregion
