@@ -542,6 +542,7 @@ public static class Visual
 					};
 				}
 			}
+			__result.byteArray = DiskSerializationHelpers.ToLZ4CompressedByteArray(result, version);
 		}
 	}
 
