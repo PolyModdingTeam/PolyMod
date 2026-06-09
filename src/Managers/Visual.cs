@@ -9,6 +9,7 @@ using PolyMod.Json;
 using System.Text.Json.Serialization;
 using PolytopiaBackendBase.Common;
 using Il2CppInterop.Runtime;
+using TMPro;
 
 namespace PolyMod.Managers;
 
@@ -75,6 +76,8 @@ public static class Visual
 	/// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
 	/// </summary>
 	internal static Dictionary<TileData.EffectType, SkinType> customFloodingSkins = new();
+	private static bool isTakingSnapshot = false;
+	private static float? baseOrthographicCameraSize = null;
 
 	/// <summary>The type of a custom prefab.</summary>
 	public enum PrefabType
@@ -479,6 +482,92 @@ public static class Visual
 				tile.DebugText.gameObject.SetActive(true);
 			}
 		}
+	}
+
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(TribePreviewRegistry), nameof(TribePreviewRegistry.GetTribePreviewData))]
+	private static void TribePreviewRegistry_GetTribePreviewData(ref SaveStateData __result, TribeType tribeType, SkinType skinType)
+	{
+		string tribeName = EnumCache<TribeType>.GetName(tribeType).ToLower();
+		if (!Registry.tribePreviews.ContainsKey(tribeName))
+			return;
+
+		PreviewTile[]? preview = Registry.tribePreviews[tribeName];
+		if (preview == null)
+			return;
+
+		ClientSerializationWrapper result = new ClientSerializationWrapper(null);
+		int version;
+		bool num = DiskSerializationHelpers.FromLZ4CompressedByteArray<ClientSerializationWrapper>(__result.byteArray, out result, out version);
+		if (num)
+		{
+			GameState currentGameState = result.GetCurrentGameState();
+			Console.Write(currentGameState.Map.tiles.Count);
+			foreach (var previewTile in preview)
+			{
+				if(previewTile.x == null || previewTile.y == null)
+					continue;
+
+				WorldCoordinates coordinates = new((int)previewTile.x, (int)previewTile.y);
+				TileData tileData = currentGameState.Map.GetTile(coordinates);
+				tileData.terrain = previewTile.terrainType;
+				// DO THE STATES AND MAYBE THE EFFECTS
+				//tileData.resource = previewTile.resourceType;
+				// tileData.unitType = previewTile.unitType;
+				// tileData.improvement = previewTile.improvementType;
+			}
+			// TODO: override tiles based on gld stuff
+		}
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(SpriteCamera), nameof(SpriteCamera.TakeSnapshotOfMapState))]
+	private static bool SpriteCamera_TakeSnapshotOfMapState(ref Texture2D __result, SpriteCamera.SnapshotMapData mapSnapshot,
+		float w, float h, TribeType tribe, SkinType skin, TribeType climate, int color, bool clearMapAfterwards)
+	{
+		if(!Plugin.config.debug)
+			return true;
+
+		var instance = SpriteCamera.instance;
+		if(baseOrthographicCameraSize == null)
+			baseOrthographicCameraSize = instance.spriteCamera.orthographicSize;
+
+		instance.spriteCamera.orthographicSize = (float)baseOrthographicCameraSize * 2;
+		isTakingSnapshot = true;
+
+		return true;
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteCamera), nameof(SpriteCamera.TakeSnapshotOfMapState))]
+	private static void SpriteCamera_TakeSnapshotOfMapState_Postfix(ref Texture2D __result, SpriteCamera.SnapshotMapData mapSnapshot,
+		float w, float h, TribeType tribe, SkinType skin, TribeType climate, int color, bool clearMapAfterwards)
+	{
+		if(isTakingSnapshot)
+			isTakingSnapshot = false;
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(Tile), nameof(Tile.RenderDebug))]
+	public static void Tile_RenderDebug(Tile __instance)
+	{
+		if(!isTakingSnapshot)
+			return;
+
+		GameObject textObj = new GameObject("CoordinateText");
+		textObj.transform.SetParent(__instance.transform);
+		textObj.transform.localPosition = new Vector3(0, 0.0f, 0);
+
+		TextMeshPro textMesh = textObj.AddComponent<TextMeshPro>();
+		textMesh.text = __instance.Data.coordinates.ToString();
+		textMesh.fontSize = 3;
+		textMesh.alignment = TextAlignmentOptions.Center;
+		textMesh.color = Color.white;
+
+		MeshRenderer renderer = textObj.GetComponent<MeshRenderer>();
+		renderer.sortingLayerID = MeshCache.TERRAIN_LAYER_ID;
+		renderer.sortingOrder = __instance.Depth + 10;
 	}
 
 	#endregion
