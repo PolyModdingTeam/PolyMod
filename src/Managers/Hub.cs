@@ -192,8 +192,7 @@ internal static class Hub
                 ));
             }
             popup.buttonData = popupButtons.ToArray();
-            popup.Show();
-            // popup.ShowSetWidth(POPUP_WIDTH);
+            popup.ShowSetWidth(POPUP_WIDTH);
         }
 
         if (Main.dependencyCycle)
@@ -371,8 +370,7 @@ internal static class Hub
         polymodPopup.Description = "";
 
         polymodPopup.buttonData = CreateConfigPopupButtonData();
-        // polymodPopup.ShowSetWidth(POPUP_WIDTH);
-        polymodPopup.Show();
+        polymodPopup.ShowSetWidth(POPUP_WIDTH);
     }
 
     /// <summary>

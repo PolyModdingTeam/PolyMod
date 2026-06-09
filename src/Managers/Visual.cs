@@ -763,7 +763,22 @@ public static class Visual
 	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeight))]
 	private static void BasicPopup_RefreshHeight(ref Il2CppSystem.Collections.IEnumerator __result, PopupBase __instance, Il2CppSystem.Action OnComplete)
 	{
-		__instance.rectTransform.sizeDelta = new Vector2(2000, __instance.rectTransform.sizeDelta.y);
+		UpdateWidth(__instance);
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.OnShowComplete))]
+	private static bool BasicPopup_ShowInternal(PopupBase __instance)
+	{
+		UpdateWidth(__instance);
+		return true;
+	}
+
+	private static void UpdateWidth(PopupBase __instance)
+	{
+		int id = __instance.GetInstanceID();
+		if (basicPopupWidths.ContainsKey(id))
+			__instance.rectTransform.SetWidth(basicPopupWidths[id]);
 	}
 
 	/// <summary>Sets the attacker's tribe before a unit attacks.</summary>
@@ -840,23 +855,23 @@ public static class Visual
 		self.Show();
 	}
 
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.SetButtonData))]
-	public static bool SetButtonData(BasicPopup __instance, PopupBase.PopupButtonData[] buttonDatas, bool updateOmniCursor)
-	{
-		if (buttonDatas == null)
-		{
-			__instance.SetDefaultOkbutton();
-			return false;
-		}
-		foreach (var buttonData in buttonDatas)
-		{
-			var MainButton = __instance.createButton(buttonData.text, buttonData.callback, UIButtonBase_UI2.ButtonStyle.Suggested);
-			MainButton.OnClickedSignal.Add(DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(__instance.Hide));
-		}
-		__instance.RunLayout();
-		return false;
-	}
+	// [HarmonyPrefix]
+	// [HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.SetButtonData))]
+	// public static bool SetButtonData(BasicPopup __instance, PopupBase.PopupButtonData[] buttonDatas, bool updateOmniCursor)
+	// {
+	// 	if (buttonDatas == null)
+	// 	{
+	// 		__instance.SetDefaultOkbutton();
+	// 		return false;
+	// 	}
+	// 	foreach (var buttonData in buttonDatas)
+	// 	{
+	// 		var MainButton = __instance.createButton(buttonData.text, buttonData.callback, UIButtonBase_UI2.ButtonStyle.Suggested);
+	// 		MainButton.OnClickedSignal.Add(DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(__instance.Hide));
+	// 	}
+	// 	__instance.RunLayout();
+	// 	return false;
+	// }
 
 	#endregion
 
