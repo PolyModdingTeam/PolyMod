@@ -278,18 +278,16 @@ internal static class Hub
     /// </summary>
     internal static void ShowConfigPopup()
     {
-        WhatsNewPopup polymodPopup = PopupManager.GetWhatsNewPopup();
-
+        BasicPopupLegacy polymodPopup = Visual.GetBasicPopupLegacy();
         polymodPopup.Header = Localization.Get("polymod.hub.config");
         polymodPopup.Description = "";
-
         polymodPopup.buttonData = CreateConfigPopupButtonData();
         polymodPopup.ShowSetWidth(POPUP_WIDTH);
     }
 
     internal static void ShowPolyModHub()
     {
-        WhatsNewPopup popup = PopupManager.GetWhatsNewPopup();
+        BasicPopupLegacy popup = Visual.GetBasicPopupLegacy();
         popup.Header = Localization.Get("polymod.hub");
         popup.Description = Localization.Get("polymod.hub.header", new Il2CppSystem.Object[] {
             HEADER_PREFIX,
@@ -344,7 +342,6 @@ internal static class Hub
         }
         popup.buttonData = popupButtons.ToArray();
         popup.ShowSetWidth(POPUP_WIDTH);
-        popup.Show();
     }
 
     /// <summary>

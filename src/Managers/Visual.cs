@@ -68,6 +68,7 @@ public static class Visual
 		public string tribe;
 		public string skin;
 	}
+	private const int BASIC_POPUP_LEGACY_ID = 29;
 	public static Dictionary<UnitPrefabInfo, Unit> customPrefabs = new();
 	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
@@ -761,18 +762,10 @@ public static class Visual
 
 	/// <summary>Updates the width of a basic popup if a custom width is set.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeight))]
-	private static void BasicPopup_RefreshHeight(ref Il2CppSystem.Collections.IEnumerator __result, PopupBase __instance, Il2CppSystem.Action OnComplete)
+	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeightWhenHeightIsKnownAndDontUseCoroutines))]
+	private static void PopupBase_RefreshHeightWhenHeightIsKnownAndDontUseCoroutines(PopupBase __instance)
 	{
 		UpdateWidth(__instance);
-	}
-
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.OnShowComplete))]
-	private static bool BasicPopup_ShowInternal(PopupBase __instance)
-	{
-		UpdateWidth(__instance);
-		return true;
 	}
 
 	private static void UpdateWidth(PopupBase __instance)
@@ -875,6 +868,20 @@ public static class Visual
 	// }
 
 	#endregion
+
+	internal static BasicPopupLegacy GetBasicPopupLegacy()
+	{
+		WhatsNewPopup whatsNewPopup = PopupManager.GetWhatsNewPopup();
+		BasicPopupLegacy original = PopupManager.instance.popupPrefabs[BASIC_POPUP_LEGACY_ID].Cast<BasicPopupLegacy>();
+		BasicPopupLegacy basicPopupLegacy = UnityEngine.Object.Instantiate(original, PopupManager.instance.transform);
+		basicPopupLegacy.buttonContainer = GameObject.Instantiate(whatsNewPopup.buttonContainer, basicPopupLegacy.transform);
+		basicPopupLegacy.popupId = "basicPopupLegacy";
+		basicPopupLegacy.popupManager = PopupManager.instance;
+		basicPopupLegacy.Init();
+		basicPopupLegacy.identifier = null;
+		basicPopupLegacy.rectTransform.SetAsLastSibling();
+		return basicPopupLegacy;
+	}
 
 	/// <summary>Updates a visual part with a custom sprite.</summary>
 	private static void UpdateVisualPart(SkinVisualsReference.VisualPart? visualPart, string name, string style)
