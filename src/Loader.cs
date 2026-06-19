@@ -183,17 +183,20 @@ public static class Loader
 			}
 			else
 			{
+				string improvementId = Util.GetJTokenName(token);
 				if (token["attractsResource"] != null)
 				{
-					string improvementId = Util.GetJTokenName(token);
 					string attractsId = token["attractsResource"].ToString();
 					Main.attractsResourceNames[improvementId] = attractsId;
 				}
 				if (token["attractsToTerrain"] != null)
 				{
-					string improvementId = Util.GetJTokenName(token);
 					string attractsId = token["attractsToTerrain"].ToString();
 					Main.attractsTerrainNames[improvementId] = attractsId;
+				}
+				if(token["infoOverride"] != null)
+				{
+					Loc.buildingsInfoOverrides[improvementId] = Loc.ReplaceDashesWithDots(token["infoOverride"].ToString());
 				}
 			}
 		})

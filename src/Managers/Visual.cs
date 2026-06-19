@@ -36,15 +36,15 @@ public static class Visual
 		/// <summary>The resource type on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<ResourceData.Type>))]
-		public ResourceData.Type resourceType = ResourceData.Type.None;
+		public ResourceData.Type? resourceType = null;
 		/// <summary>The unit type on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<UnitData.Type>))]
-		public UnitData.Type unitType = UnitData.Type.None;
+		public UnitData.Type? unitType = null;
 		/// <summary>The improvement type on the tile.</summary>
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<ImprovementData.Type>))]
-		public ImprovementData.Type improvementType = ImprovementData.Type.None;
+		public ImprovementData.Type? improvementType = null;
 	}
 
 	/// <summary>Represents information about a sprite, such as its pivot and pixels per unit.</summary>
@@ -70,7 +70,6 @@ public static class Visual
 	}
 	private const int BASIC_POPUP_LEGACY_ID = 29;
 	public static Dictionary<UnitPrefabInfo, Unit> customPrefabs = new();
-	private static bool firstTimeOpeningPreview = true;
 	private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
 	private static TribeType attackerTribe = TribeType.None;
 	/// <summary>
@@ -121,6 +120,7 @@ public static class Visual
 	);
 	private static bool enableOutlines = false;
 	private static bool seenWarningWCPopup = false;
+	public record PreviewInfo(int arrayIdx, SaveStateData saveStateData, PreviewTile[] customPreview);
 
 	#region General
 
@@ -129,14 +129,6 @@ public static class Visual
 	[HarmonyPatch(typeof(TechItem), nameof(TechItem.SetupComplete))]
 	private static void TechItem_SetupComplete()
 	{
-	}
-
-	/// <summary>Resets the firstTimeOpeningPreview flag when the start screen is shown.</summary>
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
-	private static void StartScreen_UI2_OnShow()
-	{
-		firstTimeOpeningPreview = true;
 	}
 
 	/// <summary>Patches the sprite atlas manager to load custom sprites.</summary>
@@ -432,78 +424,63 @@ public static class Visual
     }
 
 	#endregion
-	#region TribePreview
+	#region Tribe Preview
 
-	/// <summary>Provides custom data for the tribe preview.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UIWorldPreviewData), nameof(UIWorldPreviewData.TryGetData))]
-	private static void UIWorldPreviewData_TryGetData(ref bool __result, UIWorldPreviewData __instance, Vector2Int position, TribeType tribeType, ref UITileData uiTile)
+	[HarmonyPatch(typeof(TribePreviewRegistry), nameof(TribePreviewRegistry.PreloadTribePreviews))]
+	public static void PreloadTribePreviews()
 	{
-		PreviewTile[]? preview = null;
-		if (Registry.tribePreviews.ContainsKey(EnumCache<TribeType>.GetName(tribeType).ToLower()))
+		Dictionary<string, PreviewInfo> previewSaveStateDatas = new();
+
+		SaveStateData fallbackSaveStateData = TribePreviewRegistry.saveStateDatas[TribePreviewRegistry.fallbackStateIndex];
+		foreach(string tribe in Registry.tribePreviews.Keys)
 		{
-			preview = Registry.tribePreviews[EnumCache<TribeType>.GetName(tribeType).ToLower()];
+			string previewId = GetTribePreviewName(tribe);
+			PreviewTile[] customPreview = Registry.tribePreviews[tribe];
+			previewSaveStateDatas[previewId] = new(TribePreviewRegistry.fallbackStateIndex, fallbackSaveStateData, customPreview);
 		}
-		if (preview != null)
+
+		for (int i = 0; i < TribePreviewRegistry.saveStateDatas.Length; i++)
 		{
-			PreviewTile? previewTile = preview.FirstOrDefault(tileInPreview => tileInPreview.x == position.x && tileInPreview.y == position.y);
-			if (previewTile != null)
+			SaveStateData saveStateData = TribePreviewRegistry.saveStateDatas[i];
+			if(previewSaveStateDatas.ContainsKey(saveStateData.name))
 			{
-				uiTile = new UITileData
-				{
-					Position = position,
-					terrainType = previewTile.terrainType,
-					resourceType = previewTile.resourceType,
-					unitType = previewTile.unitType,
-					improvementType = previewTile.improvementType,
-					tileEffects = new Il2CppSystem.Collections.Generic.List<TileData.EffectType>()
-				};
-				__result = true;
+				previewSaveStateDatas[saveStateData.name] = new(i, saveStateData, previewSaveStateDatas[saveStateData.name].customPreview);
+			}
+		}
+
+		foreach (string previewId in previewSaveStateDatas.Keys)
+		{
+			var data = previewSaveStateDatas[previewId];
+			SaveStateData? customSaveStateData = ApplyCustomPreview(previewId, data.saveStateData, data.customPreview);
+			if(customSaveStateData == null)
+				continue;
+
+			if(data.arrayIdx == TribePreviewRegistry.fallbackStateIndex)
+			{
+				List<SaveStateData> saveStateDatas = TribePreviewRegistry.saveStateDatas.ToList();
+				saveStateDatas.Add(customSaveStateData);
+				TribePreviewRegistry.saveStateDatas = saveStateDatas.ToArray();
+			}
+			else
+			{
+				TribePreviewRegistry.saveStateDatas[data.arrayIdx] = customSaveStateData;
 			}
 		}
 	}
 
-	/// <summary>Modifies the tribe preview for debugging purposes.</summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UIWorldPreview), nameof(UIWorldPreview.SetPreview), new Type[] { })]
-	private static void UIWorldPreview_SetPreview(UIWorldPreview __instance)
+	private static string GetTribePreviewName(string tribeType)
 	{
-		if (Plugin.config.debug && UIManager.Instance.CurrentScreen == UIConstants.Screens.TribePicker)
-		{
-			if (firstTimeOpeningPreview)
-			{
-				RectMask2D mask = __instance.gameObject.GetComponent<RectMask2D>();
-				GameObject.Destroy(mask);
-				__instance.gameObject.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
-				__instance.gameObject.transform.position -= new Vector3(-5f, 40f, 0f);
-				firstTimeOpeningPreview = false;
-			}
-			foreach (UITile tile in __instance.tiles)
-			{
-				tile.DebugText.gameObject.SetActive(true);
-			}
-		}
+		return "worldpreview_" + tribeType;
 	}
 
-
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(TribePreviewRegistry), nameof(TribePreviewRegistry.GetTribePreviewData))]
-	private static void TribePreviewRegistry_GetTribePreviewData(ref SaveStateData __result, TribeType tribeType, SkinType skinType)
+	private static SaveStateData? ApplyCustomPreview(string previewId, SaveStateData originalPreview, PreviewTile[] preview)
 	{
-		string tribeName = EnumCache<TribeType>.GetName(tribeType).ToLower();
-		if (!Registry.tribePreviews.ContainsKey(tribeName))
-			return;
-
-		PreviewTile[]? preview = Registry.tribePreviews[tribeName];
-		if (preview == null)
-			return;
-
-		ClientSerializationWrapper result = new ClientSerializationWrapper(null);
-		int version;
-		bool num = DiskSerializationHelpers.FromLZ4CompressedByteArray<ClientSerializationWrapper>(__result.byteArray, out result, out version);
-		if (num)
+		SaveStateData? saveStateData = null;
+		if (DiskSerializationHelpers.FromLZ4CompressedByteArray<ClientSerializationWrapper>(
+			originalPreview.byteArray, out ClientSerializationWrapper clientSerializationWrapper, out int version))
 		{
-			GameState currentGameState = result.GetCurrentGameState();
+			GameState currentGameState = clientSerializationWrapper.GetCurrentGameState();
 			foreach (var previewTile in preview)
 			{
 				if(previewTile.x == null || previewTile.y == null)
@@ -517,34 +494,64 @@ public static class Visual
 				if(previewTile.terrainType != Polytopia.Data.TerrainData.Type.None)
 					tileData.terrain = previewTile.terrainType;
 
-				if(previewTile.resourceType != Polytopia.Data.ResourceData.Type.None)
-					tileData.resource = new ResourceState { type = previewTile.resourceType };
-
-				if(previewTile.unitType != Polytopia.Data.UnitData.Type.None &&
-					currentGameState.TryGetPlayer(currentGameState.CurrentPlayer, out PlayerState playerState) &&
-					currentGameState.GameLogicData.TryGetData(previewTile.unitType, out UnitData unitData))
+				if(previewTile.resourceType != null)
 				{
-					ActionUtils.TrainUnit(currentGameState, playerState, tileData, unitData);
+					ResourceState? resourceState = null;
+					ResourceData.Type resourceType = (ResourceData.Type)previewTile.resourceType;
+					if(resourceType != ResourceData.Type.None)
+					{
+						resourceState = new ResourceState { type = resourceType };
+					}
+					tileData.resource = resourceState;
 				}
 
-				if(previewTile.improvementType != Polytopia.Data.ImprovementData.Type.None &&
-					currentGameState.GameLogicData.TryGetData(previewTile.improvementType, out var improvementData))
+				if(previewTile.unitType != null)
 				{
-					tileData.improvement = new ImprovementState
+					tileData.unit = null;
+					if(previewTile.unitType != Polytopia.Data.UnitData.Type.None &&
+						currentGameState.TryGetPlayer(currentGameState.CurrentPlayer, out PlayerState playerState) &&
+						currentGameState.GameLogicData.TryGetData((UnitData.Type)previewTile.unitType, out UnitData unitData))
 					{
-						type = previewTile.improvementType,
-						borderSize = (ushort)improvementData.borderSize,
-						level = 0,
-						xp = 0,
-						production = 1,
-						founded = (ushort)currentGameState.CurrentTurn,
-						baseScore = (ushort)improvementData.GetScoreReward(),
-						founder = currentGameState.CurrentPlayer
-					};
+						UnitState unitState = ActionUtils.TrainUnit(currentGameState, playerState, tileData, unitData);
+						unitState.moved = false;
+						unitState.attacked = false;
+					}
+				}
+
+
+				if(previewTile.improvementType != null)
+				{
+					tileData.improvement = null;
+					ImprovementData.Type improvementType = (ImprovementData.Type)previewTile.improvementType;
+					if(
+						previewTile.improvementType != ImprovementData.Type.None &&
+						currentGameState.GameLogicData.TryGetData(
+							improvementType,
+							out ImprovementData improvementData)
+						)
+					{
+						tileData.improvement = new ImprovementState
+						{
+							type = improvementData.type,
+							borderSize = (ushort)improvementData.borderSize,
+							level = 0,
+							xp = 0,
+							production = 1,
+							founded = (ushort)currentGameState.CurrentTurn,
+							baseScore = (ushort)improvementData.GetScoreReward(),
+							founder = currentGameState.CurrentPlayer
+						};
+					}
 				}
 			}
-			__result.byteArray = DiskSerializationHelpers.ToLZ4CompressedByteArray(result, version);
+
+			saveStateData = new SaveStateData() {
+				name = previewId,
+				byteArray = DiskSerializationHelpers.ToLZ4CompressedByteArray(clientSerializationWrapper, version)
+			};
 		}
+
+		return saveStateData;
 	}
 
 	[HarmonyPrefix]
