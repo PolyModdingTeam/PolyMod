@@ -545,10 +545,9 @@ public static class Visual
 				}
 			}
 
-			saveStateData = new SaveStateData() {
-				name = previewId,
-				byteArray = DiskSerializationHelpers.ToLZ4CompressedByteArray(clientSerializationWrapper, version)
-			};
+			saveStateData = ScriptableObject.CreateInstance<SaveStateData>();
+			saveStateData.name = previewId;
+			saveStateData.byteArray = DiskSerializationHelpers.ToLZ4CompressedByteArray(clientSerializationWrapper, version);
 		}
 
 		return saveStateData;
