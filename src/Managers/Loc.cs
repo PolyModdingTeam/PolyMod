@@ -3,6 +3,8 @@ using I2.Loc;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using System.Reflection;
 using LibCpp2IL;
+using Polytopia.Data;
+using PolytopiaBackendBase.Common;
 
 namespace PolyMod.Managers;
 
@@ -12,6 +14,8 @@ namespace PolyMod.Managers;
 public static class Loc
 {
 	internal static Dictionary<string, Dictionary<string, string>> languagesToAdd = new();
+	internal static Dictionary<string, string> buildingsInfoOverrides = new();
+
 	/// <summary>
 	/// Patches the localization getter to handle custom enum values.
 	/// </summary>
@@ -69,30 +73,9 @@ public static class Loc
 		return true;
 	}
 
-	/// <summary>
-	/// Builds and loads localization data from a dictionary.
-	/// </summary>
-	/// <param name="localization">A dictionary containing the localization data.</param>
-	public static void BuildAndLoadLocalization(Dictionary<string, Dictionary<string, string>> localization)
-	{
-		foreach (var (key, data) in localization)
-		{
-			string name = key.Replace("_", ".");
-			name = name.Replace("..", "_");
-			if (name.StartsWith("tribeskins")) name = "TribeSkins/" + name;
-			TermData term = LocalizationManager.Sources[0].AddTerm(name);
-			List<string> strings = new();
-			foreach (string language in LocalizationManager.GetAllLanguages(false))
-			{
-				strings.Add(data.GetOrDefault(language, data.GetOrDefault("English", term.Term))!);
-			}
-			term.Languages = new Il2CppStringArray(strings.ToArray());
-		}
-	}
-
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(Localization), nameof(Localization.Init))]
-	public static bool Localization_Init()
+	private static bool Localization_Init()
 	{
 		if (Localization.initialized)
 			return true;
@@ -135,6 +118,51 @@ public static class Loc
 			Plugin.logger.LogInfo($"{languageCode} language terms added.");
 		}
 		return true;
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(BuildingUtils), nameof(BuildingUtils.GetInfo))]
+	private static bool BuildingUtils_GetInfo(ref string __result, SkinType skinOfCurrentLocalPlayer,
+		ImprovementData improvementData, ImprovementState improvementState, PlayerState owner, TileData tileData)
+	{
+		TribeType tribe = TribeType.None;
+		if (owner != null)
+			tribe = owner.tribe;
+
+		string key = EnumCache<ImprovementData.Type>.GetName(improvementData.type);
+		if(buildingsInfoOverrides.ContainsKey(key))
+		{
+			__result = Localization.GetSkinned(skinOfCurrentLocalPlayer, tribe, buildingsInfoOverrides[key]);
+			return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Builds and loads localization data from a dictionary.
+	/// </summary>
+	/// <param name="localization">A dictionary containing the localization data.</param>
+	internal static void BuildAndLoadLocalization(Dictionary<string, Dictionary<string, string>> localization)
+	{
+		foreach (var (key, data) in localization)
+		{
+			string name = ReplaceDashesWithDots(key);
+			if (name.StartsWith("tribeskins")) name = "TribeSkins/" + name;
+			TermData term = LocalizationManager.Sources[0].AddTerm(name);
+			List<string> strings = new();
+			foreach (string language in LocalizationManager.GetAllLanguages(false))
+			{
+				strings.Add(data.GetOrDefault(language, data.GetOrDefault("English", term.Term))!);
+			}
+			term.Languages = new Il2CppStringArray(strings.ToArray());
+		}
+	}
+
+	internal static string ReplaceDashesWithDots(string key)
+	{
+		string name = key.Replace("_", ".");
+		return name.Replace("..", "_");
 	}
 
 	/// <summary>
