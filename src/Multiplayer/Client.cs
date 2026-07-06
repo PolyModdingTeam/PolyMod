@@ -42,7 +42,7 @@ public static class Client
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.RunLayout))]
-    private static void StartScreen_Start(StartScreen_UI2 __instance)
+    private static void StartScreen_UI2_RunLayout(StartScreen_UI2 __instance)
     {
         __instance.highscoreButton.gameObject.SetActive(false);
         __instance.weeklyChallengeButton.gameObject.SetActive(false);
@@ -59,132 +59,6 @@ public static class Client
     }
 
 
-    // /// <summary>
-    // /// After GameState deserialization, check for trailing GLD version ID and set mockedGameLogicData.
-    // /// The server appends "##GLD:" + modGldVersion (int) after the normal serialized data.
-    // /// </summary>
-    // [HarmonyPostfix]
-    // [HarmonyPatch(typeof(GameState), nameof(GameState.Deserialize))]
-    // private static void Deserialize_Postfix(GameState __instance, BinaryReader __0)
-    // {
-    //     if(!allowGldMods) return;
-
-    //     Plugin.logger?.LogDebug("Deserialize_Postfix: Entered");
-
-    //     try
-    //     {
-    //         var reader = __0;
-    //         if (reader == null)
-    //         {
-    //             Plugin.logger?.LogWarning("Deserialize_Postfix: reader is null");
-    //             return;
-    //         }
-
-    //         var position = reader.BaseStream.Position;
-    //         var length = reader.BaseStream.Length;
-    //         var remaining = length - position;
-
-    //         Plugin.logger?.LogDebug($"Deserialize_Postfix: Stream position={position}, length={length}, remaining={remaining}");
-
-    //         // Check if there's more data after normal deserialization
-    //         if (position >= length)
-    //         {
-    //             Plugin.logger?.LogDebug("Deserialize_Postfix: No trailing data (position >= length)");
-
-    //             var sd = __instance.Seed;
-    //             if (_gldCache.TryGetValue(sd, out var cachedGld))
-    //             {
-    //                 __instance.mockedGameLogicData = cachedGld;
-    //                 var cachedVersion = _versionCache.GetValueOrDefault(sd, -1);
-    //                 Plugin.logger?.LogInfo($"Deserialize_Postfix: Applied cached GLD for Seed={sd}, ModGldVersion={cachedVersion}");
-    //             }
-    //             return;
-    //         }
-
-    //         Plugin.logger?.LogDebug($"Deserialize_Postfix: Found {remaining} bytes of trailing data, attempting to read marker");
-
-    //         var marker = reader.ReadString();
-    //         Plugin.logger?.LogDebug($"Deserialize_Postfix: Read marker string: '{marker}'");
-
-    //         if (marker != GldMarker)
-    //         {
-    //             Plugin.logger?.LogDebug($"Deserialize_Postfix: Marker mismatch - expected '{GldMarker}', got '{marker}'");
-    //             return;
-    //         }
-
-    //         Plugin.logger?.LogInfo($"Deserialize_Postfix: Found GLD marker '{GldMarker}'");
-
-    //         var modGldVersion = reader.ReadInt32();
-    //         Plugin.logger?.LogInfo($"Deserialize_Postfix: Found embedded ModGldVersion: {modGldVersion}");
-
-    //         Plugin.logger?.LogDebug($"Deserialize_Postfix: Fetching GLD from server for version {modGldVersion}");
-    //         var gldJson = FetchGldById(modGldVersion);
-    //         if (string.IsNullOrEmpty(gldJson))
-    //         {
-    //             Plugin.logger?.LogError($"Deserialize_Postfix: Failed to fetch GLD for ModGldVersion: {modGldVersion}");
-    //             return;
-    //         }
-
-    //         Plugin.logger?.LogDebug($"Deserialize_Postfix: Parsing GLD JSON ({gldJson.Length} chars)");
-
-    //         var customGld = new GameLogicData();
-    //         customGld.Parse(gldJson);
-    //         __instance.mockedGameLogicData = customGld;
-
-    //         // Cache for subsequent deserializations (rewinds, reloads)
-    //         var seed = __instance.Seed;
-    //         _gldCache[seed] = customGld;
-    //         _versionCache[seed] = modGldVersion;
-
-    //         Plugin.logger?.LogInfo($"Deserialize_Postfix: Successfully set mockedGameLogicData from ModGldVersion: {modGldVersion}, cached for Seed={seed}");
-    //     }
-    //     catch (EndOfStreamException)
-    //     {
-    //         Plugin.logger?.LogDebug("Deserialize_Postfix: EndOfStreamException - no trailing data");
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Plugin.logger?.LogError($"Deserialize_Postfix: Exception: {ex.GetType().Name}: {ex.Message}");
-    //         Plugin.logger?.LogDebug($"Deserialize_Postfix: Stack trace: {ex.StackTrace}");
-    //     }
-    // }
-
-    // /// <summary>
-    // /// Fetch GLD from server using ModGldVersion ID
-    // /// </summary>
-    // private static string? FetchGldById(int modGldVersion)
-    // {
-    //     if(!allowGldMods) return null;
-    //     try
-    //     {
-    //         using var client = new HttpClient();
-    //         var url = $"{Plugin.config.backendUrl.TrimEnd('/')}/api/mods/gld/{modGldVersion}";
-    //         Plugin.logger?.LogDebug($"FetchGldById: Requesting URL: {url}");
-
-    //         var response = client.GetAsync(url).Result;
-    //         Plugin.logger?.LogDebug($"FetchGldById: Response status: {response.StatusCode}");
-
-    //         if (response.IsSuccessStatusCode)
-    //         {
-    //             var gld = response.Content.ReadAsStringAsync().Result;
-    //             Plugin.logger?.LogInfo($"FetchGldById: Successfully fetched mod GLD ({gld.Length} chars)");
-    //             return gld;
-    //         }
-
-    //         var errorContent = response.Content.ReadAsStringAsync().Result;
-    //         Plugin.logger?.LogError($"FetchGldById: Failed with status {response.StatusCode}: {errorContent}");
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Plugin.logger?.LogError($"FetchGldById: Exception: {ex.GetType().Name}: {ex.Message}");
-    //         if (ex.InnerException != null)
-    //         {
-    //             Plugin.logger?.LogError($"FetchGldById: Inner exception: {ex.InnerException.Message}");
-    //         }
-    //     }
-    //     return null;
-    // }
-
     [HarmonyPrefix]
     [HarmonyPatch(typeof(ClientBase), nameof(ClientBase.SendCommand))]
     private static bool ClientBase_SendCommand(
@@ -196,14 +70,14 @@ public static class Client
         Il2CppSystem.Threading.Tasks.Task<ServerResponse<BoolResponseViewModel>> task = new();
         var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<BoolResponseViewModel>>();
 
-        _ = HandleSendCommandModded(taskCompletionSource, __instance, command);
+        _ = ClientBase_SendCommand_Async(taskCompletionSource, __instance, command);
 
         task = taskCompletionSource.Task;
 
         return false;
     }
 
-    private static async System.Threading.Tasks.Task HandleSendCommandModded(
+    private static async System.Threading.Tasks.Task ClientBase_SendCommand_Async(
         Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<BoolResponseViewModel>> tcs,
         ClientBase client,
         CommandBase command)
@@ -279,14 +153,14 @@ public static class Client
         Plugin.logger.LogInfo("Multiplayer> BackendAdapter_StartLobbyGame_Modded");
         var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>>();
 
-        _ = HandleStartLobbyGameModded(taskCompletionSource, __instance, model);
+        _ = BackendAdapter_StartLobbyGame_Async(taskCompletionSource, __instance, model);
 
         __result = taskCompletionSource.Task;
 
         return false;
     }
 
-    private static async System.Threading.Tasks.Task HandleStartLobbyGameModded(
+    private static async System.Threading.Tasks.Task BackendAdapter_StartLobbyGame_Async(
         Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>> tcs,
         BackendAdapter instance,
         StartLobbyBindingModel model)
