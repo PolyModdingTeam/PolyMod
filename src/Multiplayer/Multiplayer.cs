@@ -93,6 +93,20 @@ public static class Client
     }
 
     [HarmonyPostfix]
+    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.RunLayout))]
+    private static void StartScreen_UI2_ReflowRoundButtons(StartScreen_UI2 __instance, ScreenBase_UI2.ScreenSize screenSize)
+    {
+        // RunLayout adds all four round buttons to a UITable unconditionally, so hiding the highscore button leaves a gap. Re-run the row without it so the rest recenter.
+        UITable table = new();
+        table.AddCell(__instance.settingsButton);
+        table.AddCell(__instance.throneRoomButton);
+        table.AddCell(__instance.aboutButton);
+        table.SetBottom(screenSize.safeRect.Bottom + __instance.settingsButton.GetHalfHeight() + 15f);
+        table.margin = 20f;
+        table.RunLayout();
+    }
+
+    [HarmonyPostfix]
     [HarmonyPatch(typeof(SystemInfo), nameof(SystemInfo.deviceUniqueIdentifier), MethodType.Getter)]
     public static void SteamClient_get_SteamId(ref string  __result)
     {
