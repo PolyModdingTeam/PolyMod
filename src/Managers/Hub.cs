@@ -24,6 +24,8 @@ internal static class Hub
     private const string HEADER_PREFIX = "<align=\"center\"><size=150%><b>";
     private const string HEADER_POSTFIX = "</b></size><align=\"left\">";
     private const int POPUP_WIDTH = 1400;
+    private static UIRoundButton_UI2? polyModButton = null;
+    private static UIRoundButton_UI2? polyModVersion = null;
 
     /// <summary>
     /// Whether the configuration popup is currently active.
@@ -64,246 +66,70 @@ internal static class Hub
         }
     }
 
-    /// <summary>
-    /// Patches the start screen to add the PolyMod hub button and version text.
-    /// </summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-    private static void StartScreen_Start(StartScreen __instance)
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.Init))]
+    private static void StartScreen_UI2_Init(StartScreen_UI2 __instance, RectTransform transform)
     {
-        Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<UnityEngine.Object> allLocalizers = GameObject.FindObjectsOfTypeAll(Il2CppType.From(typeof(TMPLocalizer)));
+        polyModButton = UILibrary.NewRoundButton(transform).SetStyle(UIButtonBase_UI2.ButtonStyle.Suggested);
+        polyModButton.bg.sprite = Visual.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
+        polyModButton.OnClickedSignal.Add(DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(ShowPolyModHub));
 
-        foreach (UnityEngine.Object item in allLocalizers)
-        {
-            TMPLocalizer? localizer = item.TryCast<TMPLocalizer>();
-            if (localizer == null)
-            {
-                continue;
-            }
-
-            Transform? parent = localizer?.gameObject?.transform?.parent;
-            if (parent == null)
-            {
-                continue;
-            }
-
-            string parentName = parent.name;
-
-            if (parentName == "SettingsButton")
-            {
-                Transform? textTransform = parent.FindChild("DescriptionText");
-                if (textTransform == null)
-                {
-                    return;
-                }
-
-                GameObject originalText = textTransform.gameObject;
-                GameObject text = GameObject.Instantiate(originalText, originalText.transform.parent.parent.parent);
-                text.name = "PolyModVersion";
-
-                RectTransform rect = text.GetComponent<RectTransform>();
-                rect.anchoredPosition = new Vector2(265, 40);
-                rect.sizeDelta = new Vector2(500, rect.sizeDelta.y);
-                rect.anchorMax = Vector2.zero;
-                rect.anchorMin = Vector2.zero;
-
-                TextMeshProUGUI textComponent = text.GetComponent<TextMeshProUGUI>();
-                textComponent.fontSize = 18;
-                textComponent.alignment = TextAlignmentOptions.BottomLeft;
-
-                text.GetComponent<TMPLocalizer>().Text = $"PolyMod {Plugin.VERSION}";
-                text.AddComponent<LayoutElement>().ignoreLayout = true;
-            }
-            else if (parentName == "NewsButton")
-            {
-                GameObject originalButton = parent.gameObject;
-                GameObject button = GameObject.Instantiate(originalButton, originalButton.transform.parent);
-                button.name = "PolyModHubButton";
-                button.transform.position = originalButton.transform.position - new Vector3(90, 0, 0);
-
-                UIRoundButton buttonComponent = button.GetComponent<UIRoundButton>();
-                buttonComponent.bg.sprite = Visual.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
-                buttonComponent.bg.transform.localScale = new Vector3(1.2f, 1.2f, 0);
-                buttonComponent.bg.color = Color.white;
-
-                GameObject.Destroy(buttonComponent.icon.gameObject);
-                GameObject.Destroy(buttonComponent.outline.gameObject);
-
-                Transform descriptionText = button.transform.Find("DescriptionText");
-                descriptionText.gameObject.SetActive(true);
-                descriptionText.GetComponentInChildren<TMPLocalizer>().Key = "polymod.hub";
-
-                buttonComponent.OnClicked += (UIButtonBase.ButtonAction)PolyModHubButtonClicked;
-            }
-        }
-
-        static void PolyModHubButtonClicked(int buttonId, BaseEventData eventData)
-        {
-            BasicPopup popup = PopupManager.GetBasicPopup();
-            popup.Header = Localization.Get("polymod.hub");
-            popup.Description = Localization.Get("polymod.hub.header", new Il2CppSystem.Object[] {
-                HEADER_PREFIX,
-                HEADER_POSTFIX
-            }) + "\n\n";
-            foreach (var mod in Registry.mods.Values)
-            {
-                popup.Description += Localization.Get("polymod.hub.mod", new Il2CppSystem.Object[] {
-                    mod.name,
-                    Localization.Get("polymod.hub.mod.status."
-                        + Enum.GetName(typeof(Mod.Status), mod.status)!.ToLower()),
-                    string.Join(", ", mod.authors),
-                    mod.version.ToString(),
-                    mod.description ?? ""
-                });
-                popup.Description += "\n\n";
-            }
-            popup.Description += Localization.Get("polymod.hub.footer", new Il2CppSystem.Object[] {
-                HEADER_PREFIX,
-                HEADER_POSTFIX
-            });
-            List<PopupBase.PopupButtonData> popupButtons = new()
-            {
-                new("buttons.back"),
-                new(
-                    "polymod.hub.discord",
-                    callback: (UIButtonBase.ButtonAction)((_, _) =>
-                        NativeHelpers.OpenURL(Plugin.DISCORD_LINK, false))
-                ),
-                new(
-                    "polymod.hub.config",
-                    callback: (UIButtonBase.ButtonAction)((_, _) =>
-                    {
-                        ShowConfigPopup();
-                    })
-                )
-            };
-            if (Plugin.config.debug)
-            {
-                popupButtons.Add(new(
-                    "polymod.hub.dump",
-                    callback: (UIButtonBase.ButtonAction)((_, _) =>
-                    {
-                        Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
-                        Directory.CreateDirectory(Plugin.LOGIC_DUMP_PATH);
-                        Directory.CreateDirectory(Plugin.LOCALIZATION_DUMP_PATH);
-                        File.WriteAllTextAsync(
-                            Path.Combine(Plugin.LOGIC_DUMP_PATH, "gameLogicData.json"),
-                            PolytopiaDataManager.provider.LoadGameLogicData(VersionManager.GameLogicDataVersion)
-                        );
-                        File.WriteAllTextAsync(
-                            Path.Combine(Plugin.LOGIC_DUMP_PATH, "avatarData.json"),
-                            PolytopiaDataManager.provider.LoadAvatarData(1337)
-                        );
-                        var source = LocalizationManager.Sources[0];
-                        foreach (var language in source.GetLanguages())
-                        {
-                            int languageIndex = source.GetLanguageIndex(language);
-                            var dict = new Dictionary<string, string>();
-
-                            foreach (var term in source.mTerms)
-                            {
-                                var translation = term.GetTranslation(languageIndex);
-
-                                if (!string.IsNullOrEmpty(translation))
-                                    dict[term.Term] = translation;
-                            }
-                            var options = new JsonSerializerOptions
-                            {
-                                WriteIndented = true,
-                                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                            };
-
-                            string json = JsonSerializer.Serialize(dict, options);
-
-                            File.WriteAllText(
-                                Path.Combine(Plugin.LOCALIZATION_DUMP_PATH, $"language_{source.mLanguages[languageIndex].Code}.json"),
-                                json
-                            );
-                        }
-                        foreach (var category in source.GetCategories())
-                            File.WriteAllTextAsync(
-                                Path.Combine(Plugin.LOCALIZATION_DUMP_PATH, $"localization_{category}.csv"),
-                                source.Export_CSV(category)
-                            );
-                        foreach (KeyValuePair<string, Mod> entry in Registry.mods)
-                        {
-                            foreach (Mod.File file in entry.Value.files)
-                            {
-                                Match spritesMatch = Regex.Match(Path.GetFileName(file.name), @"^sprites(?:_(.*))?\.json$");
-                                if (spritesMatch.Success)
-                                    File.WriteAllBytes(
-                                        Path.Combine(
-                                                Plugin.DUMPED_DATA_PATH,
-                                                $"{Path.GetFileNameWithoutExtension(file.name)}_{entry.Key}.json"
-                                        ),
-                                        file.bytes
-                                    );
-                            }
-                        }
-                        foreach (TribeType type in Enum.GetValues(typeof(TribeType)))
-                        {
-                            List<Visual.PreviewTile> previewTiles = new();
-                            SelectTribePopup popup = PopupManager.GetSelectTribePopup();
-                            for (int x = -3; x <= 3; x++)
-                            {
-                                for (int y = -7; y <= 7; y++)
-                                {
-                                    Vector2Int pos = new Vector2Int(x, y);
-                                    if (popup.UIWorldPreview.worldPreviewData.TryGetData(pos, type, out UITileData tileData))
-                                    {
-                                        Visual.PreviewTile previewTile = new Visual.PreviewTile
-                                        {
-                                            x = tileData.Position.x,
-                                            y = tileData.Position.y,
-                                            terrainType = tileData.terrainType,
-                                            resourceType = tileData.resourceType,
-                                            unitType = tileData.unitType,
-                                            improvementType = tileData.improvementType
-                                        };
-                                        previewTiles.Add(previewTile);
-                                    }
-                                }
-                            }
-                            File.WriteAllTextAsync(
-                                Path.Combine(Plugin.DUMPED_DATA_PATH, $"preview_{type}.json"),
-                                JsonSerializer.Serialize(previewTiles, new JsonSerializerOptions { WriteIndented = true })
-                            );
-                        }
-                        NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
-                    }),
-                    closesPopup: false
-                ));
-                popupButtons.Add(new(
-                    "polymod.hub.spriteinfo.update",
-                    callback: (UIButtonBase.ButtonAction)((_, _) =>
-                    {
-                        UpdateSpriteInfos();
-                    }),
-                    closesPopup: false
-                ));
-            }
-            popup.buttonData = popupButtons.ToArray();
-            popup.ShowSetWidth(POPUP_WIDTH);
-        }
+        polyModVersion = UILibrary.NewRoundButton(transform).SetStyle(UIButtonBase_UI2.ButtonStyle.Suggested);
+        polyModVersion.Text = $"PolyMod {Plugin.VERSION}";
+        polyModVersion.titleTextField.textField.fontSize = 18f;
 
         if (Main.dependencyCycle)
         {
-            var popup = PopupManager.GetBasicPopup(new(
-                Localization.Get("polymod.cycle"),
-                Localization.Get("polymod.cycle.description"),
-                new(new PopupBase.PopupButtonData[] {
-                    new(
-                        "buttons.exitgame",
-                        PopupBase.PopupButtonData.States.None,
-                        (Il2CppSystem.Action)Application.Quit,
-                        closesPopup: false,
-                        customColorStates: ColorConstants.redButtonColorStates
-                    )
-                })
-            ));
+            BasicPopup popup = PopupManager.GetBasicPopupWithData(
+                new(
+                    Localization.Get("polymod.cycle"),
+                    Localization.Get("polymod.cycle.description"),
+                    new PopupBase.PopupButtonData[] {
+                        new(
+                            "buttons.exitgame",
+                            PopupBase.PopupButtonData.States.None,
+                            (Il2CppSystem.Action)Application.Quit,
+                            closesPopup: false,
+                            customColorStates: ColorConstants.redButtonColorStates
+                        )
+                    }
+                )
+            );
+
             popup.IsUnskippable = true;
             popup.Show();
         }
+
+    }
+
+    /// <summary>
+    /// Patches the start screen to add the PolyMod hub button and version text.
+    /// </summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.RunLayout))]
+    private static void StartScreen_UI2_RunLayout(StartScreen_UI2 __instance, ScreenBase_UI2.ScreenSize screenSize)
+    {
+        if(polyModButton == null)
+        {
+            Plugin.logger.LogWarning("PolyMod Hub button is null when running layout!");
+            return;
+        }
+        polyModButton.iconContainer.gameObject.SetActive(false);
+        polyModButton.outline.gameObject.SetActive(false);
+        polyModButton.bg.color = Color.white;
+        polyModButton.Text = Localization.Get("polymod.hub");
+		float num = 50f;
+		polyModButton.SetPosition(screenSize.safeRect.Right - (num * 2.5f), screenSize.safeRect.Top - num);
+
+        if(polyModVersion == null)
+        {
+            Plugin.logger.LogWarning("PolyMod Version is null when running layout!");
+            return;
+        }
+        polyModVersion.iconContainer.gameObject.SetActive(false);
+        polyModVersion.outline.gameObject.SetActive(false);
+        polyModVersion.bg.gameObject.SetActive(false);
+        polyModVersion.SetPosition(screenSize.safeRect.Left + num * 1.15f, screenSize.safeRect.Bottom + num * 1.15f);
     }
 
     /// <summary>
@@ -354,18 +180,168 @@ internal static class Hub
     }
 
     /// <summary>
+    /// Dump all data.
+    /// </summary>
+    internal static void DumpData()
+    {
+        Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
+        Directory.CreateDirectory(Plugin.LOGIC_DUMP_PATH);
+        Directory.CreateDirectory(Plugin.LOCALIZATION_DUMP_PATH);
+        File.WriteAllTextAsync(
+            Path.Combine(Plugin.LOGIC_DUMP_PATH, "gameLogicData.json"),
+            PolytopiaDataManager.provider.LoadGameLogicData(VersionManager.GameLogicDataVersion)
+        );
+        File.WriteAllTextAsync(
+            Path.Combine(Plugin.LOGIC_DUMP_PATH, "avatarData.json"),
+            PolytopiaDataManager.provider.LoadAvatarData(1337)
+        );
+        var source = LocalizationManager.Sources[0];
+        foreach (var language in source.GetLanguages())
+        {
+            int languageIndex = source.GetLanguageIndex(language);
+            var dict = new Dictionary<string, string>();
+
+            foreach (var term in source.mTerms)
+            {
+                var translation = term.GetTranslation(languageIndex);
+
+                if (!string.IsNullOrEmpty(translation))
+                    dict[term.Term] = translation;
+            }
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+
+            string json = JsonSerializer.Serialize(dict, options);
+
+            File.WriteAllText(
+                Path.Combine(Plugin.LOCALIZATION_DUMP_PATH, $"language_{source.mLanguages[languageIndex].Code}.json"),
+                json
+            );
+        }
+        foreach (var category in source.GetCategories())
+            File.WriteAllTextAsync(
+                Path.Combine(Plugin.LOCALIZATION_DUMP_PATH, $"localization_{category}.csv"),
+                source.Export_CSV(category)
+            );
+        foreach (KeyValuePair<string, Mod> entry in Registry.mods)
+        {
+            foreach (Mod.File file in entry.Value.files)
+            {
+                Match spritesMatch = Regex.Match(Path.GetFileName(file.name), @"^sprites(?:_(.*))?\.json$");
+                if (spritesMatch.Success)
+                    File.WriteAllBytes(
+                        Path.Combine(
+                                Plugin.DUMPED_DATA_PATH,
+                                $"{Path.GetFileNameWithoutExtension(file.name)}_{entry.Key}.json"
+                        ),
+                        file.bytes
+                    );
+            }
+        }
+        foreach (TribeType type in Enum.GetValues(typeof(TribeType)))
+        {
+            List<Visual.PreviewTile> previewTiles = new();
+            SelectTribePopup popup = PopupManager.GetSelectTribePopup();
+            for (int x = -3; x <= 3; x++)
+            {
+                for (int y = -7; y <= 7; y++)
+                {
+                    Vector2Int pos = new Vector2Int(x, y);
+                    if (popup.UIWorldPreview.worldPreviewData.TryGetData(pos, type, out UITileData tileData))
+                    {
+                        Visual.PreviewTile previewTile = new Visual.PreviewTile
+                        {
+                            x = tileData.Position.x,
+                            y = tileData.Position.y,
+                            terrainType = tileData.terrainType,
+                            resourceType = tileData.resourceType,
+                            unitType = tileData.unitType,
+                            improvementType = tileData.improvementType
+                        };
+                        previewTiles.Add(previewTile);
+                    }
+                }
+            }
+            File.WriteAllTextAsync(
+                Path.Combine(Plugin.DUMPED_DATA_PATH, $"preview_{type}.json"),
+                JsonSerializer.Serialize(previewTiles, new JsonSerializerOptions { WriteIndented = true })
+            );
+        }
+        NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
+    }
+
+    /// <summary>
     /// Shows the configuration popup.
     /// </summary>
     internal static void ShowConfigPopup()
     {
-        BasicPopup polymodPopup = PopupManager.GetBasicPopup();
-
+        BasicPopupLegacy polymodPopup = Visual.GetBasicPopupLegacy();
         polymodPopup.Header = Localization.Get("polymod.hub.config");
         polymodPopup.Description = "";
-
         polymodPopup.buttonData = CreateConfigPopupButtonData();
         polymodPopup.ShowSetWidth(POPUP_WIDTH);
-        polymodPopup.Show();
+    }
+
+    internal static void ShowPolyModHub()
+    {
+        BasicPopupLegacy popup = Visual.GetBasicPopupLegacy();
+        popup.Header = Localization.Get("polymod.hub");
+        popup.Description = Localization.Get("polymod.hub.header", new Il2CppSystem.Object[] {
+            HEADER_PREFIX,
+            HEADER_POSTFIX
+        }) + "\n\n";
+        foreach (var mod in Registry.mods.Values)
+        {
+            popup.Description += Localization.Get("polymod.hub.mod", new Il2CppSystem.Object[] {
+                mod.name,
+                Localization.Get("polymod.hub.mod.status."
+                    + Enum.GetName(typeof(Mod.Status), mod.status)!.ToLower()),
+                string.Join(", ", mod.authors),
+                mod.version.ToString(),
+                mod.description ?? ""
+            });
+            popup.Description += "\n\n";
+        }
+        popup.Description += Localization.Get("polymod.hub.footer", new Il2CppSystem.Object[] {
+            HEADER_PREFIX,
+            HEADER_POSTFIX
+        });
+
+        void OpenDiscord()
+        {
+            NativeHelpers.OpenURL(Plugin.DISCORD_LINK, false);
+        }
+
+        List<PopupBase.PopupButtonData> popupButtons = new()
+        {
+            new("buttons.back"),
+            new(
+                "polymod.hub.discord",
+                callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OpenDiscord)
+            ),
+            new(
+                "polymod.hub.config",
+                callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(ShowConfigPopup)
+            )
+        };
+        if (Plugin.config.debug)
+        {
+            popupButtons.Add(new(
+                "polymod.hub.dump",
+                callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(DumpData),
+                closesPopup: false
+            ));
+            popupButtons.Add(new(
+                "polymod.hub.spriteinfo.update",
+                callback:  DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(UpdateSpriteInfos),
+                closesPopup: false
+            ));
+        }
+        popup.buttonData = popupButtons.ToArray();
+        popup.ShowSetWidth(POPUP_WIDTH);
     }
 
     /// <summary>
@@ -376,12 +352,12 @@ internal static class Hub
     {
         List<PopupButtonData> popupButtons = new()
         {
-            new(Localization.Get("buttons.back"), PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnBackButtonClicked, -1, true, null)
+            new(Localization.Get("buttons.back"), PopupButtonData.States.None, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OnBackButtonClicked), -1, true, null)
         };
 
         if (GameManager.Instance.isLevelLoaded)
         {
-            popupButtons.Add(new PopupButtonData(Localization.Get("polymod.hub.spriteinfo.update"), PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnUpdateSpritesButtonClicked, -1, true, null));
+            popupButtons.Add(new PopupButtonData(Localization.Get("polymod.hub.spriteinfo.update"), PopupButtonData.States.None, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OnUpdateSpritesButtonClicked), -1, true, null));
         }
         else
         {
@@ -400,13 +376,13 @@ internal static class Hub
                 new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate.alpha",
                 new Il2CppSystem.Object[]{}).ToUpperInvariant() }
             );
-            popupButtons.Add(new PopupButtonData(debugButtonName, PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnDebugButtonClicked, -1, true, null));
-            popupButtons.Add(new PopupButtonData(autoUpdateButtonName, PopupButtonData.States.None, (UIButtonBase.ButtonAction)OnAutoUpdateButtonClicked, -1, true, null));
-            popupButtons.Add(new PopupButtonData(includeAlphasButtonName, Plugin.config.autoUpdate ? PopupButtonData.States.None : PopupButtonData.States.Disabled, (UIButtonBase.ButtonAction)OnIncludeAlphasButtonClicked, -1, true, null));
+            popupButtons.Add(new PopupButtonData(debugButtonName, PopupButtonData.States.None, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OnDebugButtonClicked), -1, true, null));
+            popupButtons.Add(new PopupButtonData(autoUpdateButtonName, PopupButtonData.States.None, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OnAutoUpdateButtonClicked), -1, true, null));
+            popupButtons.Add(new PopupButtonData(includeAlphasButtonName, Plugin.config.autoUpdate ? PopupButtonData.States.None : PopupButtonData.States.Disabled, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OnIncludeAlphasButtonClicked), -1, true, null));
         }
         return popupButtons.ToArray();
 
-        void OnDebugButtonClicked(int buttonId, BaseEventData eventData)
+        void OnDebugButtonClicked()
         {
             Plugin.config = new(debug: !Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
             Plugin.WriteConfig();
@@ -419,7 +395,7 @@ internal static class Hub
             isConfigPopupActive = false;
         }
 
-        void OnAutoUpdateButtonClicked(int buttonId, BaseEventData eventData)
+        void OnAutoUpdateButtonClicked()
         {
             Plugin.config = new(debug: Plugin.config.debug, autoUpdate: !Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
             Plugin.WriteConfig();
@@ -432,7 +408,7 @@ internal static class Hub
             isConfigPopupActive = false;
         }
 
-        void OnIncludeAlphasButtonClicked(int buttonId, BaseEventData eventData)
+        void OnIncludeAlphasButtonClicked()
         {
             Plugin.config = new(debug: Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: !Plugin.config.updatePrerelease);
             Plugin.WriteConfig();
@@ -445,13 +421,13 @@ internal static class Hub
             isConfigPopupActive = false;
         }
 
-        void OnUpdateSpritesButtonClicked(int buttonId, BaseEventData eventData)
+        void OnUpdateSpritesButtonClicked()
         {
             UpdateSpriteInfos();
             isConfigPopupActive = false;
         }
 
-        void OnBackButtonClicked(int buttonId, BaseEventData eventData)
+        void OnBackButtonClicked()
         {
             isConfigPopupActive = false;
         }

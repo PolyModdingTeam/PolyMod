@@ -61,7 +61,7 @@ public static class Loader
 			{
 				if (duringEnumCacheCreation)
 				{
-					Registry.customTribes.Add((TribeType)Registry.autoidx);
+					Registry.customTribes.Add((TribeType)(int)token["idx"]);
 					token["style"] = Registry.climateAutoidx;
 					token["climate"] = Registry.climateAutoidx;
 					Registry.climateAutoidx++;
@@ -183,17 +183,20 @@ public static class Loader
 			}
 			else
 			{
+				string improvementId = Util.GetJTokenName(token);
 				if (token["attractsResource"] != null)
 				{
-					string improvementId = Util.GetJTokenName(token);
 					string attractsId = token["attractsResource"].ToString();
 					Main.attractsResourceNames[improvementId] = attractsId;
 				}
 				if (token["attractsToTerrain"] != null)
 				{
-					string improvementId = Util.GetJTokenName(token);
 					string attractsId = token["attractsToTerrain"].ToString();
 					Main.attractsTerrainNames[improvementId] = attractsId;
+				}
+				if(token["infoOverride"] != null)
+				{
+					Loc.buildingsInfoOverrides[improvementId] = Loc.ReplaceDashesWithDots(token["infoOverride"].ToString());
 				}
 			}
 		})
@@ -912,6 +915,7 @@ public static class Loader
 		try
 		{
 			CreateMappings(rootObject);
+			ProcessCustomTribes();
 			ProcessPrefabs();
 			ProcessEmbarkOverrides();
 			ProcessAttractOverrides();
@@ -919,6 +923,17 @@ public static class Loader
 		catch (Exception e)
 		{
 			Plugin.logger.LogError($"Error on processing modified game logic data : {e.StackTrace}");
+		}
+	}
+
+	internal static void ProcessCustomTribes()
+	{
+		foreach (var tribe in Registry.customTribes)
+		{
+			if(!GameLogicData.legacyTribeTypesOrder.Contains(tribe))
+			{
+				GameLogicData.legacyTribeTypesOrder.Add(tribe);
+			}
 		}
 	}
 

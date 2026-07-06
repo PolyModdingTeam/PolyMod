@@ -78,18 +78,18 @@ public static class Client
     }
 
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(MultiplayerScreen), nameof(MultiplayerScreen.Show))]
-    public static void MultiplayerScreen_Show(MultiplayerScreen __instance)
+    [HarmonyPatch(typeof(MultiplayerSelectionScreen), nameof(MultiplayerSelectionScreen.Awake))]
+    public static void MultiplayerSelectionScreen_Awake(MultiplayerSelectionScreen __instance)
     {
-        __instance.multiplayerSelectionScreen.TournamentsButton.gameObject.SetActive(false);
+        __instance.TournamentsButton.gameObject.SetActive(false);
     }
 
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-    private static void StartScreen_Start(StartScreen __instance)
+    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.Init))]
+    private static void StartScreen_UI2_HideButtons(StartScreen_UI2 __instance)
     {
         __instance.highscoreButton.gameObject.SetActive(false);
-        __instance.weeklyChallengesButton.gameObject.SetActive(false);
+        __instance.weeklyChallengeButton.gameObject.SetActive(false);
     }
 
     [HarmonyPostfix]
