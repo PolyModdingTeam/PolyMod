@@ -63,13 +63,27 @@ public static class AndroidHandler
 
     /// <summary>
     /// On android Firebase cannot initialize inside the launcher process (its config lives in the game APK's resources, and the native lib may be unreachable there).
-    /// We try to skip Firebase completely.
+    /// We try to skip Firebase completely. isFirebaseInitialized deliberately stays false:
+    /// pretending Firebase is up could wake isFirebaseInitialized-guarded code paths
+    /// (e.g. HandleOpenedThroughNotification on every app resume).
     /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(FirebaseMessagingManager), nameof(FirebaseMessagingManager.Init))]
-    private static bool FirebaseMessagingManager_Init(FirebaseMessagingManager __instance)
+    private static bool FirebaseMessagingManager_Init()
     {
-        __instance.isFirebaseInitialized = true;
+        return false;
+    }
+
+    /// <summary>
+    /// RequestPushNotificationPermissions (the push-notification row in LoginDetails) calls
+    /// InitAsync directly, bypassing Init — with isFirebaseInitialized kept false that would
+    /// still reach Firebase, so hand back a completed task instead.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(FirebaseMessagingManager), nameof(FirebaseMessagingManager.InitAsync))]
+    private static bool FirebaseMessagingManager_InitAsync(ref Il2CppSystem.Threading.Tasks.Task __result)
+    {
+        __result = Il2CppSystem.Threading.Tasks.Task.CompletedTask;
         return false;
     }
 }
