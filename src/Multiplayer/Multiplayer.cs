@@ -39,44 +39,6 @@ public static class Client
         Plugin.logger.LogInfo($"Multiplayer> Server URL set to: {Plugin.config.backendUrl}");
     }
 
-    /// <summary>
-    /// On Android, bypass multiplayer requirements that depend on
-    /// Google Play login, push notifications, and purchases — none of which work
-    /// when running as a wrapper app with a different package identity.
-    /// </summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(GameManager), nameof(GameManager.IsMultiplayerEnabled), MethodType.Getter)]
-    public static bool GameManager_IsMultiplayerEnabled(ref bool __result)
-    {
-        if (Application.platform != RuntimePlatform.Android) return true;
-        __result = true;
-        return false;
-    }
-
-    /// <summary>
-    /// Replace the Android login flow to skip Google Play Games SDK entirely.
-    /// Uses deviceUniqueIdentifier as the auth code for the Polydystopia backend.
-    /// </summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(PolytopiaBackendAdapter), "LoginPlatformAndroid")]
-    public static bool LoginPlatformAndroid_Prefix(
-        ref Il2CppSystem.Threading.Tasks.Task<ServerResponse<PolytopiaToken>> __result,
-        PolytopiaBackendAdapter __instance)
-    {
-        if (Application.platform != RuntimePlatform.Android) return true;
-
-        // Mark social login as cached so the post-login flow doesn't bail out
-        __instance.HasSocialLoginCached = true;
-
-        var model = new LoginGooglePlayBindingModel();
-        model.AuthCode = SystemInfo.deviceUniqueIdentifier;
-        model.DeviceId = SystemInfo.deviceUniqueIdentifier;
-
-        Plugin.logger.LogInfo($"Multiplayer> Android login with DeviceId: {model.DeviceId}");
-        __result = __instance.LoginGooglePlay(model);
-        return false;
-    }
-
     [HarmonyPostfix]
     [HarmonyPatch(typeof(MultiplayerSelectionScreen), nameof(MultiplayerSelectionScreen.Awake))]
     public static void MultiplayerSelectionScreen_Awake(MultiplayerSelectionScreen __instance)
@@ -98,9 +60,9 @@ public static class Client
     {
         // RunLayout adds all four round buttons to a UITable unconditionally, so hiding the highscore button leaves a gap. Re-run the row without it so the rest recenter.
         UITable table = new();
-        table.AddCell(__instance.settingsButton);
-        table.AddCell(__instance.throneRoomButton);
-        table.AddCell(__instance.aboutButton);
+        table.AddCell(__instance.settingsButton.Cast<IUILayoutable>());
+        table.AddCell(__instance.throneRoomButton.Cast<IUILayoutable>());
+        table.AddCell(__instance.aboutButton.Cast<IUILayoutable>());
         table.SetBottom(screenSize.safeRect.Bottom + __instance.settingsButton.GetHalfHeight() + 15f);
         table.margin = 20f;
         table.RunLayout();
@@ -115,7 +77,6 @@ public static class Client
             __result = Plugin.config.overrideDeviceId;
         }
     }
-
 
     /// <summary>
     /// After GameState deserialization, check for trailing GLD version ID and set mockedGameLogicData.

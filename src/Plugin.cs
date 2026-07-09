@@ -3,6 +3,7 @@ using System.Text.Json;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using PolyMod.Android;
 using PolyMod.Managers;
 using UnityEngine;
 
@@ -135,6 +136,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 
 		Main.Init();
 		Multiplayer.Client.Init();
+		AndroidHandler.Init();
 	}
 
 	/// <summary>
