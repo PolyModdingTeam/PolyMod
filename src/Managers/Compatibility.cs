@@ -22,6 +22,15 @@ internal static class Compatibility
     private static bool sawSignatureWarning;
 
     /// <summary>
+    /// Whether all loaded mods are client only. If at least one non client only mod exists this returns false.
+    /// </summary>
+    /// <returns></returns>
+    public static bool IsClientOnly()
+    {
+        return Registry.mods.Select(modPair => modPair.Value).All(mod => mod.client);
+    }
+
+    /// <summary>
     /// Hashes the signatures of all loaded mods to create a checksum.
     /// </summary>
     /// <param name="checksumString">A string builder containing the signatures to hash.</param>
