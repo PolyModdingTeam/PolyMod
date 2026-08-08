@@ -170,8 +170,9 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		{
 			ConsoleManager.CreateConsole();
 		}
-		else
+		else if (OperatingSystem.IsWindows())
 		{
+			// BepInEx's Unix console driver throws unsupported on detach. Off-Windows there is no separate console window, so there is nothing to detach.
 			ConsoleManager.DetachConsole();
 		}
 	}
