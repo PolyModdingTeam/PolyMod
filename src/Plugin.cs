@@ -136,9 +136,9 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		Hub.Init();
 
 		Main.Init();
-		Multiplayer.Client.Init();
+		Client.Init();
 		ModMultiplayer.Init();
-		Multiplayer.Dystopia.Init();
+		Dystopia.Init();
 		AndroidHandler.Init();
 	}
 
