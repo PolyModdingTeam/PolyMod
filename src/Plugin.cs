@@ -119,7 +119,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		}
 		catch
 		{
-			config = new();
+			config = new(backendUrl: Multiplayer.Dystopia.DefaultServerUrl());
 		}
 		WriteConfig();
 		UpdateConsole();
@@ -138,6 +138,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		Main.Init();
 		Multiplayer.Client.Init();
 		ModMultiplayer.Init();
+		Multiplayer.Dystopia.Init();
 		AndroidHandler.Init();
 	}
 
