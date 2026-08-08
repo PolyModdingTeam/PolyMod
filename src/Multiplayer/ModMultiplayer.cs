@@ -1,6 +1,7 @@
 using HarmonyLib;
 using Il2CppMicrosoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using PolyMod.Managers;
 using PolyMod.Multiplayer.ViewModels;
 using Polytopia.Data;
@@ -29,6 +30,49 @@ public class ModMultiplayer
 
 
         Plugin.logger?.LogInfo($"Finished modded multiplayer initialization.");
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(BackendAdapter), nameof(BackendAdapter.CreateLobby))]
+    private static bool BackendAdapter_CreateLobby(
+        ref Il2CppSystem.Threading.Tasks.Task<ServerResponse<LobbyGameViewModel>> __result,
+        BackendAdapter __instance,
+        CreateLobbyBindingModel model)
+    {
+        Plugin.logger.LogInfo("Multiplayer> BackendAdapter_CreateLobby");
+        var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>>();
+
+        _ = HandleCreateLobbyModded(taskCompletionSource, __instance, model);
+
+        __result = taskCompletionSource.Task;
+
+        return false;
+    }
+
+    private static async System.Threading.Tasks.Task HandleCreateLobbyModded(
+        Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>> tcs,
+        BackendAdapter instance,
+        CreateLobbyBindingModel model)
+    {
+        try
+        {
+            var payload = JObject.FromObject(model);
+            payload["IsModded"] = new JValue(true);
+            payload["Checksum"] = new JValue(Compatibility.checksum);
+
+            var serverResponse = await instance.HubConnection.InvokeAsync<ServerResponse<LobbyGameViewModel>>(
+                "CreateLobby",
+                payload,
+                Il2CppSystem.Threading.CancellationToken.None
+            );
+            Plugin.logger.LogInfo("Multiplayer> Invoked CreateLobby with mod info");
+            tcs.SetResult(serverResponse);
+        }
+        catch (Exception ex)
+        {
+            Plugin.logger.LogError("Multiplayer> Error during HandleCreateLobbyModded: " + ex.Message);
+            tcs.SetException(new Il2CppSystem.Exception(ex.Message));
+        }
     }
 
     [HarmonyPrefix]
