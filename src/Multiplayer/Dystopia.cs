@@ -17,24 +17,15 @@ public static class Dystopia
 
     internal const string OFFICIAL_SERVER_URL = "https://polytopia-prod.net/";
 
-    private record ServerEntry(string name, string url, bool official = false);
+    private record ServerEntry(string name, string url, bool official = false, bool disabled = false);
 
     private static readonly ServerEntry[] SERVERS =
     {
         new("Official", OFFICIAL_SERVER_URL, official: true),
-        new("Dystopia", "https://polydystopia.xyz"),
+        // Disabled until the production Dystopia server goes online.
+        new("Dystopia", "https://polydystopia.xyz", disabled: true),
         new("Dystopia Dev", "https://dev.polydystopia.xyz"),
     };
-
-    /// <summary>
-    /// Default backend: the official server, except on Android
-    /// </summary>
-    internal static string DefaultServerUrl()
-    {
-        return Application.platform == RuntimePlatform.Android
-            ? Client.DEFAULT_SERVER_URL
-            : OFFICIAL_SERVER_URL;
-    }
 
     private static UIRoundButton_UI2? dystopiaButton = null;
 
@@ -89,8 +80,7 @@ public static class Dystopia
         foreach (ServerEntry server in SERVERS)
         {
             bool isActive = Normalize(server.url) == current;
-            // The official server rejects our DeviceId login, so it stays greyed out on Android.
-            bool isDisabled = isActive || (server.official && Application.platform == RuntimePlatform.Android);
+            bool isDisabled = isActive || server.official || server.disabled;
             string url = server.url;
             buttons.Add(new(
                 isActive ? server.name + " (active)" : server.name,

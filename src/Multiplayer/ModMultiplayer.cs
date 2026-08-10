@@ -27,7 +27,8 @@ public class ModMultiplayer
         Plugin.logger?.LogInfo($"Starting modded multiplayer initialization.");
 
         Harmony.CreateAndPatchAll(typeof(ModMultiplayer));
-
+        SerializationUtils.Init();
+        ModdedClient.Init();
 
         Plugin.logger?.LogInfo($"Finished modded multiplayer initialization.");
     }
@@ -82,9 +83,6 @@ public class ModMultiplayer
         BackendAdapter __instance,
         StartLobbyBindingModel model)
     {
-        // On Android, let the game's original StartLobbyGame handle it
-        if (Application.platform == RuntimePlatform.Android) return true;
-
         Plugin.logger.LogInfo("Multiplayer> BackendAdapter_StartLobbyGame_Modded");
         var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>>();
 
@@ -119,11 +117,29 @@ public class ModMultiplayer
 
             Plugin.logger.LogInfo("Multiplayer> GameState and Settings created");
 
+            var serializedGameSummary = Array.Empty<byte>();
+            var initialCommandCount = -1;
+            string? currentPlayerId = null;
+            if (GameStateSummary.FromGameStateByteArray(serializedGameState, out GameStateSummary stateSummary,
+                    out GameState initialState))
+            {
+                serializedGameSummary = SerializationHelpers.ToByteArray(stateSummary, initialState.Version);
+                initialCommandCount = initialState.CommandStack.Count;
+                currentPlayerId = GameStateUtils.GetCurrentPlayerAccountId(initialState).ToString();
+                if (currentPlayerId == "00000000-0000-0000-0000-000000000000")
+                {
+                    currentPlayerId = null;
+                }
+            }
+
             var setupGameDataViewModel = new SetupGameDataViewModel
             {
                 lobbyId = lobbyGameViewModel.Id.ToString(),
                 serializedGameState = serializedGameState,
-                gameSettingsJson = gameSettingsJson
+                serializedGameSummary = serializedGameSummary,
+                gameSettingsJson = gameSettingsJson,
+                initialCommandCount = initialCommandCount,
+                currentPlayerId = currentPlayerId
             };
 
             var setupData = System.Text.Json.JsonSerializer.Serialize(setupGameDataViewModel);
@@ -134,11 +150,76 @@ public class ModMultiplayer
                 Il2CppSystem.Threading.CancellationToken.None
             );
             Plugin.logger.LogInfo("Multiplayer> Invoked StartLobbyGameModded");
+
+            if (serverResponse != null && serverResponse.Success)
+            {
+                ModdedClient.RegisterModdedGame(lobbyGameViewModel.Id.ToString(), Compatibility.checksum);
+                ModdedClient.SetShadowState(lobbyGameViewModel.Id.ToString(), serializedGameState);
+            }
+
             tcs.SetResult(serverResponse);
         }
         catch (Exception ex)
         {
             Plugin.logger.LogError("Multiplayer> Error during HandleStartLobbyGameModded: " + ex.Message);
+            tcs.SetException(new Il2CppSystem.Exception(ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Joining a modded lobby must carry the local mod checksum so the server can block mismatched mod sets before they corrupt a game.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(BackendAdapter), nameof(BackendAdapter.RespondToLobbyInvitation))]
+    private static bool BackendAdapter_RespondToLobbyInvitation(
+        ref Il2CppSystem.Threading.Tasks.Task<ServerResponse<LobbyGameViewModel>> __result,
+        BackendAdapter __instance,
+        RespondToLobbyInvitation model)
+    {
+        Plugin.logger.LogInfo("Multiplayer> BackendAdapter_RespondToLobbyInvitation");
+        var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>>();
+
+        _ = HandleRespondToLobbyInvitationModded(taskCompletionSource, __instance, model);
+
+        __result = taskCompletionSource.Task;
+
+        return false;
+    }
+
+    private static async System.Threading.Tasks.Task HandleRespondToLobbyInvitationModded(
+        Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>> tcs,
+        BackendAdapter instance,
+        RespondToLobbyInvitation model)
+    {
+        try
+        {
+            var payload = JObject.FromObject(model);
+            payload["Checksum"] = new JValue(Compatibility.checksum);
+
+            var serverResponse = await instance.HubConnection.InvokeAsync<ServerResponse<LobbyGameViewModel>>(
+                "RespondToLobbyInvitation",
+                payload,
+                Il2CppSystem.Threading.CancellationToken.None
+            );
+
+            if (serverResponse != null && !serverResponse.Success &&
+                serverResponse.ErrorCode == ErrorCode.StateProhibitsOperation)
+            {
+                Plugin.logger.LogWarning("Multiplayer> Lobby join blocked: mod set mismatch");
+                PopupManager.GetBasicPopupWithData(new(
+                    Localization.Get("polymod.signature.mismatch"),
+                    Localization.Get("polymod.signature.incompatible"),
+                    new(new PopupBase.PopupButtonData[] {
+                        new("OK")
+                    })
+                )).Show();
+            }
+
+            tcs.SetResult(serverResponse);
+        }
+        catch (Exception ex)
+        {
+            Plugin.logger.LogError("Multiplayer> Error during HandleRespondToLobbyInvitationModded: " + ex.Message);
             tcs.SetException(new Il2CppSystem.Exception(ex.Message));
         }
     }
@@ -155,13 +236,16 @@ public class ModMultiplayer
         }
         foreach (var participatorViewModel in lobby.Participators)
         {
+            if (participatorViewModel.InvitationState != PlayerInvitationState.Accepted) continue;
+
+            var tribe = (TribeType)participatorViewModel.SelectedTribe;
             var humanPlayer = new PlayerData
             {
                 type = PlayerDataType.LocalUser,
                 state = PlayerDataFriendshipState.Accepted,
                 knownTribe = true,
-                tribe = (TribeType)participatorViewModel.SelectedTribe,
-                tribeMix = (TribeType)participatorViewModel.SelectedTribe,
+                tribe = tribe,
+                tribeMix = (int)tribe < byte.MaxValue ? tribe : TribeType.None,
                 skinType = (SkinType)participatorViewModel.SelectedTribeSkin,
                 defaultName = participatorViewModel.GetNameInternal()
             };
@@ -263,6 +347,8 @@ public class ModMultiplayer
         Plugin.logger.LogInfo("Multiplayer> Session created successfully");
 
         gameState.CommandStack.Add((CommandBase)new StartMatchCommand((byte)1));
+
+        new ActionManager(gameState).Update();
 
         var serializedGameState = SerializationHelpers.ToByteArray(gameState, gameState.Version);
 

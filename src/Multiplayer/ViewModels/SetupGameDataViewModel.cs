@@ -6,5 +6,11 @@ public class SetupGameDataViewModel : IMonoServerResponseData
 
 	public byte[] serializedGameState { get; set; } = Array.Empty<byte>();
 
+	public byte[] serializedGameSummary { get; set; } = Array.Empty<byte>();
+
 	public string gameSettingsJson { get; set; } = string.Empty;
+
+	public int initialCommandCount { get; set; } = -1;
+
+	public string? currentPlayerId { get; set; }
 }

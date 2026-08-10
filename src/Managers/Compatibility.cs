@@ -27,7 +27,8 @@ internal static class Compatibility
     /// <returns></returns>
     public static bool IsClientOnly()
     {
-        return Registry.mods.Select(modPair => modPair.Value).All(mod => mod.client);
+        return Registry.mods.Select(modPair => modPair.Value)
+            .All(mod => mod.client || mod.id == "polytopia" || mod.status != Mod.Status.Success);
     }
 
     /// <summary>
