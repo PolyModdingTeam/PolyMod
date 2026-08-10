@@ -163,6 +163,25 @@ internal static class Compatibility
     }
 
     /// <summary>
+    /// Checks the signature of a multiplayer game before opening it.
+    /// Blocks on mismatch.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.OpenMultiplayerGame))]
+    private static bool GameManager_OpenMultiplayerGame(
+        ref Il2CppSystem.Threading.Tasks.Task<bool> __result,
+        Il2CppSystem.Guid gameId)
+    {
+        if (CheckSignatures(null!, gameId)) return true;
+
+        var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<bool>();
+        taskCompletionSource.SetResult(false);
+        __result = taskCompletionSource.Task;
+
+        return false;
+    }
+
+    /// <summary>
     /// Deletes the signature file of a pass-and-play game when it is deleted.
     /// </summary>
     [HarmonyPostfix]
