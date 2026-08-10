@@ -43,6 +43,7 @@ public static class AndroidHandler
         var model = new LoginGooglePlayBindingModel();
         model.AuthCode = SystemInfo.deviceUniqueIdentifier;
         model.DeviceId = SystemInfo.deviceUniqueIdentifier;
+        model.GameVersion = new Il2CppSystem.Nullable<int>(VersionManager.GameVersion);
 
         Plugin.logger.LogInfo($"Multiplayer> Android login with DeviceId: {model.DeviceId}");
         __result = __instance.LoginGooglePlay(model);
