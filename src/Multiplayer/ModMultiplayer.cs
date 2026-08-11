@@ -151,7 +151,13 @@ public class ModMultiplayer
             );
             Plugin.logger.LogInfo("Multiplayer> Invoked StartLobbyGameModded");
 
-            if (serverResponse != null && serverResponse.Success)
+            if (serverResponse == null)
+            {
+                tcs.SetException(new Il2CppSystem.Exception("No response from StartLobbyGameModded."));
+                return;
+            }
+
+            if (serverResponse.Success)
             {
                 ModdedClient.RegisterModdedGame(lobbyGameViewModel.Id.ToString(), Compatibility.checksum);
                 ModdedClient.SetShadowState(lobbyGameViewModel.Id.ToString(), serializedGameState);
@@ -202,8 +208,13 @@ public class ModMultiplayer
                 Il2CppSystem.Threading.CancellationToken.None
             );
 
-            if (serverResponse != null && !serverResponse.Success &&
-                serverResponse.ErrorCode == ErrorCode.StateProhibitsOperation)
+            if (serverResponse == null)
+            {
+                tcs.SetException(new Il2CppSystem.Exception("No response from RespondToLobbyInvitation."));
+                return;
+            }
+
+            if (!serverResponse.Success && serverResponse.ErrorCode == ErrorCode.StateProhibitsOperation)
             {
                 Plugin.logger.LogWarning("Multiplayer> Lobby join blocked: mod set mismatch");
                 PopupManager.GetBasicPopupWithData(new(
