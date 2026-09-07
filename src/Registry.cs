@@ -36,6 +36,8 @@ public static class Registry
 	/// </summary>
 	public static Dictionary<string, Visual.PreviewTile[]> tribePreviews = new();
 
+	public static Dictionary<string, Visual2.PreviewTile[]> tribePreviews2 = new();
+
 	/// <summary>
 	/// A dictionary of sprite information, keyed by sprite name.
 	/// </summary>
@@ -121,5 +123,45 @@ public static class Registry
 		audioSource = audioClips.GetOrDefault($"{name}_{style}", audioSource);
 		if (audioSource == null) return null;
 		return audioSource.clip;
+	}
+
+
+
+
+	// API2
+	private static Dictionary<string, Sprite> sprites2 = new();
+	public static Dictionary<string, Visual.SpriteInfo> spriteInfos2 = new();
+
+	public static Sprite? GetSprite2(string baseName, string tribeText = "", string skinText = "", int level = 0)
+	{
+		Sprite? sprite = null;
+		baseName = baseName.ToLower();
+		tribeText = tribeText.ToLower();
+		skinText = skinText.ToLower();
+
+		List<string> spriteNameVariants = new();
+
+		if (level >= 0)
+		{
+			string levelText = level.ToString();
+			spriteNameVariants.Add(baseName + "_" + levelText);
+			spriteNameVariants.Add(baseName + "_" + levelText + "_" + tribeText);
+			spriteNameVariants.Add(baseName + "_" + levelText + "_" + skinText);
+			spriteNameVariants.Add(baseName + "_" + levelText + "_" + tribeText + "_" + skinText);
+		}
+		else
+		{
+			spriteNameVariants.Add(baseName);
+			spriteNameVariants.Add(baseName + "_" + tribeText);
+			spriteNameVariants.Add(baseName + "_" + skinText);
+			spriteNameVariants.Add(baseName + "_" + tribeText + "_" + skinText);
+		}
+
+		foreach(string spriteName in spriteNameVariants)
+		{
+			sprite = sprites2.GetOrDefault(spriteName, sprite);
+		}
+
+		return sprite;
 	}
 }

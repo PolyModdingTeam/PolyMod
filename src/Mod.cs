@@ -24,7 +24,7 @@ public class Mod
     /// <param name="authors">The authors of the mod.</param>
     /// <param name="dependencies">The dependencies of the mod.</param>
     /// <param name="client">Whether the mod is client-side only.</param>
-    public record Manifest(string id, string? name, string? description, Version version, string[] authors, Dependency[]? dependencies, bool client = false);
+    public record Manifest(string id, string? name, string? description, Version version, string[] authors, Dependency[]? dependencies, bool client = false, int apiVersion = 1);
 
     /// <summary>
     /// Represents a file included in a mod.
