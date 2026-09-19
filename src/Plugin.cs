@@ -140,6 +140,8 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		ModMultiplayer.Init();
 		Dystopia.Init();
 		AndroidHandler.Init();
+		Multiplayer.SerializationUtils.Init();
+		Multiplayer.Client.Init();
 	}
 
 	/// <summary>
