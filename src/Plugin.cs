@@ -20,12 +20,8 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	/// Represents the configuration for PolyMod.
 	/// </summary>
 	/// <param name="debug">Whether to enable debug mode.</param>
-	/// <param name="autoUpdate">Whether to automatically update PolyMod.</param>
-	/// <param name="updatePrerelease">Whether to include pre-release versions when updating.</param>
 	internal record PolyConfig(
 		bool debug = false,
-		bool autoUpdate = true,
-		bool updatePrerelease = false,
 		bool allowUnsafeIndexes = false,
 		string backendUrl = Multiplayer.Client.DEFAULT_SERVER_URL,
 		string overrideDeviceId = ""
@@ -125,8 +121,6 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		UpdateConsole();
 		logger = Log;
 		ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
-
-		AutoUpdate.Init();
 
 		Compatibility.Init();
 
