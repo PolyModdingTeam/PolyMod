@@ -129,8 +129,8 @@ public static class Registry
 
 
 	// API2
-	private static Dictionary<string, Sprite> sprites2 = new();
-	public static Dictionary<string, Visual.SpriteInfo> spriteInfos2 = new();
+	public static Dictionary<string, Sprite> sprites2 = new();
+	public static Dictionary<string, Visual2.SpriteInfo> spriteInfos2 = new();
 
 	public static Sprite? GetSprite2(string baseName, string tribeText = "", string skinText = "", int level = 0)
 	{

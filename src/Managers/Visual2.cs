@@ -170,6 +170,7 @@ public static class Visual2
 	}
 
 	public record PreviewInfo(int arrayIdx, SaveStateData saveStateData, PreviewTile[] customPreview);
+	public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot);
 	private static float? baseOrthographicCameraSize = null;
 	private static bool isTakingSnapshot = false;
 

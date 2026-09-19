@@ -1,12 +1,3 @@
-using BepInEx.Logging;
-using Cpp2IL.Core.Extensions;
-using Il2CppSystem.Linq;
-using MonoMod.Utils;
-using Newtonsoft.Json.Linq;
-using PolyMod.Json;
-using PolyMod.Managers;
-using Polytopia.Data;
-using PolytopiaBackendBase.Game;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
@@ -14,8 +5,6 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using UnityEngine;
-using PolytopiaBackendBase.Common;
 
 namespace PolyMod;
 
@@ -626,24 +615,55 @@ public static class Loader
 	/// <param name="file">The sprite file to load.</param>
 	public static void LoadSpriteFile(Mod mod, Mod.File file)
 	{
-		string name = Path.GetFileNameWithoutExtension(file.name);
-		Vector2 pivot = name.Split("_")[0] switch
+		switch (mod.apiVersion)
 		{
-			"field" => new(0.5f, 0.0f),
-			"mountain" => new(0.5f, -0.375f),
-			_ => new(0.5f, 0.5f),
-		};
-		float pixelsPerUnit = 2112f;
-		if (Registry.spriteInfos.ContainsKey(name))
-		{
-			Visual.SpriteInfo spriteData = Registry.spriteInfos[name];
-			pivot = spriteData.pivot ?? pivot;
-			pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
+			case 1:
+			{
+				string name = Path.GetFileNameWithoutExtension(file.name);
+				Vector2 pivot = name.Split("_")[0] switch
+				{
+					"field" => new(0.5f, 0.0f),
+					"mountain" => new(0.5f, -0.375f),
+					_ => new(0.5f, 0.5f),
+				};
+				float pixelsPerUnit = 2112f;
+				if (Registry.spriteInfos.ContainsKey(name))
+				{
+					Visual.SpriteInfo spriteData = Registry.spriteInfos[name];
+					pivot = spriteData.pivot ?? pivot;
+					pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
+				}
+				Sprite sprite = Visual.BuildSprite(file.bytes, pivot, pixelsPerUnit);
+				GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
+				GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
+				Registry.sprites.Add(name, sprite);
+				return;
+			}
+			case 2:
+			{
+				string name = Path.GetFileNameWithoutExtension(file.name);
+				Vector2 pivot = name.Split("_")[0] switch
+				{
+					"field" => new(0.5f, 0.0f),
+					"mountain" => new(0.5f, -0.375f),
+					_ => new(0.5f, 0.5f),
+				};
+				float pixelsPerUnit = 2112f;
+				if (Registry.spriteInfos2.ContainsKey(name))
+				{
+					Visual2.SpriteInfo spriteData = Registry.spriteInfos2[name];
+					pivot = spriteData.pivot ?? pivot;
+					pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
+				}
+				Sprite sprite = Visual2.BuildSprite(file.bytes, pivot, pixelsPerUnit);
+				GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
+				GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
+				Registry.sprites2.Add(name, sprite);
+				return;
+			}
+			default:
+				throw new Exception("Unsupported api version");
 		}
-		Sprite sprite = Visual.BuildSprite(file.bytes, pivot, pixelsPerUnit);
-		GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
-		GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
-		Registry.sprites.Add(name, sprite);
 	}
 
 	/// <summary>

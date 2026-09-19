@@ -97,6 +97,8 @@ public class Mod
     /// </summary>
     public List<File> files;
 
+    public int apiVersion;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="Mod"/> class.
     /// </summary>
@@ -112,6 +114,7 @@ public class Mod
         authors = manifest.authors;
         dependencies = manifest.dependencies;
         client = manifest.client;
+        apiVersion = manifest.apiVersion;
         this.status = status;
         this.files = files;
     }
