@@ -11,8 +11,8 @@
         </RestoreAdditionalProjectSources>
         <Configurations>IL2CPP</Configurations>
         <RootNamespace>PolyMod</RootNamespace>
-        <Version>1.3.0-pre-android-multi-1</Version>
-        <PolytopiaVersion>2.17.2.16299</PolytopiaVersion>
+        <Version>1.3.0-pre</Version>
+        <PolytopiaVersion>2.17.3.16375</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
         <NoWarn>IDE0130</NoWarn>
@@ -23,7 +23,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.755" />
+        <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.788" />
         <PackageReference Include="Costura.Fody" Version="6.0.0">
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
