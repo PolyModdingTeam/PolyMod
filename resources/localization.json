@@ -282,5 +282,17 @@
 		"English": "PROCEED",
 		"Russian": "ПРОДОЛЖИТЬ",
 		"Elyrion": "πrȱ#∑∑Δ"
+	},
+	"polymod_title_invalid": {
+		"English": "Invalid Launch",
+		"Russian": "Неверный Запуск"
+	},
+	"polymod_description_invalid": {
+		"English": "PolyMod launch was invalid. Please, open the game via the PolyMod Launcher or proceed to our site to install it :)",
+		"Russian": "PolyMod запущен неккоректно. Пожалуйста, откройте игру через PolyMod Launcher или перейдите на наш сайт и установите его :)"
+	},
+	"buttons_download_launcher": {
+		"English": "OUR SITE",
+		"Russian": "НАШ САЙТ"
 	}
 }

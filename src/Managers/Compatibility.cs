@@ -1,7 +1,7 @@
 using HarmonyLib;
+using Il2CppInterop.Runtime;
 using System.Text;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace PolyMod.Managers;
 
@@ -20,6 +20,7 @@ internal static class Compatibility
     /// </summary>
     internal static bool shouldResetSettings = false;
     private static bool sawSignatureWarning;
+    private const string downloadLink = "https://polymod.dev/download/";
 
     /// <summary>
     /// Whether all loaded mods are client only. If at least one non client only mod exists this returns false.
@@ -97,6 +98,36 @@ internal static class Compatibility
     [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
     private static void StartScreen_UI2_OnShow()
     {
+        if(!Plugin.ValidLaunch)
+        {
+            PopupManager.GetBasicPopupWithData(
+                new(
+                    Localization.Get("polymod.title.invalid"),
+                    Localization.Get("polymod.description.invalid"),
+                    new PopupBase.PopupButtonData[] {
+                        new(
+                            "buttons.exitgame",
+                            PopupBase.PopupButtonData.States.None,
+                            callback: (Il2CppSystem.Action)Application.Quit,
+                            closesPopup: false
+                        ),
+                        new(
+                            "buttons.download.launcher",
+                            PopupBase.PopupButtonData.States.None,
+                            callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OpenSite),
+                            closesPopup: false
+                        )
+                    }
+                )
+            ).Show();
+
+            void OpenSite()
+            {
+                NativeHelpers.OpenURL(downloadLink, false);
+                Application.Quit();
+            }
+            return;
+        }
         string lastChecksum = checksum;
         try
         {

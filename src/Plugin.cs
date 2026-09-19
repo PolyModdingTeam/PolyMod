@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.IO.Pipes;
+using System.Reflection;
 using System.Text.Json;
 using BepInEx;
 using BepInEx.Configuration;
@@ -16,6 +17,10 @@ namespace PolyMod;
 [BepInPlugin("com.polymod", "PolyMod", VERSION)]
 public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 {
+    internal static string? Token { get; set; }
+	internal static bool ValidLaunch { get; set; } = false;
+	internal static bool Disabled { get; set; } = false;
+
 	/// <summary>
 	/// Represents the configuration for PolyMod.
 	/// </summary>
@@ -25,7 +30,10 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		bool allowUnsafeIndexes = false,
 		string backendUrl = Multiplayer.Client.DEFAULT_SERVER_URL,
 		string overrideDeviceId = ""
-	);
+	)
+	{
+    	public List<string> disabledMods { get; init; } = new();
+	};
 
 	/// <summary>
 	/// The starting index for automatically assigned IDs.
@@ -122,8 +130,12 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		logger = Log;
 		ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
 
-		Compatibility.Init();
+		CaptureLaunchData();
 
+		if(Disabled)
+			return;
+
+		Compatibility.Init();
 		Audio.Init();
 		Loc.Init();
 		Visual.Init();
@@ -134,6 +146,30 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		ModMultiplayer.Init();
 		Dystopia.Init();
 		AndroidHandler.Init();
+	}
+
+	internal static void CaptureLaunchData()
+	{
+		try
+		{
+			using var client = new NamedPipeClientStream(
+				".", "PolyMod.Launcher", PipeDirection.In, PipeOptions.CurrentUserOnly);
+			client.Connect(2000);
+
+			using var reader = new StreamReader(client);
+			var line = reader.ReadLine();
+			if (string.IsNullOrEmpty(line)) return;
+
+			using var doc = JsonDocument.Parse(line);
+			var root = doc.RootElement;
+			Plugin.ValidLaunch = root.GetProperty("validLaunch").GetBoolean();
+			Plugin.Disabled = root.GetProperty("disabled").GetBoolean();
+			Plugin.Token = root.GetProperty("token").GetString() ?? "";
+		}
+		catch
+		{
+			Plugin.ValidLaunch = false;
+		}
 	}
 
 	/// <summary>
