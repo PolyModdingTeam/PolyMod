@@ -1,4 +1,44 @@
 {
+	"polymod_dystopia": {
+		"English": "Dystopia",
+		"German (Germany)": "Dystopia"
+	},
+	"polymod_dystopia_server": {
+		"English": "Server",
+		"German (Germany)": "Server"
+	},
+	"polymod_dystopia_connected": {
+		"English": "connected",
+		"German (Germany)": "verbunden"
+	},
+	"polymod_dystopia_disconnected": {
+		"English": "disconnected",
+		"German (Germany)": "getrennt"
+	},
+	"polymod_dystopia_modded": {
+		"English": "modded",
+		"German (Germany)": "gemoddet"
+	},
+	"polymod_dystopia_vanilla": {
+		"English": "vanilla",
+		"German (Germany)": "vanilla"
+	},
+	"polymod_dystopia_modded_description": {
+		"English": "Gameplay Mods active\nChecksum: {0}\n\nOnly players with the exact same mods can join your games. The official backend is unavailable while gameplay mods are loaded.",
+		"German (Germany)": "Gameplay-Mods aktiv\nPrüfsumme: {0}\n\nNur Spieler mit exakt denselben Mods können deinen Spielen beitreten. Der offizielle Server ist mit geladenen Gameplay-Mods nicht verfügbar."
+	},
+	"polymod_dystopia_vanilla_description": {
+		"English": "No gameplay mods loaded — vanilla multiplayer.",
+		"German (Germany)": "Keine Gameplay-Mods geladen — Vanilla-Multiplayer."
+	},
+	"polymod_dystopia_connect": {
+		"English": "Connect to {0}",
+		"German (Germany)": "Mit {0} verbinden"
+	},
+	"polymod_dystopia_custom": {
+		"English": "Custom server...",
+		"German (Germany)": "Eigener Server..."
+	},
 	"polymod_hub": {
 		"English": "PolyMod Hub",
 		"Russian": "Центр PolyMod",

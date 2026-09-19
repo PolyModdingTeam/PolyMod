@@ -3,7 +3,9 @@ using System.Text.Json;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using PolyMod.Android;
 using PolyMod.Managers;
+using PolyMod.Multiplayer;
 using UnityEngine;
 
 namespace PolyMod;
@@ -134,8 +136,10 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		Hub.Init();
 
 		Main.Init();
-		Multiplayer.SerializationUtils.Init();
-		Multiplayer.Client.Init();
+		Client.Init();
+		ModMultiplayer.Init();
+		Dystopia.Init();
+		AndroidHandler.Init();
 	}
 
 	/// <summary>
@@ -167,8 +171,9 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		{
 			ConsoleManager.CreateConsole();
 		}
-		else
+		else if (OperatingSystem.IsWindows())
 		{
+			// BepInEx's Unix console driver throws unsupported on detach. Off-Windows there is no separate console window, so there is nothing to detach.
 			ConsoleManager.DetachConsole();
 		}
 	}

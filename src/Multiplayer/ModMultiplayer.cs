@@ -1,5 +1,8 @@
 using HarmonyLib;
 using Il2CppMicrosoft.AspNetCore.SignalR.Client;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using PolyMod.Managers;
 using PolyMod.Multiplayer.ViewModels;
 using Polytopia.Data;
 using PolytopiaBackendBase;
@@ -7,138 +10,68 @@ using PolytopiaBackendBase.Common;
 using PolytopiaBackendBase.Game;
 using PolytopiaBackendBase.Game.BindingModels;
 using UnityEngine;
-using Newtonsoft.Json;
 
 namespace PolyMod.Multiplayer;
 
-public static class Client
+public class ModMultiplayer
 {
-    internal const string DEFAULT_SERVER_URL = "https://dev.polydystopia.xyz";
-    internal const string LOCAL_SERVER_URL = "http://localhost:5051/";
-    private const string GldMarker = "##GLD:";
-    internal static bool allowGldMods = false;
-
-    // Cache parsed GLD by game Seed to handle rewinds/reloads
-    private static readonly Dictionary<int, GameLogicData> _gldCache = new();
-    private static readonly Dictionary<int, int> _versionCache = new(); // Seed -> modGldVersion
-
     internal static void Init()
     {
-        Harmony.CreateAndPatchAll(typeof(Client));
-        BuildConfig buildConfig = BuildConfigHelper.GetSelectedBuildConfig();
-        buildConfig.buildServerURL = BuildServerURL.Custom;
-        buildConfig.customServerURL = LOCAL_SERVER_URL;
-
-        Plugin.logger.LogInfo($"Multiplayer> Server URL set to: {Plugin.config.backendUrl}");
-        Plugin.logger.LogInfo("Multiplayer> GLD patches applied");
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(MultiplayerSelectionScreen), nameof(MultiplayerSelectionScreen.Show))]
-    public static void MultiplayerScreen_Show(MultiplayerSelectionScreen __instance)
-    {
-        __instance.TournamentsButton.gameObject.SetActive(false);
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.RunLayout))]
-    private static void StartScreen_UI2_RunLayout(StartScreen_UI2 __instance)
-    {
-        __instance.highscoreButton.gameObject.SetActive(false);
-        __instance.weeklyChallengeButton.gameObject.SetActive(false);
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(SystemInfo), nameof(SystemInfo.deviceUniqueIdentifier), MethodType.Getter)]
-    public static void SteamClient_get_SteamId(ref string  __result)
-    {
-        if (Plugin.config.overrideDeviceId != string.Empty)
+        if (Compatibility.IsClientOnly())
         {
-            __result = Plugin.config.overrideDeviceId;
-        }
-    }
+            Plugin.logger?.LogInfo($"All loaded mods are client only. Skipping modded multiplayer initialization.");
 
+            return;
+        }
+
+        Plugin.logger?.LogInfo($"Starting modded multiplayer initialization.");
+
+        Harmony.CreateAndPatchAll(typeof(ModMultiplayer));
+        SerializationUtils.Init();
+        ModdedClient.Init();
+
+        Plugin.logger?.LogInfo($"Finished modded multiplayer initialization.");
+    }
 
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(ClientBase), nameof(ClientBase.SendCommand))]
-    private static bool ClientBase_SendCommand(
-        ClientBase __instance,
-        CommandBase command)
+    [HarmonyPatch(typeof(BackendAdapter), nameof(BackendAdapter.CreateLobby))]
+    private static bool BackendAdapter_CreateLobby(
+        ref Il2CppSystem.Threading.Tasks.Task<ServerResponse<LobbyGameViewModel>> __result,
+        BackendAdapter __instance,
+        CreateLobbyBindingModel model)
     {
+        Plugin.logger.LogInfo("Multiplayer> BackendAdapter_CreateLobby");
+        var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>>();
 
-        Plugin.logger.LogInfo("Multiplayer> ClientBase_SendCommand");
-        Il2CppSystem.Threading.Tasks.Task<ServerResponse<BoolResponseViewModel>> task = new();
-        var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<BoolResponseViewModel>>();
+        _ = HandleCreateLobbyModded(taskCompletionSource, __instance, model);
 
-        _ = ClientBase_SendCommand_Async(taskCompletionSource, __instance, command);
-
-        task = taskCompletionSource.Task;
+        __result = taskCompletionSource.Task;
 
         return false;
     }
 
-    private static async System.Threading.Tasks.Task ClientBase_SendCommand_Async(
-        Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<BoolResponseViewModel>> tcs,
-        ClientBase client,
-        CommandBase command)
+    private static async System.Threading.Tasks.Task HandleCreateLobbyModded(
+        Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>> tcs,
+        BackendAdapter instance,
+        CreateLobbyBindingModel model)
     {
         try
         {
-            if (!client.CurrentGameId.HasValue)
-            {
-                Console.Write("Tried to perform and send command but no GameId was set");
-                return;
-            }
-            if (!ClientActionManager.CanReceiveCommand(command, client.GameState))
-            {
-                Console.Write("Tried to send invalid command");
-                return;
-            }
-            uint currentResetId = client.resets;
-            int count = client.GameState.CommandStack.Count;
-            var list = new Il2CppSystem.Collections.Generic.List<CommandBase>();
-            list.Add(command);
-            client.ActionManager.ExecuteCommands(list);
-            await client.SendCommandToServer(command, count);
+            var payload = JObject.FromObject(model);
+            payload["IsModded"] = new JValue(true);
+            payload["Checksum"] = new JValue(Compatibility.checksum);
 
-            var serializedGameState = SerializationHelpers.ToByteArray(client.GameState, client.GameState.Version);
-
-            var succ = GameStateSummary.FromGameStateByteArray(serializedGameState,
-                out GameStateSummary stateSummary, out var gameState);
-
-            var serializedGameSummary = SerializationHelpers.ToByteArray(stateSummary, gameState.Version);
-
-
-            client.GameState.TryGetPlayer(client.GameState.CurrentPlayer, out PlayerState playerState);
-            var currentPlayerId = "";
-            if(playerState.AccountId.HasValue)
-            {
-                currentPlayerId = playerState.AccountId.Value.ToString();
-            }
-            var setupGameDataViewModel = new ModdedGameStateViewModel
-            {
-                gameId = client.gameId.ToString(),
-                serializedGameState = serializedGameState,
-                serializedGameSummary = serializedGameSummary,
-                gameSettingsJson = "",
-                currentPlayerId = currentPlayerId,
-                IsEndTurnCommand = command.GetCommandType() == CommandType.EndTurn
-            };
-
-
-
-            var setupData = System.Text.Json.JsonSerializer.Serialize(setupGameDataViewModel);
-
-            var serverResponse = await PolytopiaBackendAdapter.Instance.HubConnection.InvokeAsync<ServerResponse<BoolResponseViewModel>>(
-                "UpdateGameStateModded",
-                setupData,
+            var serverResponse = await instance.HubConnection.InvokeAsync<ServerResponse<LobbyGameViewModel>>(
+                "CreateLobby",
+                payload,
                 Il2CppSystem.Threading.CancellationToken.None
             );
+            Plugin.logger.LogInfo("Multiplayer> Invoked CreateLobby with mod info");
             tcs.SetResult(serverResponse);
         }
         catch (Exception ex)
         {
-            Plugin.logger.LogError("Multiplayer> Error during HandleSendCommandModded: " + ex.Message);
+            Plugin.logger.LogError("Multiplayer> Error during HandleCreateLobbyModded: " + ex.Message);
             tcs.SetException(new Il2CppSystem.Exception(ex.Message));
         }
     }
@@ -153,14 +86,14 @@ public static class Client
         Plugin.logger.LogInfo("Multiplayer> BackendAdapter_StartLobbyGame_Modded");
         var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>>();
 
-        _ = BackendAdapter_StartLobbyGame_Async(taskCompletionSource, __instance, model);
+        _ = HandleStartLobbyGameModded(taskCompletionSource, __instance, model);
 
         __result = taskCompletionSource.Task;
 
         return false;
     }
 
-    private static async System.Threading.Tasks.Task BackendAdapter_StartLobbyGame_Async(
+    private static async System.Threading.Tasks.Task HandleStartLobbyGameModded(
         Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>> tcs,
         BackendAdapter instance,
         StartLobbyBindingModel model)
@@ -182,18 +115,31 @@ public static class Client
                 VersionManager.GameLogicDataVersion
             );
 
-            Plugin.logger.LogInfo("Multiplayer> GameState and Settiings created");
+            Plugin.logger.LogInfo("Multiplayer> GameState and Settings created");
 
-            var succ = GameStateSummary.FromGameStateByteArray(serializedGameState,
-                out GameStateSummary stateSummary, out var gameState);
+            var serializedGameSummary = Array.Empty<byte>();
+            var initialCommandCount = -1;
+            string? currentPlayerId = null;
+            if (GameStateSummary.FromGameStateByteArray(serializedGameState, out GameStateSummary stateSummary,
+                    out GameState initialState))
+            {
+                serializedGameSummary = SerializationHelpers.ToByteArray(stateSummary, initialState.Version);
+                initialCommandCount = initialState.CommandStack.Count;
+                currentPlayerId = GameStateUtils.GetCurrentPlayerAccountId(initialState).ToString();
+                if (currentPlayerId == "00000000-0000-0000-0000-000000000000")
+                {
+                    currentPlayerId = null;
+                }
+            }
 
-            var serializedGameSummary = SerializationHelpers.ToByteArray(stateSummary, gameState.Version);
-            var setupGameDataViewModel = new ModdedGameStateViewModel
+            var setupGameDataViewModel = new SetupGameDataViewModel
             {
                 lobbyId = lobbyGameViewModel.Id.ToString(),
                 serializedGameState = serializedGameState,
                 serializedGameSummary = serializedGameSummary,
-                gameSettingsJson = gameSettingsJson
+                gameSettingsJson = gameSettingsJson,
+                initialCommandCount = initialCommandCount,
+                currentPlayerId = currentPlayerId
             };
 
             var setupData = System.Text.Json.JsonSerializer.Serialize(setupGameDataViewModel);
@@ -204,11 +150,87 @@ public static class Client
                 Il2CppSystem.Threading.CancellationToken.None
             );
             Plugin.logger.LogInfo("Multiplayer> Invoked StartLobbyGameModded");
+
+            if (serverResponse == null)
+            {
+                tcs.SetException(new Il2CppSystem.Exception("No response from StartLobbyGameModded."));
+                return;
+            }
+
+            if (serverResponse.Success)
+            {
+                ModdedClient.RegisterModdedGame(lobbyGameViewModel.Id.ToString(), Compatibility.checksum);
+                ModdedClient.SetShadowState(lobbyGameViewModel.Id.ToString(), serializedGameState);
+            }
+
             tcs.SetResult(serverResponse);
         }
         catch (Exception ex)
         {
             Plugin.logger.LogError("Multiplayer> Error during HandleStartLobbyGameModded: " + ex.Message);
+            tcs.SetException(new Il2CppSystem.Exception(ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Joining a modded lobby must carry the local mod checksum so the server can block mismatched mod sets before they corrupt a game.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(BackendAdapter), nameof(BackendAdapter.RespondToLobbyInvitation))]
+    private static bool BackendAdapter_RespondToLobbyInvitation(
+        ref Il2CppSystem.Threading.Tasks.Task<ServerResponse<LobbyGameViewModel>> __result,
+        BackendAdapter __instance,
+        RespondToLobbyInvitation model)
+    {
+        Plugin.logger.LogInfo("Multiplayer> BackendAdapter_RespondToLobbyInvitation");
+        var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>>();
+
+        _ = HandleRespondToLobbyInvitationModded(taskCompletionSource, __instance, model);
+
+        __result = taskCompletionSource.Task;
+
+        return false;
+    }
+
+    private static async System.Threading.Tasks.Task HandleRespondToLobbyInvitationModded(
+        Il2CppSystem.Threading.Tasks.TaskCompletionSource<ServerResponse<LobbyGameViewModel>> tcs,
+        BackendAdapter instance,
+        RespondToLobbyInvitation model)
+    {
+        try
+        {
+            var payload = JObject.FromObject(model);
+            payload["Checksum"] = new JValue(Compatibility.checksum);
+
+            var serverResponse = await instance.HubConnection.InvokeAsync<ServerResponse<LobbyGameViewModel>>(
+                "RespondToLobbyInvitation",
+                payload,
+                Il2CppSystem.Threading.CancellationToken.None
+            );
+
+            if (serverResponse == null)
+            {
+                tcs.SetException(new Il2CppSystem.Exception("No response from RespondToLobbyInvitation."));
+                return;
+            }
+
+            if (!serverResponse.Success && serverResponse.ErrorCode == ErrorCode.StateProhibitsOperation)
+            {
+                Plugin.logger.LogWarning("Multiplayer> Lobby join blocked: mod set mismatch");
+                PopupManager.GetBasicPopupWithData(new(
+                    Localization.Get("polymod.signature.mismatch"),
+                    Localization.Get("polymod.signature.incompatible"),
+                    new(new PopupBase.PopupButtonData[] {
+                        new("OK")
+                    })
+                )).Show();
+            }
+
+            tcs.SetResult(serverResponse);
+        }
+        catch (Exception ex)
+        {
+            Plugin.logger.LogError("Multiplayer> Error during HandleRespondToLobbyInvitationModded: " + ex.Message);
             tcs.SetException(new Il2CppSystem.Exception(ex.Message));
         }
     }
@@ -225,13 +247,16 @@ public static class Client
         }
         foreach (var participatorViewModel in lobby.Participators)
         {
+            if (participatorViewModel.InvitationState != PlayerInvitationState.Accepted) continue;
+
+            var tribe = (TribeType)participatorViewModel.SelectedTribe;
             var humanPlayer = new PlayerData
             {
                 type = PlayerDataType.LocalUser,
                 state = PlayerDataFriendshipState.Accepted,
                 knownTribe = true,
-                tribe = (TribeType)participatorViewModel.SelectedTribe,
-                tribeMix = TribeType.None, // TribeMix is byte too
+                tribe = tribe,
+                tribeMix = (int)tribe < byte.MaxValue ? tribe : TribeType.None,
                 skinType = (SkinType)participatorViewModel.SelectedTribeSkin,
                 defaultName = participatorViewModel.GetNameInternal()
             };
@@ -334,41 +359,11 @@ public static class Client
 
         gameState.CommandStack.Add((CommandBase)new StartMatchCommand((byte)1));
 
+        new ActionManager(gameState).Update();
+
         var serializedGameState = SerializationHelpers.ToByteArray(gameState, gameState.Version);
 
         return (serializedGameState,
             JsonConvert.SerializeObject(gameState.Settings));
     }
-
-    // FIX FOR NATURE PLAYER. BOTS ARENT IMPLEMENTED YET
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(GameState), nameof(GameState.EndPlayerTurn))]
-	private static bool GameState_EndPlayerTurn(GameState __instance, bool newTurn = false)
-	{
-        Console.Write("GameState_EndPlayerTurn");
-		__instance.CurrentPlayerIndex++;
-		if (__instance.CurrentPlayerIndex >=__instance. PlayerStates.Count)
-		{
-			__instance.CurrentPlayerIndex = 0;
-			newTurn = true;
-		}
-
-        var currentPlayer = __instance.PlayerStates[__instance.CurrentPlayerIndex];
-		if (!currentPlayer.IsAlive(__instance))
-		{
-			__instance.EndPlayerTurn(newTurn);
-		}
-		else if (newTurn)
-		{
-			__instance.CurrentTurn++;
-		}
-
-        if(currentPlayer.AutoPlay)
-        {
-            __instance.CommandStack.Add(new EndTurnCommand(currentPlayer.Id));
-        }
-        Console.Write("finished");
-        return false;
-	}
 }

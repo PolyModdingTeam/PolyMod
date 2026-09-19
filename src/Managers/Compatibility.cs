@@ -22,6 +22,16 @@ internal static class Compatibility
     private static bool sawSignatureWarning;
 
     /// <summary>
+    /// Whether all loaded mods are client only. If at least one non client only mod exists this returns false.
+    /// </summary>
+    /// <returns></returns>
+    public static bool IsClientOnly()
+    {
+        return Registry.mods.Select(modPair => modPair.Value)
+            .All(mod => mod.client || mod.id == "polytopia" || mod.status != Mod.Status.Success);
+    }
+
+    /// <summary>
     /// Hashes the signatures of all loaded mods to create a checksum.
     /// </summary>
     /// <param name="checksumString">A string builder containing the signatures to hash.</param>
@@ -150,6 +160,25 @@ internal static class Compatibility
     private static bool StartScreen_OnResumeButtonClick(StartScreen_UI2 __instance)
     {
         return CheckSignatures(__instance.OnResumeButtonLongPress, LocalSaveFileUtils.GetSaveFiles(PolytopiaBackendBase.Game.GameType.SinglePlayer)[0]);
+    }
+
+    /// <summary>
+    /// Checks the signature of a multiplayer game before opening it.
+    /// Blocks on mismatch.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.OpenMultiplayerGame))]
+    private static bool GameManager_OpenMultiplayerGame(
+        ref Il2CppSystem.Threading.Tasks.Task<bool> __result,
+        Il2CppSystem.Guid gameId)
+    {
+        if (CheckSignatures(null!, gameId)) return true;
+
+        var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<bool>();
+        taskCompletionSource.SetResult(false);
+        __result = taskCompletionSource.Task;
+
+        return false;
     }
 
     /// <summary>
