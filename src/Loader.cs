@@ -54,85 +54,120 @@ public static class Loader
 	/// <summary>
 	/// Handlers for processing specific data types during mod loading.
 	/// </summary>
-	internal static readonly Dictionary<Type, Action<JObject, bool>> typeHandlers = new()
+	internal static readonly Dictionary<Type, List<Action<JObject, bool>>> typeHandlers = new()
 	{
-		[typeof(TribeType)] = new((token, duringEnumCacheCreation) =>
-		{
-			if (duringEnumCacheCreation)
+		[typeof(TribeType)] = new List<Action<JObject, bool>>() {
+			new((token, duringEnumCacheCreation) =>
 			{
-				Registry.customTribes.Add((TribeType)Registry.autoidx);
-				token["style"] = Registry.climateAutoidx;
-				token["climate"] = Registry.climateAutoidx;
-				Registry.climateAutoidx++;
-			}
-			else
-			{
-				if (token["skins"] != null)
+				if (duringEnumCacheCreation)
 				{
-					JArray skins = token["skins"].Cast<JArray>();
-					List<JToken> skinValues = skins._values.ToArray().ToList();
-					foreach (var skin in skinValues)
+					Registry.customTribes.Add((TribeType)(int)token["idx"]);
+					token["style"] = Registry.climateAutoidx;
+					token["climate"] = Registry.climateAutoidx;
+					Registry.climateAutoidx++;
+				}
+				else
+				{
+					if (token["skins"] != null)
 					{
-						string skinValue = skin.ToString();
-						if (!Enum.TryParse<SkinType>(skinValue, ignoreCase: true, out _))
+						JArray skins = token["skins"].Cast<JArray>();
+						List<JToken> skinValues = skins._values.ToArray().ToList();
+						foreach (var skin in skinValues)
 						{
-							EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
-							EnumCache<SkinType>.AddMapping(skinValue.ToLowerInvariant(), (SkinType)Registry.autoidx);
-							Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinValue, null));
-							Plugin.logger.LogInfo("Created mapping for skinType with id " + skinValue + " and index " + Registry.autoidx);
-							Registry.autoidx++;
+							string skinId = skin.ToString();
+							if (!Enum.TryParse<SkinType>(skinId, ignoreCase: true, out _))
+							{
+								SkinType skinValue = (SkinType)Registry.autoidx;
+								EnumCache<SkinType>.AddMapping(skinId.ToLowerInvariant(), skinValue);
+								EnumCache<SkinType>.AddMapping(skinId.ToLowerInvariant(), skinValue);
+								Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinId, null));
+								Plugin.logger.LogInfo("Created mapping for skinType with id " + skinId + " and index " + Registry.autoidx);
+								Registry.autoidx++;
+								if(token["tribeAbilities"] != null)
+								{
+									JArray tribeAbilities = token["tribeAbilities"].Cast<JArray>();
+									List<JToken> tribeAbilitiesValues = tribeAbilities._values.ToArray().ToList();
+
+									foreach(JToken ability in tribeAbilitiesValues)
+									{
+										string abilityValue = ability.ToString();
+
+										if (Enum.TryParse<TribeAbility.Type>(
+												abilityValue, ignoreCase: true,
+												out TribeAbility.Type tribeAbilityType
+											) && tribeAbilityType == TribeAbility.Type.Flooded)
+										{
+											string tileEffectId = skinId.ToLowerInvariant() + "_flood";
+											EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
+											EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
+                                            Visual.customFloodingSkins.Add((TileData.EffectType)Registry.autoidx, skinValue);
+											Plugin.logger.LogInfo("Created mapping for tileEffect with id " + tileEffectId + " and index " + Registry.autoidx);
+											Registry.autoidx++;
+										}
+									}
+								}
+							}
+						}
+						Il2CppSystem.Collections.Generic.List<JToken> modifiedSkins = skins._values;
+						foreach (var skin in Registry.skinInfo)
+						{
+							if (modifiedSkins.Contains(skin.id))
+							{
+								modifiedSkins.Remove(skin.id);
+								modifiedSkins.Add(skin.idx.ToString());
+							}
+						}
+						JArray newSkins = new JArray();
+						foreach (var item in modifiedSkins)
+						{
+							newSkins.Add(item);
+						}
+						token["skins"] = newSkins;
+					}
+					if (token["preview"] != null)
+					{
+						Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
+						Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
+					}
+				}
+			})
+		},
+		[typeof(UnitData.Type)] = new List<Action<JObject, bool>>() {
+			new((token, duringEnumCacheCreation) =>
+			{
+				if(duringEnumCacheCreation)
+				{
+					if (token["prefab"] == null)
+					{
+						Registry.prefabNames.Add((int)token["idx"], EnumCache<UnitData.Type>.GetName(UnitData.Type.Scout).ToLowerInvariant());
+					}
+				}
+				else
+				{
+					if (token["prefab"] != null)
+					{
+						Registry.prefabNames.Add((int)token["idx"], token["prefab"].ToString().ToLowerInvariant());
+					}
+					if (token["embarksTo"] != null)
+					{
+						string unitId = Util.GetJTokenName(token);
+						string embarkUnitId = token["embarksTo"].ToString();
+						Main.embarkNames[unitId] = embarkUnitId;
+					}
+					if (token["weapon"] != null)
+					{
+						string weaponString = token["weapon"].ToString();
+						if (EnumCache<UnitData.WeaponEnum>.TryGetType(weaponString, out UnitData.WeaponEnum type))
+						{
+							token["weapon"] = (int)type;
 						}
 					}
-					Il2CppSystem.Collections.Generic.List<JToken> modifiedSkins = skins._values;
-					foreach (var skin in Registry.skinInfo)
-					{
-						if (modifiedSkins.Contains(skin.id))
-						{
-							modifiedSkins.Remove(skin.id);
-							modifiedSkins.Add(skin.idx.ToString());
-						}
-					}
-					JArray newSkins = new JArray();
-					foreach (var item in modifiedSkins)
-					{
-						newSkins.Add(item);
-					}
-					token["skins"] = newSkins;
 				}
-				if (token["preview"] != null)
-				{
-					Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
-					Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
-				}
-			}
-		}),
+			})
+		},
 
-		[typeof(UnitData.Type)] = new((token, duringEnumCacheCreation) =>
-		{
-			if (!duringEnumCacheCreation)
-			{
-				if (token["prefab"] != null)
-				{
-					Registry.prefabNames.Add((int)(UnitData.Type)(int)token["idx"], CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString()));
-				}
-				if (token["embarksTo"] != null)
-				{
-					string unitId = Util.GetJTokenName(token);
-					string embarkUnitId = token["embarksTo"].ToString();
-					Main.embarkNames[unitId] = embarkUnitId;
-				}
-				if (token["weapon"] != null)
-				{
-					string weaponString = token["weapon"].ToString();
-					if (EnumCache<UnitData.WeaponEnum>.TryGetType(weaponString, out UnitData.WeaponEnum type))
-					{
-						token["weapon"] = (int)type;
-					}
-				}
-			}
-		}),
-
-		[typeof(ImprovementData.Type)] = new((token, duringEnumCacheCreation) =>
+		[typeof(ImprovementData.Type)] = new List<Action<JObject, bool>>() {
+		new((token, duringEnumCacheCreation) =>
 		{
 			if (duringEnumCacheCreation)
 			{
@@ -143,45 +178,55 @@ public static class Loader
 					if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
 						improvementPrefabType = parsedType;
 				}
-				PrefabManager.improvements.TryAdd((ImprovementData.Type)Registry.autoidx, PrefabManager.improvements[improvementPrefabType]);
+				if(token["idx"] != null)
+					PrefabManager.improvements.TryAdd((ImprovementData.Type)(int)token["idx"], PrefabManager.improvements[improvementPrefabType]);
 			}
 			else
 			{
+				string improvementId = Util.GetJTokenName(token);
 				if (token["attractsResource"] != null)
 				{
-					string improvementId = Util.GetJTokenName(token);
 					string attractsId = token["attractsResource"].ToString();
 					Main.attractsResourceNames[improvementId] = attractsId;
 				}
 				if (token["attractsToTerrain"] != null)
 				{
-					string improvementId = Util.GetJTokenName(token);
 					string attractsId = token["attractsToTerrain"].ToString();
 					Main.attractsTerrainNames[improvementId] = attractsId;
 				}
-			}
-		}),
-
-		[typeof(ResourceData.Type)] = new((token, duringEnumCacheCreation) =>
-		{
-			if (duringEnumCacheCreation)
-			{
-				ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
-				if (token["prefab"] != null)
+				if(token["infoOverride"] != null)
 				{
-					string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
-					if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
-						resourcePrefabType = parsedType;
+					Loc.buildingsInfoOverrides[improvementId] = Loc.ReplaceDashesWithDots(token["infoOverride"].ToString());
 				}
-				PrefabManager.resources.TryAdd((ResourceData.Type)Registry.autoidx, PrefabManager.resources[resourcePrefabType]);
 			}
-		}),
+		})
+		},
 
-		[typeof(SkinData)] = new((token, duringEnumCacheCreation) =>
-		{
-			var prop = token.Parent.Cast<JProperty>();
-			prop.Replace(new JProperty(prop.Name.ToLower(), prop.Value));
-		}),
+		[typeof(ResourceData.Type)] = new List<Action<JObject, bool>>() {
+			new((token, duringEnumCacheCreation) =>
+			{
+				if (duringEnumCacheCreation)
+				{
+					ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
+					if (token["prefab"] != null)
+					{
+						string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
+						if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
+							resourcePrefabType = parsedType;
+					}
+					if(token["idx"] != null)
+						PrefabManager.resources.TryAdd((ResourceData.Type)(int)token["idx"], PrefabManager.resources[resourcePrefabType]);
+				}
+			})
+		},
+
+		[typeof(SkinData)] = new List<Action<JObject, bool>>() {
+			new((token, duringEnumCacheCreation) =>
+			{
+				var prop = token.Parent.Cast<JProperty>();
+				prop.Replace(new JProperty(prop.Name.ToLower(), prop.Value));
+			})
+		},
 	};
 
 	/// <summary>
@@ -215,7 +260,7 @@ public static class Loader
 	/// Adds a new data type for patching.
 	/// </summary>
 	/// <param name="typeId">The identifier for the data type in JSON.</param>
-	/// <param name="type">The C# type corresponding to the identifier.</param>
+	/// <param name="type">"The C# type corresponding to the identifier.</param>
 	public static void AddPatchDataType(string typeId, Type type)
 	{
 		if (!typeMappings.ContainsKey(typeId))
@@ -226,6 +271,22 @@ public static class Loader
 	{
 		if (!typeMappings.ContainsKey(typeId))
 			typeMappings.Add(typeId, new TypeMapping(type, shouldCreateCache));
+	}
+
+	public static void AddTypeHandler(Type type, Action<JObject, bool> handler)
+	{
+		string typeString = type.ToString();
+		if(!typeMappings.ContainsValue(new TypeMapping(type, true)) && !typeMappings.ContainsValue(new TypeMapping(type, false)))
+		{
+			Plugin.logger.LogWarning($"Tried adding TypeHandler for type: {typeString} with missing TypeMapping. Please, add TypeMapping first.");
+			return;
+		}
+		if(!typeHandlers.ContainsKey(type))
+			typeHandlers[type] = new();
+		
+		typeHandlers[type].Add(handler);
+
+		Plugin.logger.LogInfo($"Added TypeHandler for type: {typeString}.");
 	}
 
 	/// <summary>
@@ -247,38 +308,26 @@ public static class Loader
 			// Load mod from directory or zip archive
 			if (Directory.Exists(modContainer))
 			{
-				foreach (var file in Directory.GetFiles(modContainer))
+				foreach (var file in Directory.GetFiles(modContainer, "*", SearchOption.AllDirectories))
 				{
-					if (Path.GetFileName(file) == "manifest.json")
-					{
-						manifest = JsonSerializer.Deserialize<Mod.Manifest>(
-							File.ReadAllBytes(file),
-							new JsonSerializerOptions()
-							{
-								Converters = { new VersionJson() },
-							}
-						);
-						continue;
-					}
-					files.Add(new(Path.GetFileName(file), File.ReadAllBytes(file)));
+					ProcessModFile(
+						Path.GetRelativePath(modContainer, file),
+						File.ReadAllBytes(file),
+						files,
+						ref manifest
+					);
 				}
 			}
 			else
 			{
 				foreach (var entry in new ZipArchive(File.OpenRead(modContainer)).Entries)
 				{
-					if (entry.FullName == "manifest.json")
-					{
-						manifest = JsonSerializer.Deserialize<Mod.Manifest>(
-							entry.ReadBytes(),
-							new JsonSerializerOptions()
-							{
-								Converters = { new VersionJson() },
-							}
-						);
-						continue;
-					}
-					files.Add(new(entry.FullName, entry.ReadBytes()));
+					ProcessModFile(
+						entry.FullName,
+						entry.ReadBytes(),
+						files,
+						ref manifest
+					);
 				}
 			}
 			#region ValidateManifest()
@@ -324,6 +373,22 @@ public static class Loader
 		CheckDependencies(mods);
 	}
 
+	private static void ProcessModFile(string fullName, byte[] bytes, List<Mod.File> files, ref Mod.Manifest? manifest)
+	{
+		if (fullName == "manifest.json")
+		{
+			manifest = JsonSerializer.Deserialize<Mod.Manifest>(
+				bytes,
+				new JsonSerializerOptions()
+				{
+					Converters = { new VersionJson() },
+				}
+			);
+			return;
+		}
+		files.Add(new(fullName, bytes));
+	}
+
 	internal static void LoadMods(Dictionary<string, Mod> mods, out bool dependencyCycle)
 	{
 		dependencyCycle = !SortMods(Registry.mods);
@@ -340,9 +405,20 @@ public static class Loader
 				{
 					LoadAssemblyFile(mod, file);
 				}
-				if (Path.GetFileName(file.name) == "sprites.json")
+				Match spritesMatch = Regex.Match(Path.GetFileName(file.name), @"^sprites(?:_(.*))?\.json$");
+				if (spritesMatch.Success)
 				{
 					LoadSpriteInfoFile(mod, file);
+				}
+				Match languageMatch = Regex.Match(Path.GetFileName(file.name), @"^language(?:_(.*))?\.json$");
+				if (languageMatch.Success)
+				{
+					string languageName = languageMatch.Groups[1].Value;
+					LoadLanguageFile(
+						mod,
+						file,
+						languageName
+					);
 				}
 			}
 			if (!mod.client && id != "polytopia")
@@ -474,7 +550,7 @@ public static class Loader
 			    is { } modType)
 			{
 				var modInstance = (Api.PolyScriptBase) Activator.CreateInstance(modType)!;
-				modInstance.Initialize(mod.id, BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.id}"));
+				modInstance.Initialize(mod, BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.id}"));
 				modInstance.Load();
 				return;
 			}
@@ -523,6 +599,23 @@ public static class Loader
 		catch (Exception e)
 		{
 			Plugin.logger.LogError($"Error on loading locatization from {mod.id} mod: {e.StackTrace}");
+		}
+	}
+
+	public static void LoadLanguageFile(Mod mod, Mod.File file, string languageName)
+	{
+		try
+		{
+			var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(file.bytes);
+			if(dict != null)
+			{
+				Loc.languagesToAdd.Add(languageName, dict);
+				Plugin.logger.LogInfo($"Registered language from {mod.id} mod");
+			}
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading language file from {mod.id} mod: {e.StackTrace}");
 		}
 	}
 
@@ -639,6 +732,10 @@ public static class Loader
 			if (prefab == null || prefab.type != Visual.PrefabType.Unit || prefab.visualParts.Count == 0)
 				return;
 
+			if (Registry.unitPrefabs.Keys.Any(pref => pref.name == prefab.name))
+			{
+				Plugin.logger.LogInfo($"Prefab {prefab.name} already exists, skipping.");
+			}
 			var baseUnit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeType.Imperius, SkinType.Default);
 			if (baseUnit == null)
 				return;
@@ -670,11 +767,11 @@ public static class Loader
 			GameObject.DontDestroyOnLoad(unitInstance.gameObject);
 			Registry.unitPrefabs.Add(prefab, unitInstance.GetComponent<Unit>());
 
-			Plugin.logger.LogInfo($"Registered prefab info from {mod.id} mod");
+			Plugin.logger.LogInfo($"Registered prefab {prefab.name} info from {mod.id} mod.");
 		}
 		catch (Exception e)
 		{
-			Plugin.logger.LogError($"Error on loading prefab info from {mod.id} mod: {e.StackTrace}");
+			Plugin.logger.LogError($"Error on loading prefab {Path.GetFileNameWithoutExtension(file.name)} info from {mod.id} mod: {e.StackTrace}.");
 		}
 	}
 
@@ -818,6 +915,7 @@ public static class Loader
 		try
 		{
 			CreateMappings(rootObject);
+			ProcessCustomTribes();
 			ProcessPrefabs();
 			ProcessEmbarkOverrides();
 			ProcessAttractOverrides();
@@ -825,6 +923,17 @@ public static class Loader
 		catch (Exception e)
 		{
 			Plugin.logger.LogError($"Error on processing modified game logic data : {e.StackTrace}");
+		}
+	}
+
+	internal static void ProcessCustomTribes()
+	{
+		foreach (var tribe in Registry.customTribes)
+		{
+			if(!GameLogicData.legacyTribeTypesOrder.Contains(tribe))
+			{
+				GameLogicData.legacyTribeTypesOrder.Add(tribe);
+			}
 		}
 	}
 
@@ -887,9 +996,12 @@ public static class Loader
 			methodInfo.Invoke(null, new object[] { id, (int)token["idx"] });
 			methodInfo.Invoke(null, new object[] { id, (int)token["idx"] });
 
-			if (typeHandlers.TryGetValue(targetType, out var handler))
+			if (typeHandlers.TryGetValue(targetType, out var handlers))
 			{
-				handler(token, true);
+				foreach(var handler in handlers)
+				{
+					handler(token, true);
+				}
 			}
 			Plugin.logger.LogInfo("Created mapping for " + targetType.ToString() + " with id " + id + " and index " + (int)token["idx"]);
 		}
@@ -901,9 +1013,12 @@ public static class Loader
 				string dataType = Util.GetJTokenName(token, 2);
 				if (typeMappings.TryGetValue(dataType, out TypeMapping? typeMapping))
 				{
-					if (typeHandlers.TryGetValue(typeMapping.type, out var handler))
+					if (typeHandlers.TryGetValue(typeMapping.type, out var handlers))
 					{
-						handler(token, false);
+						foreach(var handler in handlers)
+						{
+							handler(token, false);
+						}
 					}
 				}
 			}
@@ -915,27 +1030,34 @@ public static class Loader
 	/// </summary>
 	internal static void ProcessPrefabs()
 	{
-		foreach (System.Collections.Generic.KeyValuePair<int, string> item in Registry.prefabNames)
+		Plugin.logger.LogInfo($"Processing prefabs, count: {Registry.prefabNames.Count}.");
+		foreach (KeyValuePair<int, string> item in Registry.prefabNames)
 		{
 			UnitData.Type unitPrefabType = UnitData.Type.Scout;
 			string prefabId = item.Value;
-			if (Enum.TryParse(prefabId, out UnitData.Type parsedType))
+			int hashKey = PrefabManager.GetSkinnedHashKey((UnitData.Type)item.Key, TribeType.None, SkinType.Default);
+			if (!Enum.TryParse(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(prefabId), out unitPrefabType)) // Existing unit prefabs
 			{
-				unitPrefabType = parsedType;
-				PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
-			}
-			else
-			{
-				KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(kv => kv.Key.name == prefabId);
+				KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(
+					kv => kv.Key.name == prefabId
+				);
 				if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
 				{
-					PrefabManager.units.TryAdd(item.Key, prefabInfo.Value);
-				}
-				else
-				{
-					PrefabManager.units.TryAdd(item.Key, PrefabManager.units[(int)unitPrefabType]);
+					Visual.UnitPrefabInfo unitPrefabInfo = new(
+						EnumCache<UnitData.Type>.GetName((UnitData.Type)item.Key),
+						EnumCache<TribeType>.GetName(TribeType.None),
+						EnumCache<SkinType>.GetName(SkinType.Default)
+					);
+					Visual.customPrefabs.Add(unitPrefabInfo, prefabInfo.Value);
+					Plugin.logger.LogInfo($"Using custom prefab {prefabId} for unit {item.Key}.");
+					continue;
 				}
 			}
+			Plugin.logger.LogInfo($"Using existing prefab {EnumCache<UnitData.Type>.GetName(unitPrefabType)} for unit {item.Key}.");
+			PrefabManager.units.TryAdd(
+				hashKey,
+				PrefabManager.units[PrefabManager.GetSkinnedHashKey(unitPrefabType, TribeType.None, SkinType.Default)]
+			);
 		}
 	}
 

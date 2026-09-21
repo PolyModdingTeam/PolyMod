@@ -4,16 +4,20 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <Configurations>IL2CPP</Configurations>
-        <Version>1.2.7</Version>
-        <PolytopiaVersion>2.16.0.15379</PolytopiaVersion>
+        <RootNamespace>PolyMod</RootNamespace>
+        <Version>1.2.18</Version>
+        <PolytopiaVersion>2.17.3.16375</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
         <NoWarn>IDE0130</NoWarn>
         <NoWarn>NU5104</NoWarn>
+        <NoWarn>$(NoWarn);NU1902</NoWarn>
+        <NoWarn>$(NoWarn);NU1903</NoWarn>
+        <NoWarn>$(NoWarn);NU1904</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.752" />
+        <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.785" />
         <PackageReference Include="Costura.Fody" Version="6.0.0">
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>

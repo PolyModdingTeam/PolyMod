@@ -15,8 +15,8 @@ internal static class AutoUpdate
     /// Checks for updates when the start screen is shown.
     /// </summary>
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(StartScreen), nameof(StartScreen.Start))]
-    private static void StartScreen_Start()
+    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
+    private static void StartScreen_UI2_OnShow()
     {
         if (!Plugin.config.autoUpdate) return;
         if (Environment.GetEnvironmentVariable("WINEPREFIX") != null)
@@ -154,7 +154,7 @@ internal static class AutoUpdate
             }
 
             // Show a popup to the user asking if they want to update
-            PopupManager.GetBasicPopup(new(
+            PopupManager.GetBasicPopupWithData(new(
                 Localization.Get("polymod.autoupdate"),
                 Localization.Get("polymod.autoupdate.description"),
                 new(new PopupBase.PopupButtonData[] {

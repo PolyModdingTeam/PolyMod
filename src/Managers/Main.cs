@@ -88,7 +88,6 @@ public static class Main
 	/// </summary>
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlocked))]
-	[HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlockedInternal))]
 	private static bool PurchaseManager_IsSkinUnlockedInternal(ref bool __result, SkinType skinType)
 	{
 		__result = (int)skinType >= Plugin.AUTOIDX_STARTS_FROM && skinType != SkinType.Test;
@@ -388,12 +387,15 @@ public static class Main
 			if (mod.status != Mod.Status.Success) continue;
 			foreach (var file in mod.files)
 			{
-				if (Path.GetFileName(file.name) == "localization.json")
+				if (mod.status != Mod.Status.Success) break;
+				Match localizationMatch = Regex.Match(Path.GetFileName(file.name), @"^localization(_.*)?\.json$");
+				if (localizationMatch.Success)
 				{
 					Loader.LoadLocalizationFile(mod, file);
 					continue;
 				}
-				if (Regex.IsMatch(Path.GetFileName(file.name), @"^patch(_.*)?\.json$"))
+				Match patchMatch = Regex.Match(Path.GetFileName(file.name), @"^patch(_.*)?\.json$");
+				if (patchMatch.Success)
 				{
 					var patchText = new StreamReader(new MemoryStream(file.bytes)).ReadToEnd();
 					var template = new Api.GldConfigTemplate(patchText, mod.id);
@@ -410,7 +412,8 @@ public static class Main
 					);
 					continue;
 				}
-				if (Regex.IsMatch(Path.GetFileName(file.name), @"^prefab(_.*)?\.json$"))
+				Match prefabMatch = Regex.Match(Path.GetFileName(file.name), @"^prefab(?:_(.*))?\.json$");
+				if (prefabMatch.Success)
 				{
 					Loader.LoadPrefabInfoFile(
 						mod,

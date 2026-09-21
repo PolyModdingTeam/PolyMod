@@ -54,6 +54,16 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	public static readonly string DUMPED_DATA_PATH = Path.Combine(BASE_PATH, "DumpedData");
 
 	/// <summary>
+	/// The path to the directory where localization is dumped.
+	/// </summary>
+	public static readonly string LOGIC_DUMP_PATH = Path.Combine(DUMPED_DATA_PATH, "Logic");
+
+	/// <summary>
+	/// The path to the directory where gameLogicData and avatarData are dumped.
+	/// </summary>
+	public static readonly string LOCALIZATION_DUMP_PATH = Path.Combine(DUMPED_DATA_PATH, "Localization");
+
+	/// <summary>
 	/// The path to the PolyMod configuration file.
 	/// </summary>
 	internal static readonly string CONFIG_PATH = Path.Combine(BASE_PATH, "PolyMod.json");
