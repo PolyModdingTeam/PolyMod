@@ -99,13 +99,13 @@ public static class JsonMerger
                     result.Remove(rem);
                 hasCustomValues = true;
             }
-            else if(isSkins)
+            else if (isSkins)
             {
                 result.Add(str);
                 hasCustomValues = true;
             }
         }
-        if(!hasCustomValues)
+        if (!hasCustomValues)
         {
             result = new JArray(patch);
         }
