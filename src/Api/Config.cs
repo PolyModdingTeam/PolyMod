@@ -27,25 +27,25 @@ public class Config<T> where T : class
         switch (configType)
         {
             case ConfigTypes.PerMod:
-            {
-                if (!File.Exists(perModConfigPath))
                 {
-                    return;
+                    if (!File.Exists(perModConfigPath))
+                    {
+                        return;
+                    }
+                    var jsonText = File.ReadAllText(perModConfigPath);
+                    currentConfig = JsonSerializer.Deserialize<T>(jsonText);
+                    break;
                 }
-                var jsonText = File.ReadAllText(perModConfigPath);
-                currentConfig = JsonSerializer.Deserialize<T>(jsonText);
-                break;
-            }
             case ConfigTypes.Exposed:
-            {
-                if (!File.Exists(ExposedConfigPath))
                 {
-                    return;
+                    if (!File.Exists(ExposedConfigPath))
+                    {
+                        return;
+                    }
+                    var jsonText = File.ReadAllText(ExposedConfigPath);
+                    currentConfig = JsonNode.Parse(jsonText)![modName]?.Deserialize<T>();
+                    break;
                 }
-                var jsonText = File.ReadAllText(ExposedConfigPath);
-                currentConfig = JsonNode.Parse(jsonText)![modName]?.Deserialize<T>();
-                break;
-            }
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -60,7 +60,7 @@ public class Config<T> where T : class
         Write(defaultConfig);
         SaveChanges();
     }
-    
+
     /// <summary>
     /// Writes the **entire** config. Usage not recommended, use Edit() instead
     /// </summary>

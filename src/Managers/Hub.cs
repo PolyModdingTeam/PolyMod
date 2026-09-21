@@ -109,7 +109,7 @@ internal static class Hub
     [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.RunLayout))]
     private static void StartScreen_UI2_RunLayout(StartScreen_UI2 __instance, ScreenBase_UI2.ScreenSize screenSize)
     {
-        if(polyModButton == null)
+        if (polyModButton == null)
         {
             Plugin.logger.LogWarning("PolyMod Hub button is null when running layout!");
             return;
@@ -118,10 +118,10 @@ internal static class Hub
         polyModButton.outline.gameObject.SetActive(false);
         polyModButton.bg.color = Color.white;
         polyModButton.Text = Localization.Get("polymod.hub");
-		float num = 50f;
-		polyModButton.SetPosition(screenSize.safeRect.Right - (num * 2.5f), screenSize.safeRect.Top - num);
+        float num = 50f;
+        polyModButton.SetPosition(screenSize.safeRect.Right - (num * 2.5f), screenSize.safeRect.Top - num);
 
-        if(polyModVersion == null)
+        if (polyModVersion == null)
         {
             Plugin.logger.LogWarning("PolyMod Version is null when running layout!");
             return;
@@ -336,7 +336,7 @@ internal static class Hub
             ));
             popupButtons.Add(new(
                 "polymod.hub.spriteinfo.update",
-                callback:  DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(UpdateSpriteInfos),
+                callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(UpdateSpriteInfos),
                 closesPopup: false
             ));
         }

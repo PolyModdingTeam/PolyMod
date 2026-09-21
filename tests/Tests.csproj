@@ -1,35 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <RootNamespace>tests</RootNamespace>
-        <TargetFramework>net8.0</TargetFramework>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-        <!--
-        To enable the Microsoft Testing Platform 'dotnet test' experience, add property:
-        <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
 
-        To enable the Microsoft Testing Platform native command line experience, add property:
-        <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Tests</RootNamespace>
+    <RollForward>LatestMajor</RollForward>
+  </PropertyGroup>
 
-        For more information on Microsoft Testing Platform support in xUnit.net, please visit:
-        https://xunit.net/docs/getting-started/v3/microsoft-testing-platform
-        -->
-    </PropertyGroup>
-
-    <ItemGroup>
-        <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Using Include="Xunit" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="../src/PolyMod.csproj" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-        <PackageReference Include="xunit.v3" Version="3.0.1" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <ProjectReference Include="..\src\PolyMod.csproj" />
+    <Using Include="Xunit" />
+  </ItemGroup>
 
 </Project>

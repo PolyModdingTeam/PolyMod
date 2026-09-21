@@ -24,6 +24,7 @@
         <PackageReference Include="Scriban" Version="6.2.1" />
         <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)" />
         <EmbeddedResource Include="resources\*.*" />
+        <InternalsVisibleTo Include="Tests" />
     </ItemGroup>
 
     <Target Name="AddGeneratedFile" BeforeTargets="BeforeCompile;CoreCompile" Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)GeneratedFile.cs">

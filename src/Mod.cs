@@ -9,10 +9,10 @@ public class Mod
     /// Represents a dependency of a mod.
     /// </summary>
     /// <param name="id">The unique identifier of the dependency.</param>
-    /// <param name="min">The minimum compatible version of the dependency.</param>
-    /// <param name="max">The maximum compatible version of the dependency.</param>
+    /// <param name="min">The minimum compatible version of the dependency, or null for no minimum.</param>
+    /// <param name="max">The maximum compatible version of the dependency, or null for no maximum.</param>
     /// <param name="required">Whether the dependency is required for the mod to function.</param>
-    public record Dependency(string id, Version min, Version max, bool required = true);
+    public record Dependency(string id, Version? min, Version? max, bool required = true);
 
     /// <summary>
     /// Represents the manifest of a mod, containing metadata.
