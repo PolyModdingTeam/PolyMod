@@ -278,11 +278,11 @@ internal static class Hub
     /// </summary>
     internal static void ShowConfigPopup()
     {
-        BasicPopupLegacy polymodPopup = Visual.GetBasicPopupLegacy();
+        BasicPopup polymodPopup = PopupManager.GetBasicPopup();
         polymodPopup.Header = Localization.Get("polymod.hub.config");
         polymodPopup.Description = "";
         polymodPopup.buttonData = CreateConfigPopupButtonData();
-        polymodPopup.ShowSetWidth(POPUP_WIDTH);
+        polymodPopup.Show();
     }
 
     internal static void ShowPolyModHub()
