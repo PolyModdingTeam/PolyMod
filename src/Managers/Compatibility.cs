@@ -1,7 +1,7 @@
 using HarmonyLib;
+using Il2CppInterop.Runtime;
 using System.Text;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace PolyMod.Managers;
 
@@ -20,6 +20,17 @@ internal static class Compatibility
     /// </summary>
     internal static bool shouldResetSettings = false;
     private static bool sawSignatureWarning;
+    private const string downloadLink = "https://polymod.dev/download/";
+
+    /// <summary>
+    /// Whether all loaded mods are client only. If at least one non client only mod exists this returns false.
+    /// </summary>
+    /// <returns></returns>
+    public static bool IsClientOnly()
+    {
+        return Registry.mods.Select(modPair => modPair.Value)
+            .All(mod => mod.client || mod.id == "polytopia" || mod.status != Mod.Status.Success);
+    }
 
     /// <summary>
     /// Hashes the signatures of all loaded mods to create a checksum.
@@ -87,6 +98,36 @@ internal static class Compatibility
     [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
     private static void StartScreen_UI2_OnShow()
     {
+        if(!Plugin.ValidLaunch)
+        {
+            PopupManager.GetBasicPopupWithData(
+                new(
+                    Localization.Get("polymod.title.invalid"),
+                    Localization.Get("polymod.description.invalid"),
+                    new PopupBase.PopupButtonData[] {
+                        new(
+                            "buttons.exitgame",
+                            PopupBase.PopupButtonData.States.None,
+                            callback: (Il2CppSystem.Action)Application.Quit,
+                            closesPopup: false
+                        ),
+                        new(
+                            "buttons.download.launcher",
+                            PopupBase.PopupButtonData.States.None,
+                            callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OpenSite),
+                            closesPopup: false
+                        )
+                    }
+                )
+            ).Show();
+
+            void OpenSite()
+            {
+                NativeHelpers.OpenURL(downloadLink, false);
+                Application.Quit();
+            }
+            return;
+        }
         string lastChecksum = checksum;
         try
         {
@@ -150,6 +191,25 @@ internal static class Compatibility
     private static bool StartScreen_OnResumeButtonClick(StartScreen_UI2 __instance)
     {
         return CheckSignatures(__instance.OnResumeButtonLongPress, LocalSaveFileUtils.GetSaveFiles(PolytopiaBackendBase.Game.GameType.SinglePlayer)[0]);
+    }
+
+    /// <summary>
+    /// Checks the signature of a multiplayer game before opening it.
+    /// Blocks on mismatch.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.OpenMultiplayerGame))]
+    private static bool GameManager_OpenMultiplayerGame(
+        ref Il2CppSystem.Threading.Tasks.Task<bool> __result,
+        Il2CppSystem.Guid gameId)
+    {
+        if (CheckSignatures(null!, gameId)) return true;
+
+        var taskCompletionSource = new Il2CppSystem.Threading.Tasks.TaskCompletionSource<bool>();
+        taskCompletionSource.SetResult(false);
+        __result = taskCompletionSource.Task;
+
+        return false;
     }
 
     /// <summary>
