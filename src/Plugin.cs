@@ -1,9 +1,12 @@
-﻿using System.Reflection;
+﻿using System.IO.Pipes;
+using System.Reflection;
 using System.Text.Json;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using PolyMod.Android;
 using PolyMod.Managers;
+using PolyMod.Multiplayer;
 using UnityEngine;
 
 namespace PolyMod;
@@ -14,18 +17,23 @@ namespace PolyMod;
 [BepInPlugin("com.polymod", "PolyMod", VERSION)]
 public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 {
+    internal static string? Token { get; set; }
+	internal static bool ValidLaunch { get; set; } = false;
+	internal static bool Disabled { get; set; } = false;
+
 	/// <summary>
 	/// Represents the configuration for PolyMod.
 	/// </summary>
 	/// <param name="debug">Whether to enable debug mode.</param>
-	/// <param name="autoUpdate">Whether to automatically update PolyMod.</param>
-	/// <param name="updatePrerelease">Whether to include pre-release versions when updating.</param>
 	internal record PolyConfig(
 		bool debug = false,
-		bool autoUpdate = true,
-		bool updatePrerelease = false,
-		bool allowUnsafeIndexes = false
-	);
+		bool allowUnsafeIndexes = false,
+		string backendUrl = Multiplayer.Client.DEFAULT_SERVER_URL,
+		string overrideDeviceId = ""
+	)
+	{
+    	public List<string> disabledMods { get; init; } = new();
+	};
 
 	/// <summary>
 	/// The starting index for automatically assigned IDs.
@@ -122,16 +130,46 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		logger = Log;
 		ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
 
-		AutoUpdate.Init();
+		CaptureLaunchData();
+
+		if(Disabled)
+			return;
 
 		Compatibility.Init();
-
 		Audio.Init();
 		Loc.Init();
 		Visual.Init();
 		Hub.Init();
 
 		Main.Init();
+		Client.Init();
+		ModMultiplayer.Init();
+		Dystopia.Init();
+		AndroidHandler.Init();
+	}
+
+	internal static void CaptureLaunchData()
+	{
+		try
+		{
+			using var client = new NamedPipeClientStream(
+				".", "PolyMod.Launcher", PipeDirection.In, PipeOptions.CurrentUserOnly);
+			client.Connect(2000);
+
+			using var reader = new StreamReader(client);
+			var line = reader.ReadLine();
+			if (string.IsNullOrEmpty(line)) return;
+
+			using var doc = JsonDocument.Parse(line);
+			var root = doc.RootElement;
+			Plugin.ValidLaunch = root.GetProperty("validLaunch").GetBoolean();
+			Plugin.Disabled = root.GetProperty("disabled").GetBoolean();
+			Plugin.Token = root.GetProperty("token").GetString() ?? "";
+		}
+		catch
+		{
+			Plugin.ValidLaunch = false;
+		}
 	}
 
 	/// <summary>
@@ -163,8 +201,9 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		{
 			ConsoleManager.CreateConsole();
 		}
-		else
+		else if (OperatingSystem.IsWindows())
 		{
+			// BepInEx's Unix console driver throws unsupported on detach. Off-Windows there is no separate console window, so there is nothing to detach.
 			ConsoleManager.DetachConsole();
 		}
 	}

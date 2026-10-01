@@ -346,6 +346,11 @@ public static class Loader
 				Plugin.logger.LogError($"Mod id {manifest.id} is invalid in {modContainer}");
 				continue;
 			}
+			if (Plugin.config.disabledMods.Contains(manifest.id))
+			{
+				Plugin.logger.LogError($"Mod {manifest.id} is disabled, skipping");
+				continue;
+			}
 			if (manifest.version == null)
 			{
 				Plugin.logger.LogError($"Mod version not found in {modContainer}");

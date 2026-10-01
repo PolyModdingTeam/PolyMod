@@ -55,6 +55,10 @@ public static class Visual
 
 	/// <summary>A dictionary of custom widths for basic popups.</summary>
 	public static Dictionary<int, int> basicPopupWidths = new();
+	/// <summary>Original font sizes of popup buttons, so relayouts rescale from the prefab size.</summary>
+	private static readonly Dictionary<int, float> popupButtonFontSizes = new();
+	/// <summary>Original scroll viewport bottom offsets of popups, so relayouts don't compound.</summary>
+	private static readonly Dictionary<int, float> popupScrollBottoms = new();
 	/// <summary>Represents information about a unit prefab.</summary>
 	public struct UnitPrefabInfo
 	{
@@ -778,7 +782,86 @@ public static class Visual
 	{
 		int id = __instance.GetInstanceID();
 		if (basicPopupWidths.ContainsKey(id))
-			__instance.rectTransform.SetWidth(basicPopupWidths[id]);
+		{
+			float maxWidth = UIManager.GetUIWidth() - 40f;
+			float width = Mathf.Min(basicPopupWidths[id], maxWidth);
+			__instance.rectTransform.SetWidth(width);
+			LayoutPopupButtons(__instance, width);
+		}
+	}
+
+	private const float BUTTON_GAP = 10f;
+	private const float BUTTON_ROW_PADDING = 40f;
+
+	private static void LayoutPopupButtons(PopupBase popup, float popupWidth)
+	{
+		var legacy = popup.TryCast<BasicPopupLegacy>();
+		if (legacy == null || legacy.buttonContainer == null) return;
+		var buttons = legacy.buttonContainer.Buttons;
+		if (buttons == null || buttons.Length < 2) return;
+
+		float rowWidth = popupWidth - BUTTON_ROW_PADDING;
+
+		foreach (UITextButton button in buttons)
+		{
+			int id = button.GetInstanceID();
+			if (!popupButtonFontSizes.ContainsKey(id))
+				popupButtonFontSizes[id] = button.FontSize;
+			else
+				button.FontSize = popupButtonFontSizes[id];
+			button.UpdateSize();
+			float width = button.rectTransform.GetWidth();
+			if (width > rowWidth)
+			{
+				button.FontSize *= rowWidth / width;
+				button.UpdateSize();
+			}
+		}
+
+		List<List<UITextButton>> rows = new();
+		float cursor = 0f;
+		foreach (UITextButton button in buttons)
+		{
+			float width = button.rectTransform.GetWidth();
+			if (rows.Count == 0 || cursor + width > rowWidth)
+			{
+				rows.Add(new());
+				cursor = 0f;
+			}
+			rows[^1].Add(button);
+			cursor += width + BUTTON_GAP;
+		}
+
+		float rowHeight = buttons[0].rectTransform.GetHeight() + BUTTON_GAP;
+		for (int r = 0; r < rows.Count; r++)
+		{
+			float total = -BUTTON_GAP;
+			foreach (UITextButton button in rows[r])
+				total += button.rectTransform.GetWidth() + BUTTON_GAP;
+			float x = -total / 2f;
+			float y = (rows.Count - 1 - r) * rowHeight;
+			foreach (UITextButton button in rows[r])
+			{
+				button.rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+				button.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+				button.rectTransform.pivot = new Vector2(0f, 0.5f);
+				button.rectTransform.anchoredPosition = new Vector2(x, y);
+				x += button.rectTransform.GetWidth() + BUTTON_GAP;
+			}
+		}
+
+		float extra = (rows.Count - 1) * rowHeight;
+		float maxHeight = (ScreenManager.SafeHeight - 20f) * UICanvasScalerHelper.GetInvertedUIScale();
+		popup.rectTransform.SetHeight(Mathf.Min(popup.rectTransform.GetHeight() + extra, maxHeight));
+
+		if (popup.scrollRect != null)
+		{
+			var viewport = popup.scrollRect.GetComponent<RectTransform>();
+			int popupId = popup.GetInstanceID();
+			if (!popupScrollBottoms.ContainsKey(popupId))
+				popupScrollBottoms[popupId] = viewport.offsetMin.y;
+			viewport.offsetMin = new Vector2(viewport.offsetMin.x, popupScrollBottoms[popupId] + extra);
+		}
 	}
 
 	/// <summary>Sets the attacker's tribe before a unit attacks.</summary>
@@ -809,12 +892,19 @@ public static class Visual
 		}
 	}
 
-	/// <summary>Removes a popup's custom width when it is hidden.</summary>
+	/// <summary>Removes a popup's custom width and cached button font sizes when it is hidden.</summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
 	private static void PopupBase_Hide(PopupBase __instance)
 	{
 		basicPopupWidths.Remove(__instance.GetInstanceID());
+		popupScrollBottoms.Remove(__instance.GetInstanceID());
+		var legacy = __instance.TryCast<BasicPopupLegacy>();
+		if (legacy != null && legacy.buttonContainer != null && legacy.buttonContainer.Buttons != null)
+		{
+			foreach (UITextButton button in legacy.buttonContainer.Buttons)
+				popupButtonFontSizes.Remove(button.GetInstanceID());
+		}
 	}
 
 	[HarmonyPrefix]
