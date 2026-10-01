@@ -98,7 +98,7 @@ internal static class Compatibility
     [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
     private static void StartScreen_UI2_OnShow()
     {
-        if(!Plugin.ValidLaunch)
+        if(!Plugin.ValidLaunch && Application.platform != RuntimePlatform.Android)
         {
             PopupManager.GetBasicPopupWithData(
                 new(
