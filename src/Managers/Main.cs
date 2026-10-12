@@ -341,8 +341,40 @@ public static class Main
 	private static bool Unit_CreateUnit(Unit __instance, UnitData unitData, TribeType tribe, SkinType unitSkin)
 	{
 		Unit unit = PrefabManager.GetPrefab(unitData.type, tribe, unitSkin);
-		if (unit == null) Console.Write("THIS FUCKING SHIT IS NULL WHAT THE FUCK");
 		return true;
+	}
+
+
+	/// <summary>
+	/// Serialization fixes for custom (modded) content.
+	/// GamePlayerSummary stores the tribe as a single byte, which custom tribe ids (>= 1000) overflow into garbage.
+	/// Instead the tribe is clamped to None before the untouched native serializer runs and menu summaries show a generic icon for custom tribes, nothing more.
+	/// </summary>
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(GamePlayerSummary), nameof(GamePlayerSummary.Serialize))]
+	private static bool GamePlayerSummary_Serialize(GamePlayerSummary __instance)
+	{
+		if ((int)__instance.TribeType >= byte.MaxValue)
+		{
+			__instance.TribeType = TribeType.None;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Serialization fixes for custom (modded) content.
+	/// PlayerState stores the play climate as a single byte, which custom climate ids (>= 1000) overflow into garbage.
+	/// Instead the climate is overriden by the tribe value, as those are effectively the same.
+	/// </summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(PlayerState), nameof(PlayerState.Deserialize))]
+	private static void PlayerState_Deserialize(PlayerState __instance, Il2CppSystem.IO.BinaryReader reader, int version)
+	{
+		if ((int)__instance.tribe >= Plugin.AUTOIDX_STARTS_FROM)
+		{
+			__instance.climate = __instance.tribe;
+		}
 	}
 
 	/// <summary>

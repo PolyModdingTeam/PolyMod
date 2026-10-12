@@ -1,10 +1,10 @@
-﻿using System.Reflection;
+﻿using System.IO.Pipes;
+using System.Reflection;
 using System.Text.Json;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using PolyMod.Managers;
-using UnityEngine;
 
 namespace PolyMod;
 
@@ -14,18 +14,22 @@ namespace PolyMod;
 [BepInPlugin("com.polymod", "PolyMod", VERSION)]
 public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 {
+    internal static string? Token { get; set; }
+	internal static bool ValidLaunch { get; set; } = false;
+	internal static bool Disabled { get; set; } = false;
+
 	/// <summary>
 	/// Represents the configuration for PolyMod.
 	/// </summary>
 	/// <param name="debug">Whether to enable debug mode.</param>
-	/// <param name="autoUpdate">Whether to automatically update PolyMod.</param>
-	/// <param name="updatePrerelease">Whether to include pre-release versions when updating.</param>
 	internal record PolyConfig(
 		bool debug = false,
-		bool autoUpdate = true,
-		bool updatePrerelease = false,
-		bool allowUnsafeIndexes = false
-	);
+		bool allowUnsafeIndexes = false,
+		string overrideDeviceId = ""
+	)
+	{
+    	public List<string> disabledMods { get; init; } = new();
+	};
 
 	/// <summary>
 	/// The starting index for automatically assigned IDs.
@@ -37,6 +41,8 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	/// </summary>
 	internal const string INCOMPATIBILITY_WARNING_LAST_VERSION_KEY
 		= "INCOMPATIBILITY_WARNING_LAST_VERSION";
+
+	internal const int LAUNCH_DATA_TIMEOUT = 2000;
 
 	/// <summary>
 	/// The base path for PolyMod files.
@@ -62,6 +68,16 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	/// The path to the directory where gameLogicData and avatarData are dumped.
 	/// </summary>
 	public static readonly string LOCALIZATION_DUMP_PATH = Path.Combine(DUMPED_DATA_PATH, "Localization");
+
+	/// <summary>
+	/// The path to the directory where sprites and sprite infos are dumped.
+	/// </summary>
+	public static readonly string SPRITES_DUMP_PATH = Path.Combine(DUMPED_DATA_PATH, "Sprites");
+
+	/// <summary>
+	/// The path to the directory where prefabs datas are dumped.
+	/// </summary>
+	public static readonly string PREFABS_DUMP_PATH = Path.Combine(DUMPED_DATA_PATH, "Prefabs");
 
 	/// <summary>
 	/// The path to the PolyMod configuration file.
@@ -122,16 +138,43 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		logger = Log;
 		ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
 
-		AutoUpdate.Init();
+		CaptureLaunchData();
+
+		if(Disabled)
+			return;
 
 		Compatibility.Init();
-
 		Audio.Init();
 		Loc.Init();
 		Visual.Init();
 		Hub.Init();
 
 		Main.Init();
+	}
+
+	internal static void CaptureLaunchData()
+	{
+		try
+		{
+			using var client = new NamedPipeClientStream(
+				".", "PolyMod.Launcher", PipeDirection.In, PipeOptions.CurrentUserOnly);
+			client.Connect(LAUNCH_DATA_TIMEOUT);
+
+			using var reader = new StreamReader(client);
+			var line = reader.ReadLine();
+			if (string.IsNullOrEmpty(line)) return;
+			using var doc = JsonDocument.Parse(line);
+			var root = doc.RootElement;
+
+			ValidLaunch = root.GetProperty("validLaunch").GetBoolean();
+			Disabled = root.GetProperty("disabled").GetBoolean();
+			Token = root.GetProperty("token").GetString() ?? "";
+		}
+		catch
+		{
+			ValidLaunch = false;
+		}
+		ValidLaunch = true;
 	}
 
 	/// <summary>
@@ -163,8 +206,9 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		{
 			ConsoleManager.CreateConsole();
 		}
-		else
+		else if (OperatingSystem.IsWindows())
 		{
+			// BepInEx's Unix console driver throws unsupported on detach. Off-Windows there is no separate console window, so there is nothing to detach.
 			ConsoleManager.DetachConsole();
 		}
 	}
