@@ -12,6 +12,8 @@ using PolytopiaBackendBase.Common;
 using System.Text.Encodings.Web;
 using Il2CppSystem.Linq;
 using System.Text.RegularExpressions;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
+using UnityEngine.Experimental.U2D;
 
 
 namespace PolyMod.Managers;
@@ -168,13 +170,13 @@ internal static class Hub
                     {
                         Loader.UpdateSprite(kvp.Key);
                     }
-                    message += Localization.Get("polymod.spriteinfo.updated", new Il2CppSystem.Object[] { subnames[1] });
+                    message += Localization.Get("polymod.hotreload.success", new Il2CppSystem.Object[] { subnames[1] });
                 }
             }
         }
         if (message == string.Empty)
         {
-            message = Localization.Get("polymod.spriteinfo.notupdated");
+            message = Localization.Get("polymod.hotreload.failure");
         }
         NotificationManager.Notify(message);
     }
@@ -185,16 +187,38 @@ internal static class Hub
     internal static void DumpData()
     {
         Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
+        DumpLogic();
+        DumpLocalization();
+        DumpSprites();
+        DumpTribePreviewLegacy();
+        DumpPrefabs();
+        NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
+    }
+
+    internal static void DumpLogic()
+    {
         Directory.CreateDirectory(Plugin.LOGIC_DUMP_PATH);
+        for (int version = 1; version <= VersionManager.GameLogicDataVersion; version++)
+        {
+            File.WriteAllTextAsync(
+                Path.Combine(Plugin.LOGIC_DUMP_PATH, $"GameLogicData{version}.json"),
+                PolytopiaDataManager.provider.LoadGameLogicData(version)
+            );
+        }
+        for (int version = 1; version <= VersionManager.AvatarDataVersion; version++)
+        {
+            File.WriteAllTextAsync(
+                Path.Combine(Plugin.LOGIC_DUMP_PATH, $"AvatarData{version}.json"),
+                PolytopiaDataManager.provider.LoadAvatarData(version)
+            );
+        }
+    }
+
+    internal static void DumpLocalization()
+    {
         Directory.CreateDirectory(Plugin.LOCALIZATION_DUMP_PATH);
-        File.WriteAllTextAsync(
-            Path.Combine(Plugin.LOGIC_DUMP_PATH, "gameLogicData.json"),
-            PolytopiaDataManager.provider.LoadGameLogicData(VersionManager.GameLogicDataVersion)
-        );
-        File.WriteAllTextAsync(
-            Path.Combine(Plugin.LOGIC_DUMP_PATH, "avatarData.json"),
-            PolytopiaDataManager.provider.LoadAvatarData(1337)
-        );
+
+        // Languages dump
         var source = LocalizationManager.Sources[0];
         foreach (var language in source.GetLanguages())
         {
@@ -221,26 +245,102 @@ internal static class Hub
                 json
             );
         }
+        // Full loc dump
         foreach (var category in source.GetCategories())
             File.WriteAllTextAsync(
                 Path.Combine(Plugin.LOCALIZATION_DUMP_PATH, $"localization_{category}.csv"),
                 source.Export_CSV(category)
             );
-        foreach (KeyValuePair<string, Mod> entry in Registry.mods)
+    }
+
+    private static void DumpSprites()
+    {
+        Directory.CreateDirectory(Plugin.SPRITES_DUMP_PATH);
+        SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
+
+        for (int i = 0; i < AtlasData.raw.Count; i++)
         {
-            foreach (Mod.File file in entry.Value.files)
+            if (spriteAtlasManager.loadedAtlases[i] == null) continue; // not loaded, skip
+
+            string[] row = AtlasData.raw[i];
+            string atlasName = row[0];
+            string dir = Path.Combine(Plugin.SPRITES_DUMP_PATH, atlasName);
+            Directory.CreateDirectory(dir);
+
+            Dictionary<string, Visual.SpriteInfo> atlasSpriteInfo = new();
+            for (int j = 1; j < row.Length; j++)
             {
-                Match spritesMatch = Regex.Match(Path.GetFileName(file.name), @"^sprites(?:_(.*))?\.json$");
-                if (spritesMatch.Success)
-                    File.WriteAllBytes(
-                        Path.Combine(
-                                Plugin.DUMPED_DATA_PATH,
-                                $"{Path.GetFileNameWithoutExtension(file.name)}_{entry.Key}.json"
-                        ),
-                        file.bytes
-                    );
+                string spriteName = row[j];
+                Sprite sprite = spriteAtlasManager.GetSprite(spriteName, atlasName);
+                if (sprite == null) continue;
+
+                (byte[] bytes, Visual.SpriteInfo spriteInfo) =  SpriteToPng(sprite);
+                File.WriteAllBytesAsync(Path.Combine(dir, spriteName + ".png"), bytes);
+                atlasSpriteInfo.Add(spriteName, spriteInfo);
             }
+            File.WriteAllTextAsync(
+                Path.Combine(dir, $"sprites_{atlasName}.json"),
+                JsonSerializer.Serialize(atlasSpriteInfo, new JsonSerializerOptions { WriteIndented = true, Converters = { new PolyMod.Json.Vector2Json() }})
+            );
         }
+    }
+
+    private static (byte[], Visual.SpriteInfo) SpriteToPng(Sprite sprite)
+    {
+        Texture2D atlasTexture = sprite.texture;
+        int spriteWidth = (int)sprite.rect.width;
+        int spriteHeight = (int)sprite.rect.height;
+        float pixelsPerUnit = sprite.pixelsPerUnit;
+        Vector2 spritePivot = sprite.pivot;
+
+        var meshVertices = sprite.vertices;
+        var meshUvs = sprite.uv;
+        var meshTriangles = sprite.triangles;
+
+        RenderTexture renderTexture = RenderTexture.GetTemporary(
+            spriteWidth, spriteHeight, 0,
+            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        RenderTexture previousActiveRenderTexture = RenderTexture.active;
+        RenderTexture.active = renderTexture;
+        GL.Clear(true, true, Color.clear);
+
+        var spriteMaterial = new Material(Shader.Find("Sprites/Default"));
+        spriteMaterial.mainTexture = atlasTexture;
+        spriteMaterial.SetPass(0);
+
+        GL.PushMatrix();
+        GL.LoadPixelMatrix(0, spriteWidth, 0, spriteHeight);
+        GL.Begin(GL.TRIANGLES);
+        for (int triangleCornerIndex = 0; triangleCornerIndex < meshTriangles.Length; triangleCornerIndex++)
+        {
+            int vertexIndex = meshTriangles[triangleCornerIndex];
+            Vector2 uv = meshUvs[vertexIndex];
+            Vector2 vertex = meshVertices[vertexIndex];
+
+            GL.TexCoord(new Vector3(uv.x, uv.y, 0));
+            GL.Vertex3(vertex.x * pixelsPerUnit + spritePivot.x,
+                    vertex.y * pixelsPerUnit + spritePivot.y, 0);
+        }
+        GL.End();
+        GL.PopMatrix();
+
+        var croppedTexture = new Texture2D(spriteWidth, spriteHeight, TextureFormat.RGBA32, false);
+        croppedTexture.ReadPixels(new Rect(0, 0, spriteWidth, spriteHeight), 0, 0);
+        croppedTexture.Apply();
+
+        RenderTexture.active = previousActiveRenderTexture;
+        RenderTexture.ReleaseTemporary(renderTexture);
+
+        byte[] pngBytes = ImageConversion.EncodeToPNG(croppedTexture);
+        UnityEngine.Object.Destroy(croppedTexture);
+        UnityEngine.Object.Destroy(spriteMaterial);
+        UnityEngine.Object.Destroy(sprite);
+        return (pngBytes, new Visual.SpriteInfo(pixelsPerUnit, spritePivot));
+    }
+
+    internal static void DumpTribePreviewLegacy()
+    {
+        // TODO legacy tribe preview dump. i have to update that
         foreach (TribeType type in Enum.GetValues(typeof(TribeType)))
         {
             List<Visual.PreviewTile> previewTiles = new();
@@ -270,19 +370,21 @@ internal static class Hub
                 JsonSerializer.Serialize(previewTiles, new JsonSerializerOptions { WriteIndented = true })
             );
         }
-        NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
     }
+
+    internal static void DumpPrefabs() // TODO
+    {}
 
     /// <summary>
     /// Shows the configuration popup.
     /// </summary>
     internal static void ShowConfigPopup()
     {
-        BasicPopupLegacy polymodPopup = Visual.GetBasicPopupLegacy();
+        BasicPopup polymodPopup = PopupManager.GetBasicPopup();
         polymodPopup.Header = Localization.Get("polymod.hub.config");
         polymodPopup.Description = "";
         polymodPopup.buttonData = CreateConfigPopupButtonData();
-        polymodPopup.ShowSetWidth(POPUP_WIDTH);
+        polymodPopup.Show();
     }
 
     internal static void ShowPolyModHub()
@@ -335,7 +437,7 @@ internal static class Hub
                 closesPopup: false
             ));
             popupButtons.Add(new(
-                "polymod.hub.spriteinfo.update",
+                "polymod.hub.hotreload",
                 callback:  DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(UpdateSpriteInfos),
                 closesPopup: false
             ));
@@ -357,7 +459,7 @@ internal static class Hub
 
         if (GameManager.Instance.isLevelLoaded)
         {
-            popupButtons.Add(new PopupButtonData(Localization.Get("polymod.hub.spriteinfo.update"), PopupButtonData.States.None, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OnUpdateSpritesButtonClicked), -1, true, null));
+            popupButtons.Add(new PopupButtonData(Localization.Get("polymod.hub.hotreload"), PopupButtonData.States.None, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OnUpdateSpritesButtonClicked), -1, true, null));
         }
         else
         {
@@ -366,57 +468,19 @@ internal static class Hub
                 new Il2CppSystem.Object[] { Localization.Get("polymod.debug",
                 new Il2CppSystem.Object[]{}).ToUpperInvariant() }
             );
-            string autoUpdateButtonName = Localization.Get(
-                Plugin.config.autoUpdate ? "polymod.hub.config.disable" : "polymod.hub.config.enable",
-                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate",
-                new Il2CppSystem.Object[]{}).ToUpperInvariant() }
-            );
-            string includeAlphasButtonName = Localization.Get(
-                Plugin.config.updatePrerelease ? "polymod.hub.config.disable" : "polymod.hub.config.enable",
-                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate.alpha",
-                new Il2CppSystem.Object[]{}).ToUpperInvariant() }
-            );
             popupButtons.Add(new PopupButtonData(debugButtonName, PopupButtonData.States.None, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OnDebugButtonClicked), -1, true, null));
-            popupButtons.Add(new PopupButtonData(autoUpdateButtonName, PopupButtonData.States.None, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OnAutoUpdateButtonClicked), -1, true, null));
-            popupButtons.Add(new PopupButtonData(includeAlphasButtonName, Plugin.config.autoUpdate ? PopupButtonData.States.None : PopupButtonData.States.Disabled, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OnIncludeAlphasButtonClicked), -1, true, null));
         }
         return popupButtons.ToArray();
 
         void OnDebugButtonClicked()
         {
-            Plugin.config = new(debug: !Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
+            Plugin.config = new(debug: !Plugin.config.debug);
             Plugin.WriteConfig();
             Plugin.UpdateConsole();
             NotificationManager.Notify(Localization.Get(
                 "polymod.config.setto",
                 new Il2CppSystem.Object[] { Localization.Get("polymod.debug",
                 new Il2CppSystem.Object[]{}), Plugin.config.debug }
-            ));
-            isConfigPopupActive = false;
-        }
-
-        void OnAutoUpdateButtonClicked()
-        {
-            Plugin.config = new(debug: Plugin.config.debug, autoUpdate: !Plugin.config.autoUpdate, updatePrerelease: Plugin.config.updatePrerelease);
-            Plugin.WriteConfig();
-            Plugin.UpdateConsole();
-            NotificationManager.Notify(Localization.Get(
-                "polymod.config.setto",
-                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate",
-                new Il2CppSystem.Object[]{}), Plugin.config.autoUpdate }
-            ));
-            isConfigPopupActive = false;
-        }
-
-        void OnIncludeAlphasButtonClicked()
-        {
-            Plugin.config = new(debug: Plugin.config.debug, autoUpdate: Plugin.config.autoUpdate, updatePrerelease: !Plugin.config.updatePrerelease);
-            Plugin.WriteConfig();
-            Plugin.UpdateConsole();
-            NotificationManager.Notify(Localization.Get(
-                "polymod.config.setto",
-                new Il2CppSystem.Object[] { Localization.Get("polymod.autoupdate.alpha",
-                new Il2CppSystem.Object[]{}), Plugin.config.updatePrerelease }
             ));
             isConfigPopupActive = false;
         }

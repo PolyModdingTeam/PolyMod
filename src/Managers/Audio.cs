@@ -1,5 +1,4 @@
 using HarmonyLib;
-using Polytopia.Data;
 using UnityEngine;
 using PolytopiaBackendBase.Common;
 
@@ -17,7 +16,7 @@ public static class Audio
     [HarmonyPatch(typeof(MusicData), nameof(MusicData.GetNatureAudioClip))]
     private static bool MusicData_GetNatureAudioClip(ref AudioClip __result, TribeType type, SkinType skinType)
     {
-        AudioClip? audioClip = Registry.GetAudioClip("nature", Util.GetStyle(type, skinType));
+        AudioClip? audioClip = Registry.GetAudioClip("nature", type, skinType);
         if (audioClip != null)
         {
             __result = audioClip;
@@ -33,7 +32,7 @@ public static class Audio
     [HarmonyPatch(typeof(MusicData), nameof(MusicData.GetMusicAudioClip))]
     private static bool MusicData_GetMusicAudioClip(ref AudioClip __result, TribeType type, SkinType skinType)
     {
-        AudioClip? audioClip = Registry.GetAudioClip("music", Util.GetStyle(type, skinType));
+        AudioClip? audioClip = Registry.GetAudioClip("music", type, skinType);
         if (audioClip != null)
         {
             __result = audioClip;
@@ -51,7 +50,7 @@ public static class Audio
     {
         AudioClip? audioClip = Registry.GetAudioClip(
             EnumCache<SFXTypes>.GetName(id),
-            EnumCache<SkinType>.GetName(skinType)
+            skin: skinType
         );
         if (audioClip != null)
         {

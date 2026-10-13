@@ -135,19 +135,8 @@ public static class Loader
 		[typeof(UnitData.Type)] = new List<Action<JObject, bool>>() {
 			new((token, duringEnumCacheCreation) =>
 			{
-				if(duringEnumCacheCreation)
+				if(!duringEnumCacheCreation)
 				{
-					if (token["prefab"] == null)
-					{
-						Registry.prefabNames.Add((int)token["idx"], EnumCache<UnitData.Type>.GetName(UnitData.Type.Scout).ToLowerInvariant());
-					}
-				}
-				else
-				{
-					if (token["prefab"] != null)
-					{
-						Registry.prefabNames.Add((int)token["idx"], token["prefab"].ToString().ToLowerInvariant());
-					}
 					if (token["embarksTo"] != null)
 					{
 						string unitId = Util.GetJTokenName(token);
@@ -169,19 +158,7 @@ public static class Loader
 		[typeof(ImprovementData.Type)] = new List<Action<JObject, bool>>() {
 		new((token, duringEnumCacheCreation) =>
 		{
-			if (duringEnumCacheCreation)
-			{
-				ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
-				if (token["prefab"] != null)
-				{
-					string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
-					if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
-						improvementPrefabType = parsedType;
-				}
-				if(token["idx"] != null)
-					PrefabManager.improvements.TryAdd((ImprovementData.Type)(int)token["idx"], PrefabManager.improvements[improvementPrefabType]);
-			}
-			else
+			if (!duringEnumCacheCreation)
 			{
 				string improvementId = Util.GetJTokenName(token);
 				if (token["attractsResource"] != null)
@@ -204,20 +181,7 @@ public static class Loader
 
 		[typeof(ResourceData.Type)] = new List<Action<JObject, bool>>() {
 			new((token, duringEnumCacheCreation) =>
-			{
-				if (duringEnumCacheCreation)
-				{
-					ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
-					if (token["prefab"] != null)
-					{
-						string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
-						if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
-							resourcePrefabType = parsedType;
-					}
-					if(token["idx"] != null)
-						PrefabManager.resources.TryAdd((ResourceData.Type)(int)token["idx"], PrefabManager.resources[resourcePrefabType]);
-				}
-			})
+			{ })
 		},
 
 		[typeof(SkinData)] = new List<Action<JObject, bool>>() {
@@ -715,161 +679,17 @@ public static class Loader
 		// TODO: issue #71
 	}
 
-	/// <summary>
-	/// Loads a prefab info file from a mod and creates a new unit prefab.
-	/// </summary>
-	/// <param name="mod">The mod the prefab info file belongs to.</param>
-	/// <param name="file">The prefab info file to load.</param>
-	public static void LoadPrefabInfoFile(Mod mod, Mod.File file)
-	{
-		try
-		{
-			var prefab = JsonSerializer.Deserialize<Visual.PrefabInfo>(file.bytes, new JsonSerializerOptions
-			{
-				Converters = { new Vector2Json() },
-				PropertyNameCaseInsensitive = true,
-			});
-			if (prefab == null || prefab.type != Visual.PrefabType.Unit || prefab.visualParts.Count == 0)
-				return;
+	public static void LoadPrefabsFile(Mod mod, Mod.File file)
+	{}
 
-			if (Registry.unitPrefabs.Keys.Any(pref => pref.name == prefab.name))
-			{
-				Plugin.logger.LogInfo($"Prefab {prefab.name} already exists, skipping.");
-			}
-			var baseUnit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeType.Imperius, SkinType.Default);
-			if (baseUnit == null)
-				return;
+	public static void LoadUnitPrefabFile(Mod mod, Mod.File file)
+	{}
 
-			var unitInstance = GameObject.Instantiate(baseUnit);
-			if (unitInstance == null)
-				return;
+	public static void LoadImprovementPrefabFile(Mod mod, Mod.File file)
+	{}
 
-			var spriteContainer = unitInstance.transform.GetChild(0);
-			var material = ClearExistingPartsAndExtractMaterial(spriteContainer);
-
-			var visualParts = ApplyVisualParts(prefab, spriteContainer, material);
-
-			Transform? headPositionMarker = null;
-			foreach (var vp in visualParts)
-			{
-				if (vp.visualPart.gameObject.name == prefab.headPositionMarker)
-				{
-					headPositionMarker = vp.visualPart.gameObject.transform;
-					break;
-				}
-			}
-
-			unitInstance.headPositionMarker = headPositionMarker ?? visualParts[0].visualPart.transform;
-
-			var svr = unitInstance.GetComponent<SkinVisualsReference>();
-			svr.visualParts = visualParts.ToArray();
-
-			GameObject.DontDestroyOnLoad(unitInstance.gameObject);
-			Registry.unitPrefabs.Add(prefab, unitInstance.GetComponent<Unit>());
-
-			Plugin.logger.LogInfo($"Registered prefab {prefab.name} info from {mod.id} mod.");
-		}
-		catch (Exception e)
-		{
-			Plugin.logger.LogError($"Error on loading prefab {Path.GetFileNameWithoutExtension(file.name)} info from {mod.id} mod: {e.StackTrace}.");
-		}
-	}
-
-	/// <summary>
-	/// Clears existing visual parts from a prefab and extracts the material.
-	/// </summary>
-	/// <param name="spriteContainer">The transform containing the sprite parts.</param>
-	/// <returns>The material of the original sprite parts.</returns>
-	private static Material? ClearExistingPartsAndExtractMaterial(Transform spriteContainer)
-	{
-		Material? material = null;
-		for (int i = 0; i < spriteContainer.childCount; i++)
-		{
-			var child = spriteContainer.GetChild(i);
-			if (child.gameObject.name == "Head")
-			{
-				var renderer = child.GetComponent<SpriteRenderer>();
-				if (renderer != null)
-					material = renderer.material;
-			}
-			GameObject.Destroy(child.gameObject);
-		}
-		return material;
-	}
-
-	/// <summary>
-	/// Applies new visual parts to a prefab.
-	/// </summary>
-	/// <param name="partInfos">A list of visual part information.</param>
-	/// <param name="spriteContainer">The transform to add the parts to.</param>
-	/// <param name="material">The material to use for the parts.</param>
-	/// <returns>A list of the created visual parts.</returns>
-	private static List<SkinVisualsReference.VisualPart> ApplyVisualParts(
-		Visual.PrefabInfo prefab,
-		Transform spriteContainer,
-		Material? material)
-	{
-		if (prefab.visualParts.Count == 0)
-			return new List<SkinVisualsReference.VisualPart>();
-
-		List<SkinVisualsReference.VisualPart> parts = new();
-
-		foreach (var info in prefab.visualParts)
-		{
-			parts.Add(CreateVisualPart(info, spriteContainer, material));
-		}
-
-		return parts;
-	}
-
-	/// <summary>
-	/// Creates a single visual part for a prefab.
-	/// </summary>
-	/// <param name="info">The information for the visual part.</param>
-	/// <param name="parent">The parent transform for the part.</param>
-	/// <param name="material">The material to use for the part.</param>
-	/// <returns>The created visual part.</returns>
-	private static SkinVisualsReference.VisualPart CreateVisualPart(
-		Visual.VisualPartInfo info,
-		Transform parent,
-		Material? material)
-	{
-		var visualPartObj = new GameObject(info.gameObjectName);
-		visualPartObj.transform.SetParent(parent);
-		visualPartObj.transform.position = info.coordinates;
-		visualPartObj.transform.localScale = info.scale;
-		visualPartObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
-
-		var outlineObj = new GameObject("Outline");
-		outlineObj.transform.SetParent(visualPartObj.transform);
-		outlineObj.transform.position = info.coordinates;
-		outlineObj.transform.localScale = info.scale;
-		outlineObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
-
-		var visualPart = new SkinVisualsReference.VisualPart
-		{
-			DefaultSpriteName = info.baseName,
-			visualPart = visualPartObj,
-			outline = outlineObj,
-			tintable = info.tintable
-		};
-
-		var renderer = visualPartObj.AddComponent<SpriteRenderer>();
-		renderer.material = material;
-		renderer.sortingLayerName = "Units";
-		renderer.sortingOrder = info.tintable ? 0 : 1;
-
-		visualPart.renderer = new SkinVisualsReference.RendererUnion { spriteRenderer = renderer };
-
-		var outlineRenderer = outlineObj.AddComponent<SpriteRenderer>();
-		outlineRenderer.material = material;
-		outlineRenderer.sortingLayerName = "Units";
-		outlineRenderer.sortingOrder = -1;
-
-		visualPart.outlineRenderer = new SkinVisualsReference.RendererUnion { spriteRenderer = outlineRenderer };
-
-		return visualPart;
-	}
+	public static void LoadResourcePrefabFile(Mod mod, Mod.File file)
+	{}
 
 	/// <summary>
 	/// Loads and applies a game logic data patch from a mod.
@@ -1030,35 +850,6 @@ public static class Loader
 	/// </summary>
 	internal static void ProcessPrefabs()
 	{
-		Plugin.logger.LogInfo($"Processing prefabs, count: {Registry.prefabNames.Count}.");
-		foreach (KeyValuePair<int, string> item in Registry.prefabNames)
-		{
-			UnitData.Type unitPrefabType = UnitData.Type.Scout;
-			string prefabId = item.Value;
-			int hashKey = PrefabManager.GetSkinnedHashKey((UnitData.Type)item.Key, TribeType.None, SkinType.Default);
-			if (!Enum.TryParse(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(prefabId), out unitPrefabType)) // Existing unit prefabs
-			{
-				KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(
-					kv => kv.Key.name == prefabId
-				);
-				if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
-				{
-					Visual.UnitPrefabInfo unitPrefabInfo = new(
-						EnumCache<UnitData.Type>.GetName((UnitData.Type)item.Key),
-						EnumCache<TribeType>.GetName(TribeType.None),
-						EnumCache<SkinType>.GetName(SkinType.Default)
-					);
-					Visual.customPrefabs.Add(unitPrefabInfo, prefabInfo.Value);
-					Plugin.logger.LogInfo($"Using custom prefab {prefabId} for unit {item.Key}.");
-					continue;
-				}
-			}
-			Plugin.logger.LogInfo($"Using existing prefab {EnumCache<UnitData.Type>.GetName(unitPrefabType)} for unit {item.Key}.");
-			PrefabManager.units.TryAdd(
-				hashKey,
-				PrefabManager.units[PrefabManager.GetSkinnedHashKey(unitPrefabType, TribeType.None, SkinType.Default)]
-			);
-		}
 	}
 
 	/// <summary>

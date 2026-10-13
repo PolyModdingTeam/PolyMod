@@ -42,26 +42,6 @@ public static class Registry
 	public static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
 
 	/// <summary>
-	/// A dictionary of prefab names, keyed by their enum value.
-	/// </summary>
-	public static Dictionary<int, string> prefabNames = new();
-
-	/// <summary>
-	/// A dictionary of custom unit prefabs, keyed by their prefab info.
-	/// </summary>
-	public static Dictionary<Visual.PrefabInfo, Unit> unitPrefabs = new();
-
-	/// <summary>
-	/// A dictionary of custom resource prefabs, keyed by their prefab info.
-	/// </summary>
-	public static Dictionary<Visual.PrefabInfo, Resource> resourcePrefabs = new();
-
-	/// <summary>
-	/// A dictionary of custom improvement prefabs, keyed by their prefab info.
-	/// </summary>
-	public static Dictionary<Visual.PrefabInfo, Building> improvementsPrefabs = new();
-
-	/// <summary>
 	/// A dictionary of loaded asset bundles, keyed by their name.
 	/// </summary>
 	public static Dictionary<string, AssetBundle> assetBundles = new();
@@ -86,24 +66,45 @@ public static class Registry
 	/// </summary>
 	public static int gameModesAutoidx = Enum.GetValues(typeof(GameMode)).Length;
 
+	public static Sprite? GetSprite(string baseName, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default, int level = -1)
+	{
+		string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
+		string skinText = (skin == SkinType.Default) ? "" : EnumCache<SkinType>.GetName(skin);
+		return GetSpriteByText(baseName, tribeText, skinText, level);
+	}
 	/// <summary>
 	/// Gets a sprite from the registry, trying to find the best match.
 	/// </summary>
-	/// <param name="name">The name of the sprite.</param>
-	/// <param name="style">The style of the sprite (e.g., tribe or skin).</param>
-	/// <param name="level">The level of the sprite (e.g., for cities).</param>
-	/// <returns>The requested sprite, or null if not found. The lookup priority is: name_style_level, name__level, name_style_, name__.</returns>
-	public static Sprite? GetSprite(string name, string style = "", int level = 0)
+	public static Sprite? GetSpriteByText(string baseName, string tribeText = "", string skinText = "", int level = -1)
 	{
 		Sprite? sprite = null;
-		name = name.ToLower();
-		style = style.ToLower();
-		// This looks backwards, but GetOrDefault returns the provided default value if the key isn't found.
-		// This means `sprite` is updated sequentially, and the last, most-specific match is the one that is kept.
-		sprite = sprites.GetOrDefault($"{name}__", sprite);
-		sprite = sprites.GetOrDefault($"{name}_{style}_", sprite);
-		sprite = sprites.GetOrDefault($"{name}__{level}", sprite);
-		sprite = sprites.GetOrDefault($"{name}_{style}_{level}", sprite);
+		baseName = baseName.ToLower();
+		tribeText = tribeText.ToLower();
+		skinText = skinText.ToLower();
+
+		List<string> spriteNameVariants = new();
+
+		if (level >= 0)
+		{
+			string levelText = level.ToString();
+			spriteNameVariants.Add(baseName + "_" + levelText);
+			spriteNameVariants.Add(baseName + "_" + levelText + "_" + tribeText);
+			spriteNameVariants.Add(baseName + "_" + levelText + "_" + skinText);
+			spriteNameVariants.Add(baseName + "_" + levelText + "_" + tribeText + "_" + skinText);
+		}
+		else
+		{
+			spriteNameVariants.Add(baseName);
+			spriteNameVariants.Add(baseName + "_" + tribeText);
+			spriteNameVariants.Add(baseName + "_" + skinText);
+			spriteNameVariants.Add(baseName + "_" + tribeText + "_" + skinText);
+		}
+
+		foreach(string spriteName in spriteNameVariants)
+		{
+			sprite = sprites.GetOrDefault(spriteName, sprite);
+		}
+
 		return sprite;
 	}
 
@@ -113,12 +114,15 @@ public static class Registry
 	/// <param name="name">The name of the audio clip.</param>
 	/// <param name="style">The style of the audio clip.</param>
 	/// <returns>The requested audio clip, or null if not found.</returns>
-	public static AudioClip? GetAudioClip(string name, string style)
+	public static AudioClip? GetAudioClip(string name, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default)
 	{
 		AudioSource? audioSource = null;
 		name = name.ToLower();
-		style = style.ToLower();
-		audioSource = audioClips.GetOrDefault($"{name}_{style}", audioSource);
+		string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
+		string skinText = (skin == SkinType.Default) ? "" : EnumCache<SkinType>.GetName(skin);
+		tribeText = tribeText.ToLower();
+		skinText = skinText.ToLower();
+		audioSource = audioClips.GetOrDefault($"{name}_{tribeText}_{skinText}", audioSource);
 		if (audioSource == null) return null;
 		return audioSource.clip;
 	}

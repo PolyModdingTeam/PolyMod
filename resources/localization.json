@@ -218,18 +218,14 @@
 		"Russian": "{0} задан на {1}!",
 		"Elyrion": "{0} iȓ ȓ∑Ŧ Ŧȱ {1}!"
 	},
-	"polymod_hub_spriteinfo_update": {
-		"English": "UPDATE SPRITES",
-		"Russian": "ОБНОВИТЬ СПРАЙТЫ",
-		"Elyrion": "₺πΔaŦ∑ ȓπriŦ∑ȓ"
+	"polymod_hub_hotreload": {
+		"English": "HOT RELOAD"
 	},
-	"polymod_spriteinfo_updated": {
-		"English": "Sprite info for mod {0} updated!",
-		"Russian": "Данные спрайтов обновлены для мода {0}!",
-		"Elyrion": "ȓπriŦ∑ iŋ₼ȱ ₼ȱr mȱΔ {0} ₺πΔaŦ∑Δ!"
+	"polymod_hotreload_success": {
+		"English": "Hot reload completed for the mod {0}!"
 	},
-	"polymod_spriteinfo_notupdated": {
-		"English": "No sprite infos were found!",
+	"polymod_hotreload_failure": {
+		"English": "No mods for hot reload!",
 		"Russian": "Данные спрайтов не найдены!",
 		"Elyrion": "ŋȱ ȓπriŦ∑ iŋ₼ȱȓ ~∑r∑ ₼ȱ₺ŋΔ!"
 	},
@@ -242,5 +238,17 @@
 		"English": "PROCEED",
 		"Russian": "ПРОДОЛЖИТЬ",
 		"Elyrion": "πrȱ#∑∑Δ"
+	},
+	"polymod_title_invalid": {
+		"English": "Invalid Launch",
+		"Russian": "Неверный Запуск"
+	},
+	"polymod_description_invalid": {
+		"English": "PolyMod launch was invalid. Please, open the game via the PolyMod Launcher or proceed to our site to install it :)",
+		"Russian": "PolyMod запущен неккоректно. Пожалуйста, откройте игру через PolyMod Launcher или перейдите на наш сайт и установите его :)"
+	},
+	"buttons_download_launcher": {
+		"English": "OUR SITE",
+		"Russian": "НАШ САЙТ"
 	}
 }

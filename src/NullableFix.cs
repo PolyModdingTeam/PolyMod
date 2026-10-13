@@ -1,5 +1,5 @@
 #nullable disable
-
+// verify whether it is needed at all bruv, i tested one time quickly and it easily compiled
 namespace System.Runtime.CompilerServices
 {
     /// <summary>

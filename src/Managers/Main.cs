@@ -334,15 +334,35 @@ public static class Main
 	}
 
 	/// <summary>
-	/// Patches the unit creation method to handle custom unit prefabs.
+	/// Serialization fixes for custom (modded) content.
+	/// GamePlayerSummary stores the tribe as a single byte, which custom tribe ids (>= 1000) overflow into garbage.
+	/// Instead the tribe is clamped to None before the untouched native serializer runs and menu summaries show a generic icon for custom tribes, nothing more.
 	/// </summary>
 	[HarmonyPrefix]
-	[HarmonyPatch(typeof(Unit), nameof(Unit.CreateUnit))]
-	private static bool Unit_CreateUnit(Unit __instance, UnitData unitData, TribeType tribe, SkinType unitSkin)
+	[HarmonyPatch(typeof(GamePlayerSummary), nameof(GamePlayerSummary.Serialize))]
+	private static bool GamePlayerSummary_Serialize(GamePlayerSummary __instance)
 	{
-		Unit unit = PrefabManager.GetPrefab(unitData.type, tribe, unitSkin);
-		if (unit == null) Console.Write("THIS FUCKING SHIT IS NULL WHAT THE FUCK");
+		if ((int)__instance.TribeType >= byte.MaxValue)
+		{
+			__instance.TribeType = TribeType.None;
+		}
+
 		return true;
+	}
+
+	/// <summary>
+	/// Serialization fixes for custom (modded) content.
+	/// PlayerState stores the play climate as a single byte, which custom climate ids (>= 1000) overflow into garbage.
+	/// Instead the climate is overriden by the tribe value, as those are effectively the same.
+	/// </summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(PlayerState), nameof(PlayerState.Deserialize))]
+	private static void PlayerState_Deserialize(PlayerState __instance, Il2CppSystem.IO.BinaryReader reader, int version)
+	{
+		if ((int)__instance.tribe >= Plugin.AUTOIDX_STARTS_FROM)
+		{
+			__instance.climate = __instance.tribe;
+		}
 	}
 
 	/// <summary>
@@ -412,10 +432,41 @@ public static class Main
 					);
 					continue;
 				}
-				Match prefabMatch = Regex.Match(Path.GetFileName(file.name), @"^prefab(?:_(.*))?\.json$");
-				if (prefabMatch.Success)
+
+				Match prefabsMatch = Regex.Match(Path.GetFileName(file.name), @"^prefabs(?:_(.*))?\.json$");
+				if (prefabsMatch.Success)
 				{
-					Loader.LoadPrefabInfoFile(
+					Loader.LoadPrefabsFile(
+						mod,
+						file
+					);
+					continue;
+				}
+
+				Match unitPrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^unitPrefab(?:_(.*))?\.json$");
+				if (unitPrefabMatch.Success)
+				{
+					Loader.LoadUnitPrefabFile(
+						mod,
+						file
+					);
+					continue;
+				}
+
+				Match improvementPrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^improvementPrefab(?:_(.*))?\.json$");
+				if (improvementPrefabMatch.Success)
+				{
+					Loader.LoadImprovementPrefabFile(
+						mod,
+						file
+					);
+					continue;
+				}
+
+				Match resourcePrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^resourcePrefab(?:_(.*))?\.json$");
+				if (resourcePrefabMatch.Success)
+				{
+					Loader.LoadResourcePrefabFile(
 						mod,
 						file
 					);
