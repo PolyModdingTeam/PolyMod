@@ -126,7 +126,7 @@ public static class Loader
 					}
 					if (token["preview"] != null)
 					{
-						Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
+						TribePreviewManager.PreviewTile[] preview = JsonSerializer.Deserialize<TribePreviewManager.PreviewTile[]>(token["preview"].ToString())!;
 						Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
 					}
 				}
@@ -680,16 +680,114 @@ public static class Loader
 	}
 
 	public static void LoadPrefabsFile(Mod mod, Mod.File file)
-	{}
+	{
+		try
+		{
+			if(!PrefabCreator.prefabsFilesToProcess.ContainsKey("all") || PrefabCreator.prefabsFilesToProcess["all"] == null)
+				PrefabCreator.prefabsFilesToProcess["all"] = new();
+
+			PrefabCreator.prefabsFilesToProcess["all"].Add(file.bytes);
+
+			// var prefab = JsonSerializer.Deserialize<PrefabCreator.PrefabsInfo>(file.bytes, new JsonSerializerOptions
+			// {
+			// 	Converters = { new Vector2Json() },
+			// 	PropertyNameCaseInsensitive = true,
+			// });
+			// if (prefab == null)
+			// 	return;
+
+			// PrefabCreator.unitInfos.AddRange(prefab.units);
+			// PrefabCreator.improvementInfos.AddRange(prefab.improvements);
+			// PrefabCreator.resourceInfos.AddRange(prefab.resources);
+
+			Plugin.logger.LogInfo($"Registered prefabs {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading prefabs {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod: {e.StackTrace}.");
+		}
+	}
 
 	public static void LoadUnitPrefabFile(Mod mod, Mod.File file)
-	{}
+	{
+		try
+		{
+			if(!PrefabCreator.prefabsFilesToProcess.ContainsKey("units") || PrefabCreator.prefabsFilesToProcess["units"] == null)
+				PrefabCreator.prefabsFilesToProcess["units"] = new();
+
+			PrefabCreator.prefabsFilesToProcess["units"].Add(file.bytes);
+
+			// var unitPrefab = JsonSerializer.Deserialize<PrefabCreator.UnitPrefabInfo>(file.bytes, new JsonSerializerOptions
+			// {
+			// 	Converters = { new Vector2Json() },
+			// 	PropertyNameCaseInsensitive = true,
+			// });
+			// if (unitPrefab == null)
+			// 	return;
+
+			// PrefabCreator.unitInfos.Add(unitPrefab);
+
+			Plugin.logger.LogInfo($"Registered unit prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading unit prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod: {e.StackTrace}.");
+		}
+	}
 
 	public static void LoadImprovementPrefabFile(Mod mod, Mod.File file)
-	{}
+	{
+		try
+		{
+			if(!PrefabCreator.prefabsFilesToProcess.ContainsKey("improvements") || PrefabCreator.prefabsFilesToProcess["improvements"] == null)
+				PrefabCreator.prefabsFilesToProcess["improvements"] = new();
+
+			PrefabCreator.prefabsFilesToProcess["improvements"].Add(file.bytes);
+
+			// var improvementPrefab = JsonSerializer.Deserialize<PrefabCreator.ImprovementPrefabInfo>(file.bytes, new JsonSerializerOptions
+			// {
+			// 	Converters = { new Vector2Json() },
+			// 	PropertyNameCaseInsensitive = true,
+			// });
+			// if (improvementPrefab == null)
+			// 	return;
+
+			// PrefabCreator.improvementInfos.Add(improvementPrefab);
+
+			Plugin.logger.LogInfo($"Registered improvement prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading improvement prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod: {e.StackTrace}.");
+		}
+	}
 
 	public static void LoadResourcePrefabFile(Mod mod, Mod.File file)
-	{}
+	{
+		try
+		{
+			if(!PrefabCreator.prefabsFilesToProcess.ContainsKey("resources") || PrefabCreator.prefabsFilesToProcess["resources"] == null)
+				PrefabCreator.prefabsFilesToProcess["resources"] = new();
+
+			PrefabCreator.prefabsFilesToProcess["resources"].Add(file.bytes);
+
+			// var resourcePrefab = JsonSerializer.Deserialize<PrefabCreator.ResourcePrefabInfo>(file.bytes, new JsonSerializerOptions
+			// {
+			// 	Converters = { new Vector2Json() },
+			// 	PropertyNameCaseInsensitive = true,
+			// });
+			// if (resourcePrefab == null)
+			// 	return;
+
+			// PrefabCreator.resourceInfos.Add(resourcePrefab);
+
+			Plugin.logger.LogInfo($"Registered resource prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading resource prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod: {e.StackTrace}.");
+		}
+	}
 
 	/// <summary>
 	/// Loads and applies a game logic data patch from a mod.
@@ -736,6 +834,7 @@ public static class Loader
 		{
 			CreateMappings(rootObject);
 			ProcessCustomTribes();
+			// OKAY BASICALLY I need to find a way to load certain files at this stage (?)
 			ProcessPrefabs();
 			ProcessEmbarkOverrides();
 			ProcessAttractOverrides();
@@ -850,6 +949,7 @@ public static class Loader
 	/// </summary>
 	internal static void ProcessPrefabs()
 	{
+		PrefabCreator.ProcessPrefabs();
 	}
 
 	/// <summary>

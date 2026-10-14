@@ -1,45 +1,17 @@
+using System.Text.Json.Serialization;
 using HarmonyLib;
-using PolyMod;
+using PolyMod.Json;
 using Polytopia.Data;
 using PolytopiaBackendBase.Common;
 using static PrefabManager;
 
-public static class PrefabFix
+namespace PolyMod.Managers;
+
+public static class PrefabRegistry
 {
-    public readonly struct SkinnedKey : IEquatable<SkinnedKey>
-    {
-        private readonly UnitData.Type unitType;
-        private readonly TribeType tribeType;
-        private readonly SkinType skinType;
-
-        public SkinnedKey(UnitData.Type unitType, TribeType tribeType, SkinType skinType)
-        {
-            this.unitType = unitType;
-            this.tribeType = tribeType;
-            this.skinType = skinType;
-        }
-
-        public bool Equals(SkinnedKey other)
-        {
-            return unitType == other.unitType
-                && tribeType == other.tribeType
-                && skinType == other.skinType;
-        }
-
-        public override bool Equals(object? other)
-        {
-            return other is SkinnedKey otherKey && Equals(otherKey);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine((int)unitType, (int)tribeType, (int)skinType);
-        }
-    }
-
-    private static readonly Dictionary<SkinnedKey, Unit> unitsNew = new();
-    private static readonly Dictionary<OverrideCondition, Dictionary<UnitData.Type, Unit>> unitOverridesNew = new();
-    private static readonly Dictionary<SkinnedKey, Unit> unitUIOverridesNew = new();
+    internal static Dictionary<SkinnedKey, Unit> unitsNew = new();
+    internal static Dictionary<OverrideCondition, Dictionary<UnitData.Type, Unit>> unitOverridesNew = new();
+    internal static Dictionary<SkinnedKey, Unit> unitUIOverridesNew = new();
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.Awake))]

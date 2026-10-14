@@ -343,7 +343,7 @@ internal static class Hub
         // TODO legacy tribe preview dump. i have to update that
         foreach (TribeType type in Enum.GetValues(typeof(TribeType)))
         {
-            List<Visual.PreviewTile> previewTiles = new();
+            List<TribePreviewManager.PreviewTile> previewTiles = new();
             SelectTribePopup popup = PopupManager.GetSelectTribePopup();
             for (int x = -3; x <= 3; x++)
             {
@@ -352,7 +352,7 @@ internal static class Hub
                     Vector2Int pos = new Vector2Int(x, y);
                     if (popup.UIWorldPreview.worldPreviewData.TryGetData(pos, type, out UITileData tileData))
                     {
-                        Visual.PreviewTile previewTile = new Visual.PreviewTile
+                        TribePreviewManager.PreviewTile previewTile = new TribePreviewManager.PreviewTile
                         {
                             x = tileData.Position.x,
                             y = tileData.Position.y,
