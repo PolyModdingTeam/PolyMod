@@ -3,12 +3,6 @@
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RestoreAdditionalProjectSources>
-            https://api.nuget.org/v3/index.json;
-            https://nuget.bepinex.dev/v3/index.json;
-            https://nuget.samboy.dev/v3/index.json;
-            https://polymod.dev/nuget/v3/index.json;
-        </RestoreAdditionalProjectSources>
         <Configurations>IL2CPP</Configurations>
         <RootNamespace>PolyMod</RootNamespace>
         <Version>1.2.18</Version>
@@ -30,6 +24,7 @@
         <PackageReference Include="Scriban" Version="6.2.1" />
         <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)" />
         <EmbeddedResource Include="resources\*.*" />
+        <InternalsVisibleTo Include="Tests" />
     </ItemGroup>
 
     <Target Name="AddGeneratedFile" BeforeTargets="BeforeCompile;CoreCompile" Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)GeneratedFile.cs">

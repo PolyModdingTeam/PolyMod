@@ -8,7 +8,7 @@ namespace PolyMod.Api;
 public class GldConfigTemplate
 {
     private static readonly string ConfigPath = Path.Combine(Plugin.BASE_PATH, "mods.json");
-    
+
     private readonly string templateText;
     private JsonObject currentConfig = new();
     private string modName;
@@ -24,8 +24,8 @@ public class GldConfigTemplate
         if (File.Exists(ConfigPath))
         {
             var json = File.ReadAllText(ConfigPath);
-            if (JsonNode.Parse(json) is JsonObject modsConfig 
-                && modsConfig.TryGetPropertyValue(modName, out var modConfigNode) 
+            if (JsonNode.Parse(json) is JsonObject modsConfig
+                && modsConfig.TryGetPropertyValue(modName, out var modConfigNode)
                 && modConfigNode is JsonObject modConfig)
             {
                 currentConfig = modConfig;
@@ -41,9 +41,9 @@ public class GldConfigTemplate
         var template = Template.Parse(templateText);
         var context = new TemplateContext();
         var scriptObject = new ScriptObject();
-        
+
         bool changedConfig = false;
-        scriptObject.Import("config", 
+        scriptObject.Import("config",
             new Func<string, string, string>((key, defaultValue) =>
             {
                 if (currentConfig.TryGetPropertyValue(key, out var token) && token != null)
@@ -53,7 +53,7 @@ public class GldConfigTemplate
 
                 changedConfig = true;
                 currentConfig[key] = defaultValue;
-                
+
                 return defaultValue;
             })
         );

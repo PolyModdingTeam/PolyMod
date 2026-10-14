@@ -11,7 +11,7 @@ public abstract class PolyScriptBase
     /// <param name="mod">The mod instance.</param>
     /// <param name="logger">The logger instance.</param>
     internal abstract void Initialize(Mod mod, ManualLogSource logger);
-    
+
     /// <summary>>
     /// Called when the mod is loaded.
     /// </summary>
@@ -41,7 +41,7 @@ public abstract class PolyScript<TConfig, TExposedConfig> : PolyScriptBase where
         return Registry.mods[Mod.id].files.FirstOrDefault(f => f.name == fileName)?.bytes;
     }
 
-    public override void Unload() {}
+    public override void Unload() { }
 
     public Mod Mod { get; private set; } = null!;
     protected Config<TConfig> Config { get; private set; } = null!;

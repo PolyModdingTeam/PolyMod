@@ -79,26 +79,66 @@ internal static class Util
 
     /// <summary>
     /// Compares two version strings to see if the first is older or equal to the second.
-    /// Handles pre-release identifiers.
+    /// Pre-release tags follow semantic-version rules: the part after the first dash is
+    /// split on dots, purely numeric identifiers compare numerically and sort before
+    /// alphanumeric ones, and a longer identifier list is newer. A version with a
+    /// pre-release tag is always older than the same version without one.
     /// </summary>
     /// <param name="version1">The first version string.</param>
     /// <param name="version2">The second version string.</param>
     /// <returns>True if version1 is older or equal to version2, false otherwise.</returns>
     internal static bool IsVersionOlderOrEqual(this string version1, string version2)
     {
-        Version version1_ = new(version1.Split('-')[0]);
-        Version version2_ = new(version2.Split('-')[0]);
+        Version core1 = ParseVersion(version1, out string? pre1);
+        Version core2 = ParseVersion(version2, out string? pre2);
 
-        if (version1_ < version2_) return true;
-        if (version1_ > version2_) return false;
+        if (core1 != core2)
+            return core1 < core2;
 
-        string pre1 = version1.Contains('-') ? version1.Split('-')[1] : "";
-        string pre2 = version2.Contains('-') ? version2.Split('-')[1] : "";
+        return ComparePreRelease(pre1, pre2) <= 0;
+    }
 
-        if (string.IsNullOrEmpty(pre1) && !string.IsNullOrEmpty(pre2)) return false;
-        if (!string.IsNullOrEmpty(pre1) && string.IsNullOrEmpty(pre2)) return true;
+    private static Version ParseVersion(string version, out string? preRelease)
+    {
+        int dash = version.IndexOf('-');
+        if (dash < 0)
+        {
+            preRelease = null;
+            return new Version(version);
+        }
+        preRelease = version[(dash + 1)..];
+        if (preRelease.Length == 0)
+            preRelease = null;
+        return new Version(version[..dash]);
+    }
 
-        return string.Compare(pre1, pre2, StringComparison.Ordinal) <= 0;
+    private static int ComparePreRelease(string? left, string? right)
+    {
+        if (left == null && right == null) return 0;
+        if (left == null) return 1;
+        if (right == null) return -1;
+
+        string[] leftIds = left.Split('.');
+        string[] rightIds = right.Split('.');
+        int shared = Math.Min(leftIds.Length, rightIds.Length);
+        for (int i = 0; i < shared; i++)
+        {
+            int comparison = CompareIdentifier(leftIds[i], rightIds[i]);
+            if (comparison != 0)
+                return comparison;
+        }
+        return leftIds.Length.CompareTo(rightIds.Length);
+    }
+
+    private static int CompareIdentifier(string left, string right)
+    {
+        bool leftNumeric = left.Length > 0 && left.All(char.IsDigit);
+        bool rightNumeric = right.Length > 0 && right.All(char.IsDigit);
+        if (leftNumeric && rightNumeric)
+            return long.Parse(left).CompareTo(long.Parse(right));
+        if (leftNumeric) return -1;
+        if (rightNumeric) return 1;
+        return string.Compare(left, right, StringComparison.Ordinal);
     }
 
     /// <summary>

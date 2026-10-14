@@ -53,7 +53,7 @@ internal static class AutoUpdate
                 _ => "unknown",
             };
             if (os == "unknown")
-            { 
+            {
                 Plugin.logger.LogError("Unsupported platform for autoupdate!");
                 return;
             }
