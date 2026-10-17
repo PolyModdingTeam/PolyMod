@@ -5,12 +5,13 @@ using Polytopia.Data;
 using PolytopiaBackendBase.Common;
 using UnityEngine;
 using static PolyMod.Managers.PrefabRegistry;
+using static SkinVisualsReference;
 
 namespace PolyMod.Managers;
 
 public static class PrefabCreator
 {
-
+	internal static Material? cachedUnitMaterial;
 	internal static Dictionary<string, List<byte[]>> prefabsFilesToProcess = new();
 
 	public static List<UnitPrefabInfo> unitInfos = new();
@@ -166,58 +167,100 @@ public static class PrefabCreator
 		{
 			ProcessResourcePrefabInfo(resourcePrefabInfo);
 		}
+
+		foreach (var item in unitsNew)
+		{
+			var skinnedKey = item.Key;
+			var unit = item.Value;
+			SkinVisualsReference skinVisualsReference = unit.GetComponent<SkinVisualsReference>();
+			if (skinVisualsReference == null)
+			{
+				skinVisualsReference = unit.GetComponentInChildren<SkinVisualsReference>(true);
+			}
+			if (skinVisualsReference == null || skinVisualsReference.visualParts == null)
+			{
+				Plugin.logger.LogWarning($"{skinnedKey.unitType} {skinnedKey.tribeType} {skinnedKey.skinType}: no SkinVisualsReference");
+				continue;
+			}
+
+			for (int partIndex = 0; partIndex < skinVisualsReference.visualParts.Length; partIndex++)
+			{
+				VisualPart currentPart = skinVisualsReference.visualParts[partIndex];
+				Plugin.logger.LogInfo($"{skinnedKey.unitType} {skinnedKey.tribeType} {skinnedKey.skinType} part {partIndex}");
+				Plugin.logger.LogInfo($"    visualPart: {DescribeVisualObject(currentPart.visualPart)}");
+				Plugin.logger.LogInfo($"    outline:    {DescribeVisualObject(currentPart.outline)}");
+			}
+		}
 	}
 
-	/// <returns>The material of the original sprite parts.</returns>
-	private static Material? ClearExistingPartsAndExtractMaterial(Transform spriteContainer)
-	{
-		Material? material = null;
-		for (int i = 0; i < spriteContainer.childCount; i++)
-		{
-			var child = spriteContainer.GetChild(i);
-			if (child.gameObject.name == "Head")
-			{
-				var renderer = child.GetComponent<SpriteRenderer>();
-				if (renderer != null)
-					material = renderer.material;
-			}
-			GameObject.Destroy(child.gameObject);
-		}
-		return material;
-	}
+    private static string DescribeVisualObject(GameObject targetObject)
+    {
+        if (targetObject == null)
+        {
+            return "null";
+        }
+
+        string layerName = LayerMask.LayerToName(targetObject.layer);
+        string description = $"name={targetObject.name}, layer={targetObject.layer} ({layerName}), activeSelf={targetObject.activeSelf}";
+
+        SpriteRenderer spriteRenderer = targetObject.GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            description += $", SpriteRenderer(enabled={spriteRenderer.enabled}, sortingLayer={SortingLayer.IDToName(spriteRenderer.sortingLayerID)}, sortingOrder={spriteRenderer.sortingOrder}, hasSprite={spriteRenderer.sprite != null})";
+        }
+
+        PolytopiaSpriteRenderer polytopiaSpriteRenderer = targetObject.GetComponent<PolytopiaSpriteRenderer>();
+        if (polytopiaSpriteRenderer != null)
+        {
+            description += $", PolytopiaSpriteRenderer(enabled={polytopiaSpriteRenderer.enabled}, sortingLayer={SortingLayer.IDToName(polytopiaSpriteRenderer.SortingLayer)}, sortingOrder={polytopiaSpriteRenderer.SortingOrder}, hasSprite={polytopiaSpriteRenderer.HasSprite()})";
+        }
+
+        return description;
+    }
 
 	private static List<SkinVisualsReference.VisualPart> ApplyVisualParts(
 		UnitPrefabInfo prefab,
-		Transform spriteContainer,
-		Material? material)
+		Transform spriteContainer)
 	{
-		if (prefab.visualParts.Count == 0)
-			return new List<SkinVisualsReference.VisualPart>();
 
 		List<SkinVisualsReference.VisualPart> parts = new();
 
+		if (prefab.visualParts.Count == 0)
+			return parts;
+
+		int nextPartSortingOrder = 0;
+		int nextOutlineSortingOrder = -prefab.visualParts.Count;
 		foreach (var info in prefab.visualParts)
 		{
-			parts.Add(CreateVisualPart(info, spriteContainer, material));
+			parts.Add(CreateUnitVisualPart(info, spriteContainer, nextPartSortingOrder, nextOutlineSortingOrder));
+			if(nextOutlineSortingOrder < -1)
+			{
+				nextOutlineSortingOrder++;
+			}
+			nextPartSortingOrder++;
+			Console.Write($"{prefab.visualParts.Count} New orders {nextPartSortingOrder} {nextOutlineSortingOrder}");
 		}
 
 		return parts;
 	}
 
-	private static SkinVisualsReference.VisualPart CreateVisualPart(
+	private static SkinVisualsReference.VisualPart CreateUnitVisualPart(
 		VisualPartInfo info,
 		Transform parent,
-		Material? material)
+		int visualPartSortingOrder,
+		int outlineSortingOrder)
 	{
 		var visualPartObj = new GameObject(info.defaultSpriteName);
 		visualPartObj.transform.SetParent(parent);
-		visualPartObj.transform.position = info.coordinates;
-		visualPartObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
 
-		var outlineObj = new GameObject("Outline");
+		var outlineObj = new GameObject($"{info.defaultSpriteName}_Outline");
 		outlineObj.transform.SetParent(visualPartObj.transform);
-		outlineObj.transform.position = info.coordinates;
-		outlineObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
+
+		visualPartObj.transform.position = outlineObj.transform.position = info.coordinates;
+		visualPartObj.transform.rotation = outlineObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
+
+		// this bs was hunting me for so long. that is the thing which makes outline hidden in ui
+		outlineObj.SetActive(false);
 
 		var visualPart = new SkinVisualsReference.VisualPart
 		{
@@ -228,20 +271,36 @@ public static class PrefabCreator
 		};
 
 		var renderer = visualPartObj.AddComponent<SpriteRenderer>();
-		renderer.material = material;
+		renderer.material = cachedUnitMaterial;
+		renderer.sortingOrder = visualPartSortingOrder;
 		renderer.sortingLayerName = "Units";
-		renderer.sortingOrder = info.tintable ? 0 : 1;
-
 		visualPart.renderer = new SkinVisualsReference.RendererUnion { spriteRenderer = renderer };
 
 		var outlineRenderer = outlineObj.AddComponent<SpriteRenderer>();
-		outlineRenderer.material = material;
+		outlineRenderer.material = cachedUnitMaterial;
+		outlineRenderer.sortingOrder = outlineSortingOrder;
 		outlineRenderer.sortingLayerName = "Units";
-		outlineRenderer.sortingOrder = -1;
-
 		visualPart.outlineRenderer = new SkinVisualsReference.RendererUnion { spriteRenderer = outlineRenderer };
 
 		return visualPart;
+	}
+
+	private static SkinVisualsReference.VisualPart CreateImprovementVisualPart(
+		VisualPartInfo info,
+		Transform parent,
+		int visualPartSortingOrder,
+		int outlineSortingOrder)
+	{
+		return null;
+	}
+
+	private static SkinVisualsReference.VisualPart CreateResourceVisualPart(
+		VisualPartInfo info,
+		Transform parent,
+		int visualPartSortingOrder,
+		int outlineSortingOrder)
+	{
+		return null;
 	}
 
 	internal static void ProcessUnitPrefabInfo(UnitPrefabInfo unitPrefabInfo)
@@ -254,10 +313,14 @@ public static class PrefabCreator
 			if (unitInstance == null)
 				return;
 
-			var spriteContainer = unitInstance.transform.GetChild(0);
-			var material = ClearExistingPartsAndExtractMaterial(spriteContainer);
+			GameObject.Destroy(unitInstance.spriteContainer.gameObject);
 
-			var visualParts = ApplyVisualParts(unitPrefabInfo, spriteContainer, material);
+			var spriteContainerObj = new GameObject("SpriteContainer");
+			spriteContainerObj.transform.SetParent(unitInstance.transform, false);
+			var spriteContainer = spriteContainerObj.transform;
+			unitInstance.spriteContainer = spriteContainer;
+
+			var visualParts = ApplyVisualParts(unitPrefabInfo, spriteContainer);
 
 			Transform? headPositionMarker = null;
 			foreach (var vp in visualParts)

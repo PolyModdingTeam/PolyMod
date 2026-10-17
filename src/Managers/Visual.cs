@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 using PolytopiaBackendBase.Common;
 using Il2CppInterop.Runtime;
 using TMPro;
+using SevenZip.Compression.LZMA;
 
 namespace PolyMod.Managers;
 
@@ -32,7 +33,6 @@ public static class Visual
 	/// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
 	/// </summary>
 	internal static Dictionary<TileData.EffectType, SkinType> customFloodingSkins = new();
-	private static bool enableOutlines = false;
 	private static bool seenWarningWCPopup = false;
 
     private static Dictionary<string, string>? cachedSpriteDataReverse = null;
@@ -149,38 +149,18 @@ public static class Visual
 		if (sprite != null)
 			__result.sprite = sprite;
 
+        Sprite? outlineSprite = Registry.GetSprite(baseName + "_outline", tribe, skin, level);
+		if (outlineSprite != null)
+			__result.outlineSprite = outlineSprite;
+
 		string formattedName = FormatSpriteName(baseName);
         sprite = Registry.GetSprite(formattedName, tribe, skin, level);
 		if (sprite != null)
 			__result.sprite = sprite;
-	}
 
-	#endregion
-	#region Units
-
-	/// <summary>Enables outlines when the interaction bar is shown.</summary>
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.Show))]
-	private static bool InteractionBar_Show(InteractionBar __instance, bool instant, bool force)
-	{
-		enableOutlines = true; // bro
-		return true;
-	}
-
-	/// <summary>Prevents outlines from being created when they are disabled.</summary>
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(UISpriteDuplicator), nameof(UISpriteDuplicator.CreateImage), typeof(SpriteRenderer), typeof(Transform), typeof(Transform), typeof(float), typeof(Vector2), typeof(bool))]
-	private static bool UISpriteDuplicator_CreateImage(SpriteRenderer spriteRenderer, Transform source, Transform destination, float scale, Vector2 offset, bool forceFullAlpha)
-	{
-		return !(spriteRenderer.sortingOrder == -1 && !enableOutlines); // uhhh tf is this hack
-	}
-
-	/// <summary>Disables outlines after the interaction bar is shown.</summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.Show))]
-	private static void InteractionBar_Show_Postfix(InteractionBar __instance, bool instant, bool force)
-	{
-		enableOutlines = false;
+		outlineSprite = Registry.GetSprite(formattedName + "_outline", tribe, skin, level);
+		if (outlineSprite != null)
+			__result.outlineSprite = outlineSprite;
 	}
 
 	#endregion

@@ -8,7 +8,6 @@ using PolyMod.Managers;
 using Polytopia.Data;
 using PolytopiaBackendBase.Game;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO.Compression;
 using System.Reflection;
 using System.Text;
@@ -606,8 +605,8 @@ public static class Loader
 		}
 		Sprite sprite = Visual.BuildSprite(file.bytes, pivot, pixelsPerUnit);
 		GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
-		GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
-		Registry.sprites.Add(name, sprite);
+		GameManager.GetSpriteAtlasManager().cachedSprites["Heads"][name] = sprite;
+		Registry.sprites[name] = sprite;
 	}
 
 	/// <summary>

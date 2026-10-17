@@ -1,9 +1,9 @@
-using System.Text.Json.Serialization;
 using HarmonyLib;
-using PolyMod.Json;
 using Polytopia.Data;
 using PolytopiaBackendBase.Common;
+using UnityEngine;
 using static PrefabManager;
+using static SkinVisualsReference;
 
 namespace PolyMod.Managers;
 
@@ -23,6 +23,27 @@ public static class PrefabRegistry
 
         foreach (UnitPrefabData unitPrefabData in __instance.unitPrefabs)
         {
+            if(PrefabCreator.cachedUnitMaterial == null)
+            {
+                SkinVisualsReference skinVisualsReference = unitPrefabData.prefab.GetComponent<SkinVisualsReference>();
+                if (skinVisualsReference != null && skinVisualsReference.visualParts != null)
+                {
+                    foreach (VisualPart currentPart in skinVisualsReference.visualParts)
+                    {
+                        if (currentPart.visualPart == null)
+                        {
+                            continue;
+                        }
+
+                        SpriteRenderer headSpriteRenderer = currentPart.visualPart.GetComponent<SpriteRenderer>();
+                        if (headSpriteRenderer != null)
+                        {
+                            PrefabCreator.cachedUnitMaterial = headSpriteRenderer.sharedMaterial;
+                            break;
+                        }
+                    }
+                }
+            }
             unitsNew[new SkinnedKey(unitPrefabData.type, unitPrefabData.tribe, unitPrefabData.skin)] = unitPrefabData.prefab;
         }
 
@@ -73,6 +94,29 @@ public static class PrefabRegistry
     {
         __result = ResolveUnitPrefab(type, tribe, skin);
         return false;
+    }
+
+    [HarmonyPostfix] // prolly remove later
+    [HarmonyPatch(typeof(SkinVisualsReference), nameof(SkinVisualsReference.SetupVisualPart))]
+    public static void SetupVisualPart(ref VisualPart visualSetting, bool isImprovement)
+    {
+        bool flag = false;
+		flag = visualSetting.outline != null && visualSetting.outline.transform.parent == visualSetting.visualPart.transform;
+		if (!flag && visualSetting.visualPart.transform.childCount > 0)
+		{
+			visualSetting.outline = visualSetting.visualPart.transform.GetChild(0).gameObject;
+			flag = true;
+		}
+		bool flag2 = false;
+		if (flag)
+		{
+			string defaultSpriteName = visualSetting.DefaultSpriteName;
+			if (visualSetting.outline != null && visualSetting.outline.name == defaultSpriteName + "_Outline")
+			{
+				flag2 = true;
+			}
+		}
+		visualSetting.hasValidOutline = flag2;
     }
 
     private static Unit ResolveUnitPrefab(UnitData.Type unitType, TribeType tribeType, SkinType skinType)
