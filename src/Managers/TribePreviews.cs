@@ -9,7 +9,7 @@ using TMPro;
 
 namespace PolyMod.Managers;
 
-public static class TribePreviewManager
+public static class TribePreviews
 {
     /// <summary>
 	/// Represents a tile in a tribe preview.

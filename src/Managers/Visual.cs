@@ -2,15 +2,9 @@ using System.Reflection;
 using HarmonyLib;
 using Polytopia.Data;
 using UnityEngine;
-using UnityEngine.U2D;
-using UnityEngine.UI;
 using Il2CppSystem.Linq;
-using PolyMod.Json;
-using System.Text.Json.Serialization;
 using PolytopiaBackendBase.Common;
 using Il2CppInterop.Runtime;
-using TMPro;
-using SevenZip.Compression.LZMA;
 
 namespace PolyMod.Managers;
 
@@ -45,45 +39,6 @@ public static class Visual
 	[HarmonyPatch(typeof(TechItem), nameof(TechItem.SetupComplete))]
 	private static void TechItem_SetupComplete()
 	{
-	}
-
-	/// <summary>Patches the sprite atlas manager to load custom sprites.</summary> TODOOOO
-	// [HarmonyPrefix]
-	// [HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), typeof(string), typeof(string), typeof(SpriteCallback))]
-	private static bool SpriteAtlasManager_LoadSprite(SpriteAtlasManager __instance, string atlas, string sprite, SpriteCallback completion)
-	{
-		bool found = false;
-		__instance.LoadSpriteAtlas(atlas, (Il2CppSystem.Action<UnityEngine.U2D.SpriteAtlas>)GetAtlas);
-
-		return !found;
-
-		void GetAtlas(SpriteAtlas spriteAtlas)
-		{
-			if (spriteAtlas != null)
-			{
-				List<string> names = sprite.Split('_').ToList();
-				List<string> filteredNames = new List<string>(names);
-				string style = "";
-				foreach (string item in names)
-				{
-					string upperitem = char.ToUpper(item[0]) + item[1..];
-					if (EnumCache<TribeType>.TryGetType(item, out TribeType tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
-					|| EnumCache<TribeType>.TryGetType(upperitem, out TribeType tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
-					{
-						filteredNames.Remove(item);
-						style = item;
-						continue;
-					}
-				}
-				string name = string.Join("_", filteredNames);
-				Sprite? newSprite = null; // Registry.GetSprite(name, style);
-				if (newSprite != null)
-				{
-					completion?.Invoke(atlas, sprite, newSprite);
-					found = true;
-				}
-			}
-		}
 	}
 
 	/// <summary>Patches the sprite atlas manager to look up custom sprites.</summary>
@@ -161,6 +116,25 @@ public static class Visual
 		outlineSprite = Registry.GetSprite(formattedName + "_outline", tribe, skin, level);
 		if (outlineSprite != null)
 			__result.outlineSprite = outlineSprite;
+	}
+
+	[HarmonyPrefix] // its obsolete so may be removed soon by midjiwan
+	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), new Type[]{ typeof(string), typeof(string), typeof(SpriteCallback) })]
+    private static bool LoadSprite(string atlas, string sprite, SpriteCallback completion)
+	{
+        Sprite? spriteResult = Registry.GetSprite(sprite);
+
+		string formattedName = FormatSpriteName(sprite);
+		Sprite? formattedSprite = Registry.GetSprite(formattedName);
+		if (formattedSprite != null)
+			spriteResult = formattedSprite;
+
+		if (spriteResult != null)
+		{
+			completion.Invoke(atlas, sprite, spriteResult);
+			return false;
+		}
+		return true;
 	}
 
 	#endregion
@@ -425,7 +399,7 @@ public static class Visual
 	internal static void Init()
 	{
 		Harmony.CreateAndPatchAll(typeof(Visual));
-		Harmony.CreateAndPatchAll(typeof(PrefabRegistry));
-		Harmony.CreateAndPatchAll(typeof(TribePreviewManager));
+		Harmony.CreateAndPatchAll(typeof(Prefabs));
+		Harmony.CreateAndPatchAll(typeof(TribePreviews));
 	}
 }

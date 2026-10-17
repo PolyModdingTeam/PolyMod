@@ -125,7 +125,7 @@ public static class Loader
 					}
 					if (token["preview"] != null)
 					{
-						TribePreviewManager.PreviewTile[] preview = JsonSerializer.Deserialize<TribePreviewManager.PreviewTile[]>(token["preview"].ToString())!;
+						TribePreviews.PreviewTile[] preview = JsonSerializer.Deserialize<TribePreviews.PreviewTile[]>(token["preview"].ToString())!;
 						Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
 					}
 				}
@@ -682,12 +682,12 @@ public static class Loader
 	{
 		try
 		{
-			if(!PrefabCreator.prefabsFilesToProcess.ContainsKey("all") || PrefabCreator.prefabsFilesToProcess["all"] == null)
-				PrefabCreator.prefabsFilesToProcess["all"] = new();
+			if(!Prefabs.prefabsFilesToProcess.ContainsKey("all") || Prefabs.prefabsFilesToProcess["all"] == null)
+				Prefabs.prefabsFilesToProcess["all"] = new();
 
-			PrefabCreator.prefabsFilesToProcess["all"].Add(file.bytes);
+			Prefabs.prefabsFilesToProcess["all"].Add(file.bytes);
 
-			// var prefab = JsonSerializer.Deserialize<PrefabCreator.PrefabsInfo>(file.bytes, new JsonSerializerOptions
+			// var prefab = JsonSerializer.Deserialize<Prefabs.PrefabsInfo>(file.bytes, new JsonSerializerOptions
 			// {
 			// 	Converters = { new Vector2Json() },
 			// 	PropertyNameCaseInsensitive = true,
@@ -695,9 +695,9 @@ public static class Loader
 			// if (prefab == null)
 			// 	return;
 
-			// PrefabCreator.unitInfos.AddRange(prefab.units);
-			// PrefabCreator.improvementInfos.AddRange(prefab.improvements);
-			// PrefabCreator.resourceInfos.AddRange(prefab.resources);
+			// Prefabs.unitInfos.AddRange(prefab.units);
+			// Prefabs.improvementInfos.AddRange(prefab.improvements);
+			// Prefabs.resourceInfos.AddRange(prefab.resources);
 
 			Plugin.logger.LogInfo($"Registered prefabs {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
 		}
@@ -711,12 +711,12 @@ public static class Loader
 	{
 		try
 		{
-			if(!PrefabCreator.prefabsFilesToProcess.ContainsKey("units") || PrefabCreator.prefabsFilesToProcess["units"] == null)
-				PrefabCreator.prefabsFilesToProcess["units"] = new();
+			if(!Prefabs.prefabsFilesToProcess.ContainsKey("units") || Prefabs.prefabsFilesToProcess["units"] == null)
+				Prefabs.prefabsFilesToProcess["units"] = new();
 
-			PrefabCreator.prefabsFilesToProcess["units"].Add(file.bytes);
+			Prefabs.prefabsFilesToProcess["units"].Add(file.bytes);
 
-			// var unitPrefab = JsonSerializer.Deserialize<PrefabCreator.UnitPrefabInfo>(file.bytes, new JsonSerializerOptions
+			// var unitPrefab = JsonSerializer.Deserialize<Prefabs.UnitPrefabInfo>(file.bytes, new JsonSerializerOptions
 			// {
 			// 	Converters = { new Vector2Json() },
 			// 	PropertyNameCaseInsensitive = true,
@@ -724,7 +724,7 @@ public static class Loader
 			// if (unitPrefab == null)
 			// 	return;
 
-			// PrefabCreator.unitInfos.Add(unitPrefab);
+			// Prefabs.unitInfos.Add(unitPrefab);
 
 			Plugin.logger.LogInfo($"Registered unit prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
 		}
@@ -738,12 +738,12 @@ public static class Loader
 	{
 		try
 		{
-			if(!PrefabCreator.prefabsFilesToProcess.ContainsKey("improvements") || PrefabCreator.prefabsFilesToProcess["improvements"] == null)
-				PrefabCreator.prefabsFilesToProcess["improvements"] = new();
+			if(!Prefabs.prefabsFilesToProcess.ContainsKey("improvements") || Prefabs.prefabsFilesToProcess["improvements"] == null)
+				Prefabs.prefabsFilesToProcess["improvements"] = new();
 
-			PrefabCreator.prefabsFilesToProcess["improvements"].Add(file.bytes);
+			Prefabs.prefabsFilesToProcess["improvements"].Add(file.bytes);
 
-			// var improvementPrefab = JsonSerializer.Deserialize<PrefabCreator.ImprovementPrefabInfo>(file.bytes, new JsonSerializerOptions
+			// var improvementPrefab = JsonSerializer.Deserialize<Prefabs.ImprovementPrefabInfo>(file.bytes, new JsonSerializerOptions
 			// {
 			// 	Converters = { new Vector2Json() },
 			// 	PropertyNameCaseInsensitive = true,
@@ -751,7 +751,7 @@ public static class Loader
 			// if (improvementPrefab == null)
 			// 	return;
 
-			// PrefabCreator.improvementInfos.Add(improvementPrefab);
+			// Prefabs.improvementInfos.Add(improvementPrefab);
 
 			Plugin.logger.LogInfo($"Registered improvement prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
 		}
@@ -765,12 +765,12 @@ public static class Loader
 	{
 		try
 		{
-			if(!PrefabCreator.prefabsFilesToProcess.ContainsKey("resources") || PrefabCreator.prefabsFilesToProcess["resources"] == null)
-				PrefabCreator.prefabsFilesToProcess["resources"] = new();
+			if(!Prefabs.prefabsFilesToProcess.ContainsKey("resources") || Prefabs.prefabsFilesToProcess["resources"] == null)
+				Prefabs.prefabsFilesToProcess["resources"] = new();
 
-			PrefabCreator.prefabsFilesToProcess["resources"].Add(file.bytes);
+			Prefabs.prefabsFilesToProcess["resources"].Add(file.bytes);
 
-			// var resourcePrefab = JsonSerializer.Deserialize<PrefabCreator.ResourcePrefabInfo>(file.bytes, new JsonSerializerOptions
+			// var resourcePrefab = JsonSerializer.Deserialize<Prefabs.ResourcePrefabInfo>(file.bytes, new JsonSerializerOptions
 			// {
 			// 	Converters = { new Vector2Json() },
 			// 	PropertyNameCaseInsensitive = true,
@@ -778,7 +778,7 @@ public static class Loader
 			// if (resourcePrefab == null)
 			// 	return;
 
-			// PrefabCreator.resourceInfos.Add(resourcePrefab);
+			// Prefabs.resourceInfos.Add(resourcePrefab);
 
 			Plugin.logger.LogInfo($"Registered resource prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
 		}
@@ -948,7 +948,7 @@ public static class Loader
 	/// </summary>
 	internal static void ProcessPrefabs()
 	{
-		PrefabCreator.ProcessPrefabs();
+		Prefabs.ProcessPrefabs();
 	}
 
 	/// <summary>

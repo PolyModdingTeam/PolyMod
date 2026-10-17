@@ -3,17 +3,12 @@ using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using I2.Loc;
 using Il2CppInterop.Runtime;
-using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
 using static PopupBase;
 using PolytopiaBackendBase.Common;
 using System.Text.Encodings.Web;
 using Il2CppSystem.Linq;
-using System.Text.RegularExpressions;
-using Il2CppInterop.Runtime.InteropTypes.Arrays;
-using UnityEngine.Experimental.U2D;
+using PolyMod.Json;
 
 
 namespace PolyMod.Managers;
@@ -343,7 +338,7 @@ internal static class Hub
         // TODO legacy tribe preview dump. i have to update that
         foreach (TribeType type in Enum.GetValues(typeof(TribeType)))
         {
-            List<TribePreviewManager.PreviewTile> previewTiles = new();
+            List<TribePreviews.PreviewTile> previewTiles = new();
             SelectTribePopup popup = PopupManager.GetSelectTribePopup();
             for (int x = -3; x <= 3; x++)
             {
@@ -352,7 +347,7 @@ internal static class Hub
                     Vector2Int pos = new Vector2Int(x, y);
                     if (popup.UIWorldPreview.worldPreviewData.TryGetData(pos, type, out UITileData tileData))
                     {
-                        TribePreviewManager.PreviewTile previewTile = new TribePreviewManager.PreviewTile
+                        TribePreviews.PreviewTile previewTile = new TribePreviews.PreviewTile
                         {
                             x = tileData.Position.x,
                             y = tileData.Position.y,
@@ -373,7 +368,50 @@ internal static class Hub
     }
 
     internal static void DumpPrefabs() // TODO
-    {}
+    {
+        Directory.CreateDirectory(Plugin.PREFABS_DUMP_PATH);
+        PrefabsInfo prefabsInfo = new();
+        foreach (KeyValuePair<SkinnedKey, Unit> keyValuePairs in Prefabs.unitsNew)
+        {
+            var unit = keyValuePairs.Value;
+            SkinVisualsReference skinVisualsReference = unit.GetComponent<SkinVisualsReference>();
+            if (skinVisualsReference == null || skinVisualsReference.visualParts == null)
+            {
+                Plugin.logger.LogWarning($"Dump skipped {keyValuePairs.Key.unitType}: no SkinVisualsReference");
+                continue;
+            }
+            UnitPrefabInfo unitPrefabInfo = new()
+            {
+                headPositionMarker = unit.headPositionMarker.gameObject.name,
+                skinnedKey = keyValuePairs.Key,
+                visualParts = new()
+            };
+            foreach (var visualPart in skinVisualsReference.visualParts)
+            {
+                if (visualPart == null || visualPart.visualPart == null)
+                {
+                    continue;
+                }
+                var visualPartInfo = new VisualPartInfo
+                {
+                    coordinates = visualPart.visualPart.transform.position,
+                    rotation = visualPart.visualPart.transform.rotation.z,
+                    defaultSpriteName = visualPart.DefaultSpriteName,
+                    tintable = visualPart.tintable,
+                    skinningLogic = visualPart.skinLogic,
+                    improvementSkinningLogic = visualPart.improvementSkinLogic,
+                    levels = visualPart.levels
+                };
+                unitPrefabInfo.visualParts.Add(visualPartInfo);
+
+            }
+            prefabsInfo.units.Add(unitPrefabInfo);
+        }
+        File.WriteAllTextAsync(
+            Path.Combine(Plugin.PREFABS_DUMP_PATH, $"prefabs.json"),
+            JsonSerializer.Serialize(prefabsInfo, new JsonSerializerOptions { WriteIndented = true, Converters = { new Vector2Json() },})
+        );
+    }
 
     /// <summary>
     /// Shows the configuration popup.

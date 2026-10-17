@@ -34,7 +34,7 @@ public static class Registry
 	/// <summary>
 	/// A dictionary of tribe previews, keyed by tribe name.
 	/// </summary>
-	public static Dictionary<string, TribePreviewManager.PreviewTile[]> tribePreviews = new();
+	public static Dictionary<string, TribePreviews.PreviewTile[]> tribePreviews = new();
 
 	/// <summary>
 	/// A dictionary of sprite information, keyed by sprite name.
@@ -77,6 +77,8 @@ public static class Registry
 	/// </summary>
 	public static Sprite? GetSpriteByText(string baseName, string tribeText = "", string skinText = "", int level = -1)
 	{
+		if(baseName.Contains("oil"))
+			Console.Write("YESSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS");
 		Sprite? sprite = null;
 		baseName = baseName.ToLower();
 		tribeText = tribeText.ToLower();
@@ -104,7 +106,8 @@ public static class Registry
 		{
 			sprite = sprites.GetOrDefault(spriteName, sprite);
 		}
-
+		if(baseName.Contains("oil"))
+			Console.Write(sprite == null);
 		return sprite;
 	}
 

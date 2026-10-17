@@ -3,7 +3,7 @@ using PolyMod.Json;
 using Polytopia.Data;
 using PolytopiaBackendBase.Common;
 
-namespace PolyMod.Managers;
+namespace PolyMod;
 
 public readonly struct SkinnedKey : IEquatable<SkinnedKey>
 {
