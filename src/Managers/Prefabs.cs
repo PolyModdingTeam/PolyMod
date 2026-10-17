@@ -4,8 +4,6 @@ using PolytopiaBackendBase.Common;
 using UnityEngine;
 using static PrefabManager;
 using static SkinVisualsReference;
-using System.Text.Json;
-using PolyMod.Json;
 
 namespace PolyMod.Managers;
 
@@ -17,7 +15,6 @@ public static class Prefabs
 
 	internal static Material? cachedUnitMaterial;
 	internal static Material? cachedResourceMaterial;
-	internal static int cachedResourceSortingLayerId;
 
 	internal static Dictionary<string, List<byte[]>> prefabsFilesToProcess = new();
 
@@ -169,7 +166,7 @@ public static class Prefabs
         return lastResortPrefab!;
     }
 
-	internal static void ProcessPrefabs()
+	internal static void CreatePrefabs()
 	{
 		// get materials
 		Material[] allLoadedMaterials = Resources.FindObjectsOfTypeAll<Material>();
@@ -178,80 +175,12 @@ public static class Prefabs
 			if(loadedMaterial.name == "SpriteMaterial")
 			{
 				cachedResourceMaterial = loadedMaterial;
-				Console.Write("MATERIAL FUCKING FOUND GOODBYE!");
 				GameObject.DontDestroyOnLoad(cachedResourceMaterial);
 				break;
 			}
 			Plugin.logger.LogInfo($"Material: {loadedMaterial.name}, shader: {loadedMaterial.shader.name}");
 		}
 
-        cachedResourceSortingLayerId = MeshCache.TERRAIN_LAYER_ID;
-		// i will remove this bs
-		foreach (var keyValuePair in prefabsFilesToProcess)
-		{
-			if(keyValuePair.Key == "all")
-			{
-				foreach (var bytes in keyValuePair.Value)
-				{
-					var prefab = JsonSerializer.Deserialize<PrefabsInfo>(bytes, new JsonSerializerOptions
-					{
-						Converters = { new Vector2Json() },
-						PropertyNameCaseInsensitive = true,
-					});
-					if (prefab == null)
-						return;
-
-					unitInfos.AddRange(prefab.units);
-					improvementInfos.AddRange(prefab.improvements);
-					resourceInfos.AddRange(prefab.resources);
-				}
-			}
-			else if(keyValuePair.Key == "units")
-			{
-				foreach (var bytes in keyValuePair.Value)
-				{
-					var unitPrefab = JsonSerializer.Deserialize<UnitPrefabInfo>(bytes, new JsonSerializerOptions
-					{
-						Converters = { new Vector2Json() },
-						PropertyNameCaseInsensitive = true,
-					});
-					if (unitPrefab == null)
-						return;
-
-					unitInfos.Add(unitPrefab);
-				}
-			}
-			else if(keyValuePair.Key == "improvements")
-			{
-				foreach (var bytes in keyValuePair.Value)
-				{
-					var improvementPrefab = JsonSerializer.Deserialize<ImprovementPrefabInfo>(bytes, new JsonSerializerOptions
-					{
-						Converters = { new Vector2Json() },
-						PropertyNameCaseInsensitive = true,
-					});
-					if (improvementPrefab == null)
-						return;
-
-					improvementInfos.Add(improvementPrefab);
-				}
-			}
-			else if(keyValuePair.Key == "resources")
-			{
-				foreach (var bytes in keyValuePair.Value)
-				{
-					var resourcePrefab = JsonSerializer.Deserialize<ResourcePrefabInfo>(bytes, new JsonSerializerOptions
-					{
-						Converters = { new Vector2Json() },
-						PropertyNameCaseInsensitive = true,
-					});
-					if (resourcePrefab == null)
-						return;
-
-					resourceInfos.Add(resourcePrefab);
-				}
-			}
-		}
 		foreach (var unitPrefabInfo in unitInfos)
 		{
 			ProcessUnitPrefabInfo(unitPrefabInfo);
@@ -395,7 +324,7 @@ public static class Prefabs
 		int visualPartSortingOrder,
 		int outlineSortingOrder)
 	{
-		return null;
+		return new VisualPart();
 	}
 
 	#endregion

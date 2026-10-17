@@ -682,22 +682,17 @@ public static class Loader
 	{
 		try
 		{
-			if(!Prefabs.prefabsFilesToProcess.ContainsKey("all") || Prefabs.prefabsFilesToProcess["all"] == null)
-				Prefabs.prefabsFilesToProcess["all"] = new();
+			var prefab = JsonSerializer.Deserialize<PrefabsInfo>(file.bytes, new JsonSerializerOptions
+			{
+				Converters = { new Vector2Json() },
+				PropertyNameCaseInsensitive = true,
+			});
+			if (prefab == null)
+				return;
 
-			Prefabs.prefabsFilesToProcess["all"].Add(file.bytes);
-
-			// var prefab = JsonSerializer.Deserialize<Prefabs.PrefabsInfo>(file.bytes, new JsonSerializerOptions
-			// {
-			// 	Converters = { new Vector2Json() },
-			// 	PropertyNameCaseInsensitive = true,
-			// });
-			// if (prefab == null)
-			// 	return;
-
-			// Prefabs.unitInfos.AddRange(prefab.units);
-			// Prefabs.improvementInfos.AddRange(prefab.improvements);
-			// Prefabs.resourceInfos.AddRange(prefab.resources);
+			Prefabs.unitInfos.AddRange(prefab.units);
+			Prefabs.improvementInfos.AddRange(prefab.improvements);
+			Prefabs.resourceInfos.AddRange(prefab.resources);
 
 			Plugin.logger.LogInfo($"Registered prefabs {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
 		}
@@ -711,20 +706,15 @@ public static class Loader
 	{
 		try
 		{
-			if(!Prefabs.prefabsFilesToProcess.ContainsKey("units") || Prefabs.prefabsFilesToProcess["units"] == null)
-				Prefabs.prefabsFilesToProcess["units"] = new();
+			var unitPrefab = JsonSerializer.Deserialize<UnitPrefabInfo>(file.bytes, new JsonSerializerOptions
+			{
+				Converters = { new Vector2Json() },
+				PropertyNameCaseInsensitive = true,
+			});
+			if (unitPrefab == null)
+				return;
 
-			Prefabs.prefabsFilesToProcess["units"].Add(file.bytes);
-
-			// var unitPrefab = JsonSerializer.Deserialize<Prefabs.UnitPrefabInfo>(file.bytes, new JsonSerializerOptions
-			// {
-			// 	Converters = { new Vector2Json() },
-			// 	PropertyNameCaseInsensitive = true,
-			// });
-			// if (unitPrefab == null)
-			// 	return;
-
-			// Prefabs.unitInfos.Add(unitPrefab);
+			Prefabs.unitInfos.Add(unitPrefab);
 
 			Plugin.logger.LogInfo($"Registered unit prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
 		}
@@ -738,20 +728,15 @@ public static class Loader
 	{
 		try
 		{
-			if(!Prefabs.prefabsFilesToProcess.ContainsKey("improvements") || Prefabs.prefabsFilesToProcess["improvements"] == null)
-				Prefabs.prefabsFilesToProcess["improvements"] = new();
+			var improvementPrefab = JsonSerializer.Deserialize<ImprovementPrefabInfo>(file.bytes, new JsonSerializerOptions
+			{
+				Converters = { new Vector2Json() },
+				PropertyNameCaseInsensitive = true,
+			});
+			if (improvementPrefab == null)
+				return;
 
-			Prefabs.prefabsFilesToProcess["improvements"].Add(file.bytes);
-
-			// var improvementPrefab = JsonSerializer.Deserialize<Prefabs.ImprovementPrefabInfo>(file.bytes, new JsonSerializerOptions
-			// {
-			// 	Converters = { new Vector2Json() },
-			// 	PropertyNameCaseInsensitive = true,
-			// });
-			// if (improvementPrefab == null)
-			// 	return;
-
-			// Prefabs.improvementInfos.Add(improvementPrefab);
+			Prefabs.improvementInfos.Add(improvementPrefab);
 
 			Plugin.logger.LogInfo($"Registered improvement prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
 		}
@@ -765,20 +750,15 @@ public static class Loader
 	{
 		try
 		{
-			if(!Prefabs.prefabsFilesToProcess.ContainsKey("resources") || Prefabs.prefabsFilesToProcess["resources"] == null)
-				Prefabs.prefabsFilesToProcess["resources"] = new();
+			var resourcePrefab = JsonSerializer.Deserialize<ResourcePrefabInfo>(file.bytes, new JsonSerializerOptions
+			{
+				Converters = { new Vector2Json() },
+				PropertyNameCaseInsensitive = true,
+			});
+			if (resourcePrefab == null)
+				return;
 
-			Prefabs.prefabsFilesToProcess["resources"].Add(file.bytes);
-
-			// var resourcePrefab = JsonSerializer.Deserialize<Prefabs.ResourcePrefabInfo>(file.bytes, new JsonSerializerOptions
-			// {
-			// 	Converters = { new Vector2Json() },
-			// 	PropertyNameCaseInsensitive = true,
-			// });
-			// if (resourcePrefab == null)
-			// 	return;
-
-			// Prefabs.resourceInfos.Add(resourcePrefab);
+			Prefabs.resourceInfos.Add(resourcePrefab);
 
 			Plugin.logger.LogInfo($"Registered resource prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
 		}
@@ -833,8 +813,6 @@ public static class Loader
 		{
 			CreateMappings(rootObject);
 			ProcessCustomTribes();
-			// OKAY BASICALLY I need to find a way to load certain files at this stage (?)
-			ProcessPrefabs();
 			ProcessEmbarkOverrides();
 			ProcessAttractOverrides();
 		}
@@ -946,9 +924,48 @@ public static class Loader
 	/// <summary>
 	/// Processes the prefab registry and populates the PrefabManager with custom prefabs.
 	/// </summary>
-	internal static void ProcessPrefabs()
+	internal static void ProcessFilesQueue()
 	{
-		Prefabs.ProcessPrefabs();
+		try
+		{
+			foreach (KeyValuePair<Mod, Mod.File> keyValuePair in Registry.filesQueueToBeProcessedAfterGLDMerge)
+			{
+				Mod mod = keyValuePair.Key;
+				Mod.File file = keyValuePair.Value;
+				Match prefabsMatch = Regex.Match(Path.GetFileName(file.name), @"^prefabs(?:_(.*))?\.json$");
+				if (prefabsMatch.Success)
+				{
+					LoadPrefabsFile(mod, file);
+					continue;
+				}
+
+				Match unitPrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^unitPrefab(?:_(.*))?\.json$");
+				if (unitPrefabMatch.Success)
+				{
+					LoadUnitPrefabFile(mod, file);
+					continue;
+				}
+
+				Match improvementPrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^improvementPrefab(?:_(.*))?\.json$");
+				if (improvementPrefabMatch.Success)
+				{
+					LoadImprovementPrefabFile(mod, file);
+					continue;
+				}
+
+				Match resourcePrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^resourcePrefab(?:_(.*))?\.json$");
+				if (resourcePrefabMatch.Success)
+				{
+					LoadResourcePrefabFile(mod, file);
+					continue;
+				}
+
+			}
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on processing post gld merge files queue : {e.StackTrace}");
+		}
 	}
 
 	/// <summary>

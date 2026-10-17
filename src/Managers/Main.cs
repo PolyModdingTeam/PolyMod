@@ -436,40 +436,28 @@ public static class Main
 				Match prefabsMatch = Regex.Match(Path.GetFileName(file.name), @"^prefabs(?:_(.*))?\.json$");
 				if (prefabsMatch.Success)
 				{
-					Loader.LoadPrefabsFile(
-						mod,
-						file
-					);
+					Registry.filesQueueToBeProcessedAfterGLDMerge.Add(mod, file);
 					continue;
 				}
 
 				Match unitPrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^unitPrefab(?:_(.*))?\.json$");
 				if (unitPrefabMatch.Success)
 				{
-					Loader.LoadUnitPrefabFile(
-						mod,
-						file
-					);
+					Registry.filesQueueToBeProcessedAfterGLDMerge.Add(mod, file);
 					continue;
 				}
 
 				Match improvementPrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^improvementPrefab(?:_(.*))?\.json$");
 				if (improvementPrefabMatch.Success)
 				{
-					Loader.LoadImprovementPrefabFile(
-						mod,
-						file
-					);
+					Registry.filesQueueToBeProcessedAfterGLDMerge.Add(mod, file);
 					continue;
 				}
 
 				Match resourcePrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^resourcePrefab(?:_(.*))?\.json$");
 				if (resourcePrefabMatch.Success)
 				{
-					Loader.LoadResourcePrefabFile(
-						mod,
-						file
-					);
+					Registry.filesQueueToBeProcessedAfterGLDMerge.Add(mod, file);
 					continue;
 				}
 
@@ -493,6 +481,8 @@ public static class Main
 			TechItem.techTierFirebaseId.Add($"tech_research_{i}");
 		}
 		Loader.ProcessGameLogicData(gameLogicData, json);
+		Loader.ProcessFilesQueue();
+		Prefabs.CreatePrefabs();
 		stopwatch.Stop();
 		Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
 	}

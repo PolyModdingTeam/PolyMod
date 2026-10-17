@@ -66,6 +66,8 @@ public static class Registry
 	/// </summary>
 	public static int gameModesAutoidx = Enum.GetValues(typeof(GameMode)).Length;
 
+	public static Dictionary<Mod, Mod.File> filesQueueToBeProcessedAfterGLDMerge = new(); // I dont know whether I should do sum abt it
+
 	public static Sprite? GetSprite(string baseName, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default, int level = -1)
 	{
 		string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
@@ -77,8 +79,6 @@ public static class Registry
 	/// </summary>
 	public static Sprite? GetSpriteByText(string baseName, string tribeText = "", string skinText = "", int level = -1)
 	{
-		if(baseName.Contains("oil"))
-			Console.Write("YESSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS");
 		Sprite? sprite = null;
 		baseName = baseName.ToLower();
 		tribeText = tribeText.ToLower();
@@ -106,8 +106,7 @@ public static class Registry
 		{
 			sprite = sprites.GetOrDefault(spriteName, sprite);
 		}
-		if(baseName.Contains("oil"))
-			Console.Write(sprite == null);
+
 		return sprite;
 	}
 
