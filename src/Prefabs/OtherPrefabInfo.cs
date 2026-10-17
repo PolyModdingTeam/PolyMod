@@ -24,6 +24,9 @@ public class ImprovementPrefabInfo : BasePrefabInfo
     [JsonInclude]
     [JsonConverter(typeof(EnumCacheJson<ImprovementData.Type>))]
     public ImprovementData.Type? improvementType = null;
+
+    [JsonInclude]
+    public bool needsOutlines = false;
 }
 
 public class ResourcePrefabInfo : BasePrefabInfo

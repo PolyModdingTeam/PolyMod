@@ -392,6 +392,25 @@ internal static class Hub
                 {
                     continue;
                 }
+
+                int? sortingOrderOverride = null;
+                SpriteRenderer spriteRenderer = visualPart.visualPart.GetComponent<SpriteRenderer>();
+                if (spriteRenderer != null)
+                {
+                    sortingOrderOverride = spriteRenderer.sortingOrder;
+                }
+
+                int? outlineSortingOrderOverride = null;
+
+                if (visualPart.outline != null)
+                {
+                    spriteRenderer = visualPart.outline.GetComponent<SpriteRenderer>();
+                    if (spriteRenderer != null)
+                    {
+                        outlineSortingOrderOverride = spriteRenderer.sortingOrder;
+                    }
+                }
+
                 var visualPartInfo = new VisualPartInfo
                 {
                     coordinates = visualPart.visualPart.transform.position,
@@ -400,7 +419,9 @@ internal static class Hub
                     tintable = visualPart.tintable,
                     skinningLogic = visualPart.skinLogic,
                     improvementSkinningLogic = visualPart.improvementSkinLogic,
-                    levels = visualPart.levels
+                    levels = visualPart.levels,
+                    sortingOrderOverride = sortingOrderOverride,
+                    outlineSortingOrderOverride = outlineSortingOrderOverride
                 };
                 unitPrefabInfo.visualParts.Add(visualPartInfo);
 

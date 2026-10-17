@@ -243,41 +243,29 @@ public static class Visual
 
 	#endregion
 	#region UI
-	// check if still needed
 
-	/// <summary>Provides custom sprites for improvements in the UI.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeType), typeof(SkinType), typeof(SpriteAtlasManager))]
-	private static void UIUtils_GetImprovementSprite(ref Sprite __result, ImprovementData.Type improvement, TribeType tribe, SkinType skin, SpriteAtlasManager atlasManager)
+	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.TerrainToString))]
+	private static void SpriteData_TerrainToString(ref string __result, Polytopia.Data.TerrainData.Type terrain)
 	{
-		Sprite? sprite = Registry.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvement), tribe, skin);
-		Console.Write(EnumCache<ImprovementData.Type>.GetName(improvement));
-		Console.Write(sprite == null);
-		if (sprite != null)
-		{
-			__result = sprite;
-		}
+		if((int)terrain >= Plugin.AUTOIDX_STARTS_FROM)
+			__result = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(terrain);
 	}
 
-	/// <summary>Provides custom sprites for improvements in the UI.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(SkinVisualsTransientData), typeof(ImprovementData.Type), typeof(SpriteAtlasManager))]
-	private static void UIUtils_GetImprovementSprite_2(ref Sprite __result, SkinVisualsTransientData data, ImprovementData.Type improvement, SpriteAtlasManager atlasManager)
+	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.ResourceToString))]
+	private static void SpriteData_ResourceToString(ref string __result, ResourceData.Type resource)
 	{
-		UIUtils_GetImprovementSprite(ref __result, improvement, data.foundingTribeSettings.tribe, data.foundingTribeSettings.skin, atlasManager);
+		if((int)resource >= Plugin.AUTOIDX_STARTS_FROM)
+			__result = EnumCache<ResourceData.Type>.GetName(resource);
 	}
 
-	/// <summary>Provides custom sprites for resources in the UI.</summary>
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetResourceSprite))]
-	private static void UIUtils_GetResourceSprite(ref Sprite __result, SkinVisualsTransientData data, ResourceData.Type resource, SpriteAtlasManager atlasManager)
+	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.ImprovementToString))]
+	private static void SpriteData_ImprovementToString(ref string __result, ImprovementData.Type improvement)
 	{
-		TribeAndSkin tileClimateSettings = data.tileClimateSettings;
-		Sprite? sprite = Registry.GetSprite(EnumCache<ResourceData.Type>.GetName(resource), tileClimateSettings.tribe, tileClimateSettings.skin);
-		if (sprite != null)
-		{
-			__result = sprite;
-		}
+		if((int)improvement >= Plugin.AUTOIDX_STARTS_FROM)
+			__result = EnumCache<ImprovementData.Type>.GetName(improvement);
 	}
 
 	#endregion

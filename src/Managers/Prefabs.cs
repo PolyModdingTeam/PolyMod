@@ -14,7 +14,7 @@ public static class Prefabs
     internal static Dictionary<SkinnedKey, Unit> unitUIOverridesNew = new();
 
 	internal static Material? cachedUnitMaterial;
-	internal static Material? cachedResourceMaterial;
+	internal static Material? cachedSharedMaterial;
 
 	internal static Dictionary<string, List<byte[]>> prefabsFilesToProcess = new();
 
@@ -174,8 +174,8 @@ public static class Prefabs
 		{
 			if(loadedMaterial.name == "SpriteMaterial")
 			{
-				cachedResourceMaterial = loadedMaterial;
-				GameObject.DontDestroyOnLoad(cachedResourceMaterial);
+				cachedSharedMaterial = loadedMaterial;
+				GameObject.DontDestroyOnLoad(cachedSharedMaterial);
 				break;
 			}
 			Plugin.logger.LogInfo($"Material: {loadedMaterial.name}, shader: {loadedMaterial.shader.name}");
@@ -254,7 +254,7 @@ public static class Prefabs
 		newVisualInfo.Reverse();
 		foreach (var info in newVisualInfo)
 		{
-			parts.Add(CreateUnitVisualPart(info, spriteContainer, nextPartSortingOrder, nextOutlineSortingOrder));
+			parts.Add(CreateUnitVisualPart(info, spriteContainer, info.sortingOrderOverride ?? nextPartSortingOrder, info.outlineSortingOrderOverride ?? nextOutlineSortingOrder));
 			if(nextOutlineSortingOrder < -1)
 			{
 				nextOutlineSortingOrder++;
@@ -315,16 +315,119 @@ public static class Prefabs
 	#region Improvements
 	internal static void ProcessImprovementPrefabInfo(ImprovementPrefabInfo improvementPrefabInfo)
 	{
-		var baseImprovement = PrefabManager.GetPrefab(ImprovementData.Type.LumberHut);
+		if(improvementPrefabInfo.improvementType == null)
+			return;
+
+		var baseBuilding = PrefabManager.GetPrefab(ImprovementData.Type.LumberHut);
+		if (baseBuilding == null)
+			return;
+
+		var buildingInstance = GameObject.Instantiate(baseBuilding);
+		if (buildingInstance == null)
+			return;
+
+		Transform buildingTransform = buildingInstance.transform;
+		for (int childIndex = buildingTransform.childCount - 1; childIndex >= 0; childIndex--)
+		{
+			GameObject.Destroy(buildingTransform.GetChild(childIndex).gameObject);
+		}
+
+		var visualParts = ApplyBuildingVisualParts(improvementPrefabInfo, buildingTransform);
+
+		var svr = buildingInstance.GetComponent<SkinVisualsReference>();
+		svr.visualParts = visualParts.ToArray();
+
+		GameObject.DontDestroyOnLoad(buildingInstance.gameObject);
+
+		PrefabManager.improvements[(Polytopia.Data.ImprovementData.Type)improvementPrefabInfo.improvementType] = buildingInstance;
 	}
 
-	private static SkinVisualsReference.VisualPart CreateImprovementVisualPart(
+	private static List<SkinVisualsReference.VisualPart> ApplyBuildingVisualParts(
+		ImprovementPrefabInfo improvementPrefabInfo,
+		Transform spriteContainer)
+	{
+		List<SkinVisualsReference.VisualPart> parts = new();
+		List<VisualPartInfo> visualPartInfos = improvementPrefabInfo.visualParts;
+
+		if (visualPartInfos.Count == 0)
+			return parts;
+
+		int nextPartSortingOrder = 0;
+		int nextOutlineSortingOrder = -visualPartInfos.Count;
+		foreach (var info in visualPartInfos)
+		{
+			parts.Add(CreateBuildingVisualPart(info, spriteContainer, nextPartSortingOrder, nextOutlineSortingOrder, improvementPrefabInfo.needsOutlines));
+			if(nextOutlineSortingOrder < -1)
+			{
+				nextOutlineSortingOrder++;
+			}
+			nextPartSortingOrder++;
+		}
+
+		return parts;
+	}
+
+	private static SkinVisualsReference.VisualPart CreateBuildingVisualPart(
 		VisualPartInfo info,
 		Transform parent,
 		int visualPartSortingOrder,
-		int outlineSortingOrder)
+		int outlineSortingOrder,
+		bool needsOutline = false)
 	{
-		return new VisualPart();
+		var visualPartObj = new GameObject(info.defaultSpriteName);
+		visualPartObj.transform.SetParent(parent);
+
+		var outlineObj = new GameObject($"{info.defaultSpriteName}_Outline");
+		outlineObj.transform.SetParent(visualPartObj.transform);
+
+		visualPartObj.transform.position = outlineObj.transform.position = info.coordinates;
+		visualPartObj.transform.rotation = outlineObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
+
+		outlineObj.SetActive(false);
+
+		var visualPart = new SkinVisualsReference.VisualPart
+		{
+			DefaultSpriteName = info.defaultSpriteName,
+			visualPart = visualPartObj,
+			outline = outlineObj,
+			tintable = info.tintable,
+			skinLogic = info.skinningLogic,
+			improvementSkinLogic = info.improvementSkinningLogic,
+			levels = info.levels,
+			isImprovement = true,
+		};
+		var renderer = AddPolytopiaSpriteRenderer(visualPartObj, visualPartSortingOrder);
+		visualPart.renderer = new SkinVisualsReference.RendererUnion { polytopiaSpriteRenderer = renderer };
+
+		if(needsOutline)
+		{
+			var outlineRenderer = AddPolytopiaSpriteRenderer(outlineObj, outlineSortingOrder);
+			visualPart.outlineRenderer = new SkinVisualsReference.RendererUnion { polytopiaSpriteRenderer = outlineRenderer };
+		}
+
+		return visualPart;
+	}
+
+	private static PolytopiaSpriteRenderer AddPolytopiaSpriteRenderer(GameObject targetGameObject, int sortingOrder, string sortingLayerName = "Terrain")
+	{
+		MeshFilter meshFilter = targetGameObject.AddComponent<MeshFilter>();
+		MeshRenderer meshRenderer = targetGameObject.AddComponent<MeshRenderer>();
+		meshRenderer.receiveShadows = false;
+		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+		meshRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+		meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+
+		PolytopiaSpriteRenderer polytopiaSpriteRenderer = targetGameObject.AddComponent<PolytopiaSpriteRenderer>();
+		polytopiaSpriteRenderer.meshFilter = meshFilter;
+		polytopiaSpriteRenderer.meshRenderer = meshRenderer;
+
+		polytopiaSpriteRenderer.SortingLayer = SortingLayer.NameToID(sortingLayerName);
+		polytopiaSpriteRenderer.SortingOrder = sortingOrder;
+		if (cachedSharedMaterial != null)
+		{
+			polytopiaSpriteRenderer.SharedMaterial = cachedSharedMaterial;
+		}
+		return polytopiaSpriteRenderer;
 	}
 
 	#endregion
@@ -349,7 +452,7 @@ public static class Prefabs
 			GameObject.Destroy(resourceTransform.GetChild(childIndex).gameObject);
 		}
 
-		var visualParts = ApplyResourceVisualParts(resourcePrefabInfo, resourceInstance.transform);
+		var visualParts = ApplyResourceVisualParts(resourcePrefabInfo, resourceTransform);
 
 		var svr = resourceInstance.GetComponent<SkinVisualsReference>();
 		svr.visualParts = visualParts.ToArray();
@@ -419,28 +522,6 @@ public static class Prefabs
 		visualPart.outlineRenderer = new SkinVisualsReference.RendererUnion { polytopiaSpriteRenderer = outlineRenderer };
 
 		return visualPart;
-	}
-
-	private static PolytopiaSpriteRenderer AddPolytopiaSpriteRenderer(GameObject targetGameObject, int sortingOrder)
-	{
-		MeshFilter meshFilter = targetGameObject.AddComponent<MeshFilter>();
-		MeshRenderer meshRenderer = targetGameObject.AddComponent<MeshRenderer>();
-		meshRenderer.receiveShadows = false;
-		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-		meshRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
-		meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-
-		PolytopiaSpriteRenderer polytopiaSpriteRenderer = targetGameObject.AddComponent<PolytopiaSpriteRenderer>();
-		polytopiaSpriteRenderer.meshFilter = meshFilter;
-		polytopiaSpriteRenderer.meshRenderer = meshRenderer;
-
-		polytopiaSpriteRenderer.SortingLayer = SortingLayer.NameToID("Terrain");
-		polytopiaSpriteRenderer.SortingOrder = sortingOrder;
-		if (cachedResourceMaterial != null)
-		{
-			polytopiaSpriteRenderer.SharedMaterial = cachedResourceMaterial;
-		}
-		return polytopiaSpriteRenderer;
 	}
 
 	#endregion
