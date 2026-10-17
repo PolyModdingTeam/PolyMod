@@ -34,4 +34,48 @@ public class VisualPartInfo
 
     [JsonInclude]
     public int? outlineSortingOrderOverride = null;
+
+    public SkinVisualsReference.VisualPart ToVisualPart(bool isImprovement)
+    {
+        return new SkinVisualsReference.VisualPart
+		{
+			DefaultSpriteName = defaultSpriteName,
+			tintable = tintable,
+			skinLogic = skinningLogic,
+			improvementSkinLogic = improvementSkinningLogic,
+			levels = levels,
+			isImprovement = isImprovement,
+		};
+    }
+
+    public void CopyFromVisualPart(SkinVisualsReference.VisualPart visualPart)
+    {
+        int? sortingOrderOverride = null;
+        SpriteRenderer spriteRenderer = visualPart.visualPart.GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            sortingOrderOverride = spriteRenderer.sortingOrder;
+        }
+
+        int? outlineSortingOrderOverride = null;
+
+        if (visualPart.outline != null)
+        {
+            spriteRenderer = visualPart.outline.GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null)
+            {
+                outlineSortingOrderOverride = spriteRenderer.sortingOrder;
+            }
+        }
+
+        coordinates = visualPart.visualPart.transform.position;
+        rotation = visualPart.visualPart.transform.rotation.z;
+        defaultSpriteName = visualPart.DefaultSpriteName;
+        tintable = visualPart.tintable;
+        skinningLogic = visualPart.skinLogic;
+        improvementSkinningLogic = visualPart.improvementSkinLogic;
+        levels = visualPart.levels;
+        this.sortingOrderOverride = sortingOrderOverride;
+        this.outlineSortingOrderOverride = outlineSortingOrderOverride;
+    }
 }

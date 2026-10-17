@@ -285,16 +285,9 @@ public static class Prefabs
 		// this bs was hunting me for so long. that is the thing which makes outline hidden in ui
 		outlineObj.SetActive(false);
 
-		var visualPart = new SkinVisualsReference.VisualPart
-		{
-			DefaultSpriteName = info.defaultSpriteName,
-			visualPart = visualPartObj,
-			outline = outlineObj,
-			tintable = info.tintable,
-			skinLogic = info.skinningLogic,
-			improvementSkinLogic = info.improvementSkinningLogic,
-			levels = info.levels
-		};
+		var visualPart = info.ToVisualPart(false);
+		visualPart.visualPart = visualPartObj;
+		visualPart.outline = outlineObj;
 
 		var renderer = visualPartObj.AddComponent<SpriteRenderer>();
 		renderer.material = cachedUnitMaterial;
@@ -385,17 +378,10 @@ public static class Prefabs
 
 		outlineObj.SetActive(false);
 
-		var visualPart = new SkinVisualsReference.VisualPart
-		{
-			DefaultSpriteName = info.defaultSpriteName,
-			visualPart = visualPartObj,
-			outline = outlineObj,
-			tintable = info.tintable,
-			skinLogic = info.skinningLogic,
-			improvementSkinLogic = info.improvementSkinningLogic,
-			levels = info.levels,
-			isImprovement = true,
-		};
+		var visualPart = info.ToVisualPart(true);
+		visualPart.visualPart = visualPartObj;
+		visualPart.outline = outlineObj;
+
 		var renderer = AddPolytopiaSpriteRenderer(visualPartObj, visualPartSortingOrder);
 		visualPart.renderer = new SkinVisualsReference.RendererUnion { polytopiaSpriteRenderer = renderer };
 
@@ -505,16 +491,10 @@ public static class Prefabs
 
 		outlineObj.SetActive(false);
 
-		var visualPart = new SkinVisualsReference.VisualPart
-		{
-			DefaultSpriteName = info.defaultSpriteName,
-			visualPart = visualPartObj,
-			outline = outlineObj,
-			tintable = info.tintable,
-			skinLogic = info.skinningLogic,
-			improvementSkinLogic = info.improvementSkinningLogic,
-			levels = info.levels
-		};
+		var visualPart = info.ToVisualPart(false);
+		visualPart.visualPart = visualPartObj;
+		visualPart.outline = outlineObj;
+
 		var renderer = AddPolytopiaSpriteRenderer(visualPartObj, visualPartSortingOrder);
 		visualPart.renderer = new SkinVisualsReference.RendererUnion { polytopiaSpriteRenderer = renderer };
 

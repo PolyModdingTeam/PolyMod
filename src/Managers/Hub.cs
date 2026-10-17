@@ -393,41 +393,72 @@ internal static class Hub
                     continue;
                 }
 
-                int? sortingOrderOverride = null;
-                SpriteRenderer spriteRenderer = visualPart.visualPart.GetComponent<SpriteRenderer>();
-                if (spriteRenderer != null)
-                {
-                    sortingOrderOverride = spriteRenderer.sortingOrder;
-                }
-
-                int? outlineSortingOrderOverride = null;
-
-                if (visualPart.outline != null)
-                {
-                    spriteRenderer = visualPart.outline.GetComponent<SpriteRenderer>();
-                    if (spriteRenderer != null)
-                    {
-                        outlineSortingOrderOverride = spriteRenderer.sortingOrder;
-                    }
-                }
-
-                var visualPartInfo = new VisualPartInfo
-                {
-                    coordinates = visualPart.visualPart.transform.position,
-                    rotation = visualPart.visualPart.transform.rotation.z,
-                    defaultSpriteName = visualPart.DefaultSpriteName,
-                    tintable = visualPart.tintable,
-                    skinningLogic = visualPart.skinLogic,
-                    improvementSkinningLogic = visualPart.improvementSkinLogic,
-                    levels = visualPart.levels,
-                    sortingOrderOverride = sortingOrderOverride,
-                    outlineSortingOrderOverride = outlineSortingOrderOverride
-                };
+                var visualPartInfo = new VisualPartInfo { };
+                visualPartInfo.CopyFromVisualPart(visualPart);
                 unitPrefabInfo.visualParts.Add(visualPartInfo);
 
             }
             prefabsInfo.units.Add(unitPrefabInfo);
         }
+
+        foreach (Il2CppSystem.Collections.Generic.KeyValuePair<Polytopia.Data.ImprovementData.Type, Building> keyValuePairs in PrefabManager.improvements)
+        {
+            var unit = keyValuePairs.Value;
+            SkinVisualsReference skinVisualsReference = unit.GetComponent<SkinVisualsReference>();
+            if (skinVisualsReference == null || skinVisualsReference.visualParts == null)
+            {
+                Plugin.logger.LogWarning($"Dump skipped {keyValuePairs.Key}: no SkinVisualsReference");
+                continue;
+            }
+            ImprovementPrefabInfo improvementPrefabInfo = new()
+            {
+                improvementType = keyValuePairs.Key,
+                visualParts = new()
+            };
+            foreach (var visualPart in skinVisualsReference.visualParts)
+            {
+                if (visualPart == null || visualPart.visualPart == null)
+                {
+                    continue;
+                }
+
+                var visualPartInfo = new VisualPartInfo { };
+                visualPartInfo.CopyFromVisualPart(visualPart);
+                improvementPrefabInfo.visualParts.Add(visualPartInfo);
+
+            }
+            prefabsInfo.improvements.Add(improvementPrefabInfo);
+        }
+
+        foreach (Il2CppSystem.Collections.Generic.KeyValuePair<Polytopia.Data.ResourceData.Type, Resource> keyValuePairs in PrefabManager.resources)
+        {
+            var unit = keyValuePairs.Value;
+            SkinVisualsReference skinVisualsReference = unit.GetComponent<SkinVisualsReference>();
+            if (skinVisualsReference == null || skinVisualsReference.visualParts == null)
+            {
+                Plugin.logger.LogWarning($"Dump skipped {keyValuePairs.Key}: no SkinVisualsReference");
+                continue;
+            }
+            ResourcePrefabInfo resourcePrefabInfo = new()
+            {
+                resourceType = keyValuePairs.Key,
+                visualParts = new()
+            };
+            foreach (var visualPart in skinVisualsReference.visualParts)
+            {
+                if (visualPart == null || visualPart.visualPart == null)
+                {
+                    continue;
+                }
+
+                var visualPartInfo = new VisualPartInfo { };
+                visualPartInfo.CopyFromVisualPart(visualPart);
+                resourcePrefabInfo.visualParts.Add(visualPartInfo);
+
+            }
+            prefabsInfo.resources.Add(resourcePrefabInfo);
+        }
+
         File.WriteAllTextAsync(
             Path.Combine(Plugin.PREFABS_DUMP_PATH, $"prefabs.json"),
             JsonSerializer.Serialize(prefabsInfo, new JsonSerializerOptions { WriteIndented = true, Converters = { new Vector2Json() },})
