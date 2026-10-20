@@ -17,6 +17,9 @@ public class UnitPrefabInfo : BasePrefabInfo
 
     [JsonInclude]
     public string headPositionMarker = "";
+
+    [JsonInclude]
+    public bool uiOverride = false;
 }
 
 public class ImprovementPrefabInfo : BasePrefabInfo
@@ -34,4 +37,11 @@ public class ResourcePrefabInfo : BasePrefabInfo
     [JsonInclude]
     [JsonConverter(typeof(EnumCacheJson<ResourceData.Type>))]
     public ResourceData.Type? resourceType = null;
+}
+
+public class WeaponPrefabInfo
+{
+    [JsonInclude]
+    [JsonConverter(typeof(EnumCacheJson<UnitData.WeaponEnum>))]
+    public UnitData.WeaponEnum? weaponEnum = null;
 }

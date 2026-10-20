@@ -10,13 +10,11 @@ namespace PolyMod.Managers;
 public static class Prefabs
 {
     internal static Dictionary<SkinnedKey, Unit> unitsNew = new();
-    internal static Dictionary<OverrideCondition, Dictionary<UnitData.Type, Unit>> unitOverridesNew = new();
+    internal static Dictionary<OverrideCondition, Dictionary<UnitData.Type, Unit>> unitOverridesNew = new(); // maybe in the future will implement
     internal static Dictionary<SkinnedKey, Unit> unitUIOverridesNew = new();
 
 	internal static Material? cachedUnitMaterial;
 	internal static Material? cachedSharedMaterial;
-
-	internal static Dictionary<string, List<byte[]>> prefabsFilesToProcess = new();
 
 	public static List<UnitPrefabInfo> unitInfos = new();
 
@@ -235,6 +233,11 @@ public static class Prefabs
 
 		GameObject.DontDestroyOnLoad(unitInstance.gameObject);
 
+		if(unitPrefabInfo.uiOverride)
+		{
+			unitUIOverridesNew[unitPrefabInfo.skinnedKey] = unitInstance;
+			return;
+		}
 		unitsNew[unitPrefabInfo.skinnedKey] = unitInstance;
 	}
 
