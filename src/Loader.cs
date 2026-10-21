@@ -157,30 +157,47 @@ public static class Loader
 		[typeof(ImprovementData.Type)] = new List<Action<JObject, bool>>() {
 		new((token, duringEnumCacheCreation) =>
 		{
-			if (!duringEnumCacheCreation)
+			if (duringEnumCacheCreation)
+				return;
+
+			if (token["prefab"] != null && (bool)token["prefab"])
 			{
-				string improvementId = Util.GetJTokenName(token);
-				if (token["attractsResource"] != null)
+				bool levels = false;
+				if(token["maxLevel"] != null && (int)token["maxLevel"] > 0)
 				{
-					string attractsId = token["attractsResource"].ToString();
-					Main.attractsResourceNames[improvementId] = attractsId;
+					levels = true;
 				}
-				if (token["attractsToTerrain"] != null)
-				{
-					string attractsId = token["attractsToTerrain"].ToString();
-					Main.attractsTerrainNames[improvementId] = attractsId;
-				}
-				if(token["infoOverride"] != null)
-				{
-					Loc.buildingsInfoOverrides[improvementId] = Loc.ReplaceDashesWithDots(token["infoOverride"].ToString());
-				}
+				Prefabs.improvementPrefabInfosToCreate[(ImprovementData.Type)(int)token["idx"]] = levels;
+			}
+			string improvementId = Util.GetJTokenName(token);
+			if (token["attractsResource"] != null)
+			{
+				string attractsId = token["attractsResource"].ToString();
+				Main.attractsResourceNames[improvementId] = attractsId;
+			}
+			if (token["attractsToTerrain"] != null)
+			{
+				string attractsId = token["attractsToTerrain"].ToString();
+				Main.attractsTerrainNames[improvementId] = attractsId;
+			}
+			if(token["infoOverride"] != null)
+			{
+				Loc.buildingsInfoOverrides[improvementId] = Loc.ReplaceDashesWithDots(token["infoOverride"].ToString());
 			}
 		})
 		},
 
 		[typeof(ResourceData.Type)] = new List<Action<JObject, bool>>() {
 			new((token, duringEnumCacheCreation) =>
-			{ })
+			{
+				if (duringEnumCacheCreation)
+					return;
+
+				if (token["prefab"] != null && (bool)token["prefab"])
+				{
+					Prefabs.resourcePrefabsInfosToCreate.Add((ResourceData.Type)(int)token["idx"]);
+				}
+			})
 		},
 
 		[typeof(SkinData)] = new List<Action<JObject, bool>>() {

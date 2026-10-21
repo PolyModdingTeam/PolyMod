@@ -22,6 +22,9 @@ public static class Prefabs
 
 	public static List<ResourcePrefabInfo> resourceInfos = new();
 
+	internal static Dictionary<ImprovementData.Type, bool> improvementPrefabInfosToCreate = new();
+	internal static List<ResourceData.Type> resourcePrefabsInfosToCreate = new();
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.Awake))]
     private static void PrefabManager_Awake_Postfix(PrefabManager __instance)
@@ -177,6 +180,44 @@ public static class Prefabs
 				break;
 			}
 			Plugin.logger.LogInfo($"Material: {loadedMaterial.name}, shader: {loadedMaterial.shader.name}");
+		}
+
+		// creates dummy improvements. those have one visual part, and default name is the enum cache name of the type
+		foreach (KeyValuePair<ImprovementData.Type, bool> improvementInfo in improvementPrefabInfosToCreate)
+		{
+			ImprovementData.Type improvementType = improvementInfo.Key;
+			improvementInfos.Add(
+				new ImprovementPrefabInfo()
+				{
+					improvementType = improvementType,
+					visualParts = new()
+					{
+						new()
+						{
+							defaultSpriteName = EnumCache<ImprovementData.Type>.GetName(improvementType),
+							levels = improvementInfo.Value,
+						}
+					}
+				}
+			);
+		}
+
+		// creates dummy resources. those have one visual part, and default name is the enum cache name of the type
+		foreach (ResourceData.Type resourceType in resourcePrefabsInfosToCreate)
+		{
+			resourceInfos.Add(
+				new ResourcePrefabInfo()
+				{
+					resourceType = resourceType,
+					visualParts = new()
+					{
+						new()
+						{
+							defaultSpriteName = EnumCache<ResourceData.Type>.GetName(resourceType),
+						}
+					}
+				}
+			);
 		}
 
 		foreach (var unitPrefabInfo in unitInfos)

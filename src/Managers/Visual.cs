@@ -1,4 +1,3 @@
-using System.Reflection;
 using HarmonyLib;
 using Polytopia.Data;
 using UnityEngine;
@@ -92,108 +91,148 @@ public static class Visual
 			formattedName = formattedName.Replace(valuePair.Key, valuePair.Value);
 		}
 		cachedReversedNames[baseName] = formattedName;
-        return baseName;
+        return formattedName;
     }
 
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
-	private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance,
-        string baseName, TribeType tribe, SkinType skin, int level)
+	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.TrySolveSpriteNameForLevelSprites))]
+	private static void SpriteAtlasManager_TrySolveSpriteNameForLevelSprites(
+		ref bool __result,
+		SpriteAtlasManager __instance,
+		Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppStringArray spriteNameVariants, int level, ref string result)
 	{
-        Sprite? sprite = Registry.GetSprite(baseName, tribe, skin, level);
-		if (sprite != null)
-			__result.sprite = sprite;
+		if(!__result) __result = true; // will crash original lookup if false....
+	}
 
-        Sprite? outlineSprite = Registry.GetSprite(baseName + "_outline", tribe, skin, level);
-		if (outlineSprite != null)
-			__result.outlineSprite = outlineSprite;
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
+	private static void SpriteAtlasManager_DoSpriteLookup(
+		ref SpriteAtlasManager.SpriteLookupResult __result,
+		SpriteAtlasManager __instance,
+		string baseName, TribeType tribe, SkinType skin, int level)
+	{
+		ApplyRegisteredSprites(ref __result, baseName, tribe, skin, level);
 
 		string formattedName = FormatSpriteName(baseName);
-        sprite = Registry.GetSprite(formattedName, tribe, skin, level);
-		if (sprite != null)
-			__result.sprite = sprite;
+		if (formattedName != baseName)
+		{
+			ApplyRegisteredSprites(ref __result, formattedName, tribe, skin, level);
+		}
+	}
 
-		outlineSprite = Registry.GetSprite(formattedName + "_outline", tribe, skin, level);
-		if (outlineSprite != null)
-			__result.outlineSprite = outlineSprite;
+	private static void ApplyRegisteredSprites(
+		ref SpriteAtlasManager.SpriteLookupResult lookupResult,
+		string spriteName, TribeType tribe, SkinType skin, int level)
+	{
+		Sprite? registeredSprite = Registry.GetSprite(spriteName, tribe, skin, level);
+		if (registeredSprite != null)
+			lookupResult.sprite = registeredSprite;
+
+		Sprite? registeredOutlineSprite = Registry.GetSprite(spriteName + "_outline", tribe, skin, level);
+		if (registeredOutlineSprite != null)
+			lookupResult.outlineSprite = registeredOutlineSprite;
 	}
 
 	[HarmonyPrefix] // its obsolete so may be removed soon by midjiwan
 	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), new Type[]{ typeof(string), typeof(string), typeof(SpriteCallback) })]
     private static bool LoadSprite(string atlas, string sprite, SpriteCallback completion)
 	{
-        Sprite? spriteResult = Registry.GetSprite(sprite);
-
 		string formattedName = FormatSpriteName(sprite);
-		Sprite? formattedSprite = Registry.GetSprite(formattedName);
-		if (formattedSprite != null)
-			spriteResult = formattedSprite;
 
-		if (spriteResult != null)
+		Sprite? resolvedSprite = Registry.GetSprite(formattedName);
+
+		if (resolvedSprite == null && formattedName != sprite)
 		{
-			completion.Invoke(atlas, sprite, spriteResult);
-			return false;
+			resolvedSprite = Registry.GetSprite(sprite);
 		}
-		return true;
+
+		if (resolvedSprite == null)
+		{
+			return true;
+		}
+
+		completion.Invoke(atlas, sprite, resolvedSprite);
+		return false;
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.TerrainToString))]
+	private static void SpriteData_TerrainToString(ref string __result, Polytopia.Data.TerrainData.Type terrain)
+	{
+		if((int)terrain >= Plugin.AUTOIDX_STARTS_FROM)
+			__result = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(terrain);
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.ResourceToString))]
+	private static void SpriteData_ResourceToString(ref string __result, ResourceData.Type resource)
+	{
+		if((int)resource >= Plugin.AUTOIDX_STARTS_FROM)
+			__result = EnumCache<ResourceData.Type>.GetName(resource);
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.ImprovementToString))]
+	private static void SpriteData_ImprovementToString(ref string __result, ImprovementData.Type improvement)
+	{
+		if((int)improvement >= Plugin.AUTOIDX_STARTS_FROM)
+			__result = EnumCache<ImprovementData.Type>.GetName(improvement);
 	}
 
 	#endregion
 	#region Level
 
-	/// <summary>Updates the terrain graphics with custom sprites.</summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))] // recheck that
-	private static void TerrainRenderer_UpdateGraphics(TerrainRenderer __instance, Tile tile)
+	private static string GetLandSpriteName(TileData tileData)
 	{
-		string terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain) ?? string.Empty;
-
-		TribeType tribe = tile.data.climate;
-		SkinType skinType = tile.data.Skin;
-
-		string flood = "";
-		if (
-			tile.data.effects.Contains(TileData.EffectType.Flooded) ||
-			(tribe == TribeType.Aquarion && tile.data.terrain == Polytopia.Data.TerrainData.Type.Mountain)
-		) // TODO: Check all tribes with flooded abil instead of Aquarion only.
+		if (!tileData.HasEffect(TileData.EffectType.Flooded))
 		{
-			foreach (var effect in tile.data.effects)
-			{
-				if(customFloodingSkins.ContainsKey(effect))
-				{
-					skinType = customFloodingSkins[effect];
-					break;
-				}
-			}
-			flood = "_flooded";
+			return SpriteData.TerrainToString(Polytopia.Data.TerrainData.Type.Field);
 		}
-		if (tile.data.terrain is Polytopia.Data.TerrainData.Type.Forest or Polytopia.Data.TerrainData.Type.Mountain)
+
+		string wetlandSpriteName = SpriteData.TerrainToString(Polytopia.Data.TerrainData.Type.Wetland);
+
+		if (tileData.HasEffect(TileData.EffectType.Swamped))
 		{
-			string propertyName = terrain.ToLower();
-			terrain = "field";
+			return wetlandSpriteName + "_swamp";
+		}
 
-			PropertyInfo? rendererProperty = tile.GetType().GetProperty(propertyName + "Renderer",
-				BindingFlags.Public | BindingFlags.Instance);
-
-			if (rendererProperty != null)
+		foreach (TileData.EffectType effectType in tileData.effects)
+		{
+			if (customFloodingSkins.TryGetValue(effectType, out SkinType skinType))
 			{
-				PolytopiaSpriteRenderer? renderer = (PolytopiaSpriteRenderer?)rendererProperty.GetValue(tile);
-				if (renderer != null)
-				{
-					Sprite? additionalSprite = Registry.GetSprite(propertyName + flood, tribe, skinType);
-					if (additionalSprite != null)
-					{
-						renderer.Sprite = additionalSprite;
-						rendererProperty.SetValue(tile, renderer);
-					}
-				}
+				return $"{wetlandSpriteName}_{EnumCache<SkinType>.GetName(skinType)}";
 			}
 		}
 
-		Sprite? sprite = Registry.GetSprite(terrain + flood, tribe, skinType);
-		if (sprite != null)
+		return wetlandSpriteName;
+	}
+
+	/// <summary>Updates the terrain graphics with custom sprites.</summary>
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))] // Why prefix? I really hate repeating the logic. I would have to do the same bs 2 times.... anyway reviewers tell me ok?
+	private static bool TerrainRenderer_UpdateGraphics(TerrainRenderer __instance, Tile tile, TribeType climate, SkinType skin, bool shouldDesaturate)
+	{
+
+		string spriteName = tile.Data.terrain switch
 		{
-			__instance.spriteRenderer.Sprite = sprite;
+			Polytopia.Data.TerrainData.Type.Water => __instance.waterSprites.GetSpriteName(tile),
+			Polytopia.Data.TerrainData.Type.Ocean => __instance.oceanSprites.GetSpriteName(tile),
+			Polytopia.Data.TerrainData.Type.Ice   => __instance.iceSprites.GetSpriteName(tile),
+			_                                     => GetLandSpriteName(tile.Data),
+		};
+
+		SpriteAtlasManager.SpriteLookupResult spriteLookupResult = GameManager.GetSpriteAtlasManager().DoSpriteLookup(spriteName, climate, skin);
+		if (spriteLookupResult.HasSprite())
+		{
+			__instance.spriteRenderer.Sprite = spriteLookupResult.sprite;
 		}
+		if (shouldDesaturate != __instance.isDesaturated)
+		{
+			TerrainMaterialHelper.SetSpriteSaturated(__instance.SpriteRenderer, shouldDesaturate);
+			__instance.isDesaturated = shouldDesaturate;
+		}
+
+		return false;
 	}
 
 	/// <summary>Adds custom flood tile effect when tile is flooded for custom aqua skins.</summary>
@@ -229,43 +268,13 @@ public static class Visual
 	[HarmonyPatch(typeof(PolytopiaSpriteRenderer), nameof(PolytopiaSpriteRenderer.ForceUpdateMesh))]
 	private static void PolytopiaSpriteRenderer_ForceUpdateMesh(PolytopiaSpriteRenderer __instance)
 	{
-		if (__instance.sprite != null && string.IsNullOrEmpty(__instance.atlasName))
-		{
-			MaterialPropertyBlock materialPropertyBlock = new();
-			materialPropertyBlock.SetVector("_Flip", new Vector4(1f, 1f, 0f, 0f));
-			materialPropertyBlock.SetTexture("_MainTex", __instance.sprite.texture);
-			__instance.meshRenderer.SetPropertyBlock(materialPropertyBlock);
-		}
-	}
+		if (__instance.sprite == null || !string.IsNullOrEmpty(__instance.atlasName))
+			return;
 
-	#endregion
-	#region Tribe Preview
-
-	#endregion
-	#region UI
-
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.TerrainToString))]
-	private static void SpriteData_TerrainToString(ref string __result, Polytopia.Data.TerrainData.Type terrain)
-	{
-		if((int)terrain >= Plugin.AUTOIDX_STARTS_FROM)
-			__result = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(terrain);
-	}
-
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.ResourceToString))]
-	private static void SpriteData_ResourceToString(ref string __result, ResourceData.Type resource)
-	{
-		if((int)resource >= Plugin.AUTOIDX_STARTS_FROM)
-			__result = EnumCache<ResourceData.Type>.GetName(resource);
-	}
-
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.ImprovementToString))]
-	private static void SpriteData_ImprovementToString(ref string __result, ImprovementData.Type improvement)
-	{
-		if((int)improvement >= Plugin.AUTOIDX_STARTS_FROM)
-			__result = EnumCache<ImprovementData.Type>.GetName(improvement);
+		MaterialPropertyBlock materialPropertyBlock = new();
+		materialPropertyBlock.SetVector("_Flip", new Vector4(1f, 1f, 0f, 0f));
+		materialPropertyBlock.SetTexture("_MainTex", __instance.sprite.texture);
+		__instance.meshRenderer.SetPropertyBlock(materialPropertyBlock);
 	}
 
 	#endregion
@@ -357,12 +366,12 @@ public static class Visual
 	{
 		Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
 		texture.LoadImage(data);
-		Color[] pixels = texture.GetPixels();
-		for (int i = 0; i < pixels.Length; i++)
-		{
-			pixels[i] = new Color(pixels[i].r, pixels[i].g, pixels[i].b, pixels[i].a);
-		}
-		texture.SetPixels(pixels);
+		// Color[] pixels = texture.GetPixels();
+		// for (int i = 0; i < pixels.Length; i++)
+		// {
+		// 	pixels[i] = new Color(pixels[i].r, pixels[i].g, pixels[i].b, pixels[i].a);
+		// }
+		// texture.SetPixels(pixels);
 		texture.filterMode = FilterMode.Trilinear;
 		texture.Apply();
 		return BuildSpriteWithTexture(texture, pivot, pixelsPerUnit);

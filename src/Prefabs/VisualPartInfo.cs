@@ -18,7 +18,7 @@ public class VisualPartInfo
     public SkinVisualsReference.ImprovementSkinningLogic improvementSkinningLogic = SkinVisualsReference.ImprovementSkinningLogic.FoundingTribe; // improvement specific
 
     [JsonInclude]
-    public Vector2 coordinates = new Vector2();
+    public Vector2 coordinates = new Vector2(0, 0);
 
     [JsonInclude]
     public float rotation = 0f;
