@@ -481,8 +481,8 @@ public static class Main
 			TechItem.techTierFirebaseId.Add($"tech_research_{i}");
 		}
 		Loader.ProcessGameLogicData(gameLogicData, json);
-		Loader.CreateSprites();
 		Loader.ProcessFilesQueue();
+		Loader.CreateSprites();
 		Prefabs.CreatePrefabs();
 		stopwatch.Stop();
 		Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");

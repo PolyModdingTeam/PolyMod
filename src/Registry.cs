@@ -21,7 +21,7 @@ public static class Registry
 	/// </summary>
 	public static Dictionary<string, Sprite> sprites = new();
 
-	public static Dictionary<string, Texture2D> textures = new();
+	public static Dictionary<string, KeyValuePair<Texture2D, bool>> textures = new(); // string = texture name, bool, whether texture was processed or not. reviwers, pls tell me how to improve
 
 	/// <summary>
 	/// A dictionary of all loaded audio clips, keyed by their name.

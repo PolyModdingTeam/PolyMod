@@ -408,7 +408,6 @@ public static class Loader
 			}
 		}
 		Compatibility.HashSignatures(checksumString);
-
 	}
 	private static void CheckDependencies(Dictionary<string, Mod> mods)
 	{
@@ -608,11 +607,13 @@ public static class Loader
 	{
 		string name = Path.GetFileNameWithoutExtension(file.name);
 		Texture2D texture2D = Visual.BuildTexture(file.bytes);
-		Registry.textures[name] = texture2D;
+		Registry.textures[name] = new KeyValuePair<Texture2D, bool>(texture2D, false);
 	}
 
 	public static void CreateSprites()
 	{
+		SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
+
 		foreach (var spriteInfo in Registry.spriteInfos)
 		{
 			string name = spriteInfo.Key;
@@ -632,8 +633,6 @@ public static class Loader
 			float pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnitPreset;
 
 			Sprite? sprite = null;
-
-			SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
 
 			if (spriteData.spriteOrigin != null && spriteData.spriteOrigin.originType == Visual.OriginType.Inner)
 			{
@@ -675,8 +674,11 @@ public static class Loader
 			}
 			else
 			{
-				if(Registry.textures.TryGetValue(name, out Texture2D? texture2D))
-					sprite = Visual.BuildSpriteWithTexture(texture2D, pivot, pixelsPerUnit);
+				if(Registry.textures.TryGetValue(name, out KeyValuePair<Texture2D, bool> textureKeyValue))
+				{
+					sprite = Visual.BuildSpriteWithTexture(textureKeyValue.Key, pivot, pixelsPerUnit);
+					Registry.textures[name] = new KeyValuePair<Texture2D, bool>(textureKeyValue.Key, true);
+				}
 			}
 
 			if(sprite != null)
@@ -684,6 +686,28 @@ public static class Loader
 				spriteAtlasManager.cachedSprites.TryAdd("Heads", new());
 				spriteAtlasManager.cachedSprites["Heads"][name] = sprite;
 
+				Registry.sprites[name] = sprite;
+			}
+		}
+
+		foreach (var texturePair in Registry.textures)
+		{
+			if(!texturePair.Value.Value)
+			{
+				string name = texturePair.Key;
+
+				Vector2 pivot = name.Split("_")[0] switch
+				{
+					"field" => new(0.5f, 0.0f),
+					"mountain" => new(0.5f, -0.375f),
+					_ => new(0.5f, 0.5f),
+				};
+
+				float pixelsPerUnit = 2112f;
+
+				Sprite? sprite = Visual.BuildSpriteWithTexture(texturePair.Value.Key, pivot, pixelsPerUnit);
+				spriteAtlasManager.cachedSprites.TryAdd("Heads", new());
+				spriteAtlasManager.cachedSprites["Heads"][name] = sprite;
 				Registry.sprites[name] = sprite;
 			}
 		}
