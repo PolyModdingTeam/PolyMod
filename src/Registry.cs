@@ -21,6 +21,8 @@ public static class Registry
 	/// </summary>
 	public static Dictionary<string, Sprite> sprites = new();
 
+	public static Dictionary<string, Texture2D> textures = new();
+
 	/// <summary>
 	/// A dictionary of all loaded audio clips, keyed by their name.
 	/// </summary>

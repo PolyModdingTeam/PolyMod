@@ -464,7 +464,7 @@ public static class Main
 				switch (Path.GetExtension(file.name))
 				{
 					case ".png":
-						Loader.LoadSpriteFile(mod, file);
+						Loader.LoadTextureFile(mod, file);
 						break;
 					case ".wav":
 						Loader.LoadAudioFile(mod, file);
@@ -481,6 +481,7 @@ public static class Main
 			TechItem.techTierFirebaseId.Add($"tech_research_{i}");
 		}
 		Loader.ProcessGameLogicData(gameLogicData, json);
+		Loader.CreateSprites();
 		Loader.ProcessFilesQueue();
 		Prefabs.CreatePrefabs();
 		stopwatch.Stop();

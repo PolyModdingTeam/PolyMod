@@ -604,6 +604,96 @@ public static class Loader
 	/// </summary>
 	/// <param name="mod">The mod the sprite file belongs to.</param>
 	/// <param name="file">The sprite file to load.</param>
+	public static void LoadTextureFile(Mod mod, Mod.File file)
+	{
+		string name = Path.GetFileNameWithoutExtension(file.name);
+		Texture2D texture2D = Visual.BuildTexture(file.bytes);
+		Registry.textures[name] = texture2D;
+	}
+
+	public static void CreateSprites()
+	{
+		foreach (var spriteInfo in Registry.spriteInfos)
+		{
+			string name = spriteInfo.Key;
+
+			Visual.SpriteInfo spriteData = spriteInfo.Value;
+
+			Vector2 pivotPreset = name.Split("_")[0] switch
+			{
+				"field" => new(0.5f, 0.0f),
+				"mountain" => new(0.5f, -0.375f),
+				_ => new(0.5f, 0.5f),
+			};
+
+			float pixelsPerUnitPreset = 2112f;
+
+			Vector2 pivot = spriteData.pivot ?? pivotPreset;
+			float pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnitPreset;
+
+			Sprite? sprite = null;
+
+			SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
+
+			if (spriteData.spriteOrigin != null && spriteData.spriteOrigin.originType == Visual.OriginType.Inner)
+			{
+				Sprite originalSprite = spriteAtlasManager.DoSpriteLookup(spriteData.spriteOrigin.name, TribeType.None, SkinType.Default).sprite;
+
+				if (originalSprite != null)
+				{
+					bool hasPivotOverride = spriteData.pivot != null;
+					bool hasPixelsPerUnitOverride = spriteData.pixelsPerUnit != null;
+
+					if (hasPivotOverride || hasPixelsPerUnitOverride)
+					{
+						Rect originalTextureRectangle = originalSprite.textureRect;
+
+						Vector2 normalizedOriginalPivot = new(
+							originalSprite.pivot.x / originalTextureRectangle.width,
+							originalSprite.pivot.y / originalTextureRectangle.height
+						);
+
+						Vector2 finalPivot = hasPivotOverride ? spriteData.pivot!.Value : normalizedOriginalPivot;
+						float finalPixelsPerUnit = hasPixelsPerUnitOverride ? spriteData.pixelsPerUnit!.Value : originalSprite.pixelsPerUnit;
+
+						sprite = Sprite.Create(
+							originalSprite.texture,
+							originalTextureRectangle,
+							finalPivot,
+							finalPixelsPerUnit,
+							0,
+							SpriteMeshType.FullRect,
+							originalSprite.border
+						);
+						sprite.name = name;
+					}
+					else
+					{
+						sprite = originalSprite;
+					}
+				}
+			}
+			else
+			{
+				if(Registry.textures.TryGetValue(name, out Texture2D? texture2D))
+					sprite = Visual.BuildSpriteWithTexture(texture2D, pivot, pixelsPerUnit);
+			}
+
+			if(sprite != null)
+			{
+				spriteAtlasManager.cachedSprites.TryAdd("Heads", new());
+				spriteAtlasManager.cachedSprites["Heads"][name] = sprite;
+
+				Registry.sprites[name] = sprite;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Loads a sprite file from a mod.
+	/// </summary>
+	/// <param name="mod">The mod the sprite file belongs to.</param>
+	/// <param name="file">The sprite file to load.</param>
 	public static void LoadSpriteFile(Mod mod, Mod.File file)
 	{
 		string name = Path.GetFileNameWithoutExtension(file.name);
@@ -613,16 +703,21 @@ public static class Loader
 			"mountain" => new(0.5f, -0.375f),
 			_ => new(0.5f, 0.5f),
 		};
+
 		float pixelsPerUnit = 2112f;
+
 		if (Registry.spriteInfos.ContainsKey(name))
 		{
 			Visual.SpriteInfo spriteData = Registry.spriteInfos[name];
 			pivot = spriteData.pivot ?? pivot;
 			pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
 		}
+
 		Sprite sprite = Visual.BuildSprite(file.bytes, pivot, pixelsPerUnit);
+
 		GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
 		GameManager.GetSpriteAtlasManager().cachedSprites["Heads"][name] = sprite;
+
 		Registry.sprites[name] = sprite;
 	}
 

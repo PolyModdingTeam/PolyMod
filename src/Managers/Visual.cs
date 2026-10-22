@@ -13,7 +13,15 @@ namespace PolyMod.Managers;
 public static class Visual
 {
 	/// <summary>Represents information about a sprite, such as its pivot and pixels per unit.</summary>
-	public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot);
+	public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot, SpriteOrigin? spriteOrigin = null);
+
+	public record SpriteOrigin(string name, OriginType originType);
+
+	public enum OriginType
+	{
+		Outer, // Outer means sprite comes from a mod, and not from game's files
+		Inner // Inner means sprite is to be fetched from game's files
+	}
 
 	/// <summary>Represents information about a custom skin.</summary>
 	public record SkinInfo(int idx, string id, SkinData? skinData);
@@ -357,6 +365,15 @@ public static class Visual
 		return basicPopupLegacy;
 	}
 
+	public static Texture2D BuildTexture(byte[] data)
+	{
+		Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
+		texture.LoadImage(data);
+		texture.filterMode = FilterMode.Trilinear;
+		texture.Apply();
+		return texture;
+	}
+
 	/// <summary>Builds a sprite from raw byte data.</summary>
 	/// <param name="data">The raw byte data of the image.</param>
 	/// <param name="pivot">The pivot point of the sprite.</param>
@@ -364,17 +381,7 @@ public static class Visual
 	/// <returns>The created sprite.</returns>
 	public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
 	{
-		Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
-		texture.LoadImage(data);
-		// Color[] pixels = texture.GetPixels();
-		// for (int i = 0; i < pixels.Length; i++)
-		// {
-		// 	pixels[i] = new Color(pixels[i].r, pixels[i].g, pixels[i].b, pixels[i].a);
-		// }
-		// texture.SetPixels(pixels);
-		texture.filterMode = FilterMode.Trilinear;
-		texture.Apply();
-		return BuildSpriteWithTexture(texture, pivot, pixelsPerUnit);
+		return BuildSpriteWithTexture(BuildTexture(data), pivot, pixelsPerUnit);
 	}
 
 	/// <summary>Builds a sprite from a texture.</summary>
