@@ -482,7 +482,7 @@ public static class Main
 		}
 		Loader.ProcessGameLogicData(gameLogicData, json);
 		Loader.ProcessFilesQueue();
-		Loader.CreateSprites();
+		Visual.CreateSprites();
 		Prefabs.CreatePrefabs();
 		stopwatch.Stop();
 		Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");

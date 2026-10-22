@@ -4,6 +4,8 @@ using UnityEngine;
 using Il2CppSystem.Linq;
 using PolytopiaBackendBase.Common;
 using Il2CppInterop.Runtime;
+using System.Text.Json.Serialization;
+using PolyMod.Json;
 
 namespace PolyMod.Managers;
 
@@ -13,9 +15,34 @@ namespace PolyMod.Managers;
 public static class Visual
 {
 	/// <summary>Represents information about a sprite, such as its pivot and pixels per unit.</summary>
-	public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot, SpriteOrigin? spriteOrigin = null);
+	public class SpriteInfo
+	{
+		[JsonInclude]
+		public float? pixelsPerUnit;
 
-	public record SpriteOrigin(string name, OriginType originType);
+		[JsonInclude]
+		public Vector2? pivot;
+
+		[JsonInclude]
+		public SpriteOrigin? spriteOrigin = null;
+
+		public SpriteInfo(float? pixelsPerUnit, Vector2? pivot, SpriteOrigin? spriteOrigin = null)
+		{
+			this.pixelsPerUnit = pixelsPerUnit;
+			this.pivot = pivot;
+			this.spriteOrigin = spriteOrigin;
+		}
+	}
+
+	public class SpriteOrigin
+	{
+		[JsonInclude]
+		public string? name;
+
+		[JsonInclude]
+		[JsonConverter(typeof(EnumNameJson<OriginType>))]
+		public OriginType originType = OriginType.Outer;
+	}
 
 	public enum OriginType
 	{
@@ -311,6 +338,13 @@ public static class Visual
 		basicPopupWidths.Remove(__instance.GetInstanceID());
 	}
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
+    private static void StartScreen_UI2_OnShow()
+    {
+        CreateInnerOriginSprites();
+	}
+
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnWeeklyChallengeClicked))]
 	private static bool StartScreen_OnWeeklyChallengeClicked(StartScreen_UI2 __instance)
@@ -397,6 +431,182 @@ public static class Visual
 			pivot ?? new(0.5f, 0.5f),
 			pixelsPerUnit ?? 2112f
 		);
+	}
+
+	internal static List<KeyValuePair<string, Visual.SpriteInfo>> pendingInnerOriginSpriteInfos = new();
+
+	private static Vector2 GetPivotPreset(string spriteName)
+	{
+		return spriteName.Split("_")[0] switch
+		{
+			"field" => new Vector2(0.5f, 0.0f),
+			"mountain" => new Vector2(0.5f, -0.375f),
+			_ => new Vector2(0.5f, 0.5f),
+		};
+	}
+
+	internal static void RegisterSprite(SpriteAtlasManager spriteAtlasManager, string spriteName, Sprite sprite)
+	{
+		spriteAtlasManager.cachedSprites.TryAdd("Heads", new());
+		spriteAtlasManager.cachedSprites["Heads"][spriteName] = sprite;
+		Registry.sprites[spriteName] = sprite;
+	}
+
+	// Runs early: only touches your own textures, nothing from SpriteAtlasManager's lookup state.
+	public static void CreateSprites()
+	{
+		pendingInnerOriginSpriteInfos.Clear();
+
+		SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
+		const float defaultPixelsPerUnit = 2112f;
+
+		foreach (KeyValuePair<string, Visual.SpriteInfo> spriteInfoPair in Registry.spriteInfos)
+		{
+			string spriteName = spriteInfoPair.Key;
+			Visual.SpriteInfo spriteData = spriteInfoPair.Value;
+
+			bool isInnerOrigin = spriteData.spriteOrigin != null
+				&& spriteData.spriteOrigin.originType == Visual.OriginType.Inner;
+
+			if (isInnerOrigin)
+			{
+				pendingInnerOriginSpriteInfos.Add(spriteInfoPair);
+				continue;
+			}
+
+			if (!Registry.textures.TryGetValue(spriteName, out KeyValuePair<Texture2D, bool> textureEntry))
+			{
+				continue;
+			}
+
+			Vector2 pivot = spriteData.pivot ?? GetPivotPreset(spriteName);
+			float pixelsPerUnit = spriteData.pixelsPerUnit ?? defaultPixelsPerUnit;
+
+			Sprite sprite = Visual.BuildSpriteWithTexture(textureEntry.Key, pivot, pixelsPerUnit);
+			Registry.textures[spriteName] = new KeyValuePair<Texture2D, bool>(textureEntry.Key, true);
+			RegisterSprite(spriteAtlasManager, spriteName, sprite);
+		}
+
+		foreach (KeyValuePair<string, KeyValuePair<Texture2D, bool>> texturePair in Registry.textures)
+		{
+			if (texturePair.Value.Value)
+			{
+				continue;
+			}
+
+			string spriteName = texturePair.Key;
+			Sprite sprite = Visual.BuildSpriteWithTexture(texturePair.Value.Key, GetPivotPreset(spriteName), defaultPixelsPerUnit);
+			RegisterSprite(spriteAtlasManager, spriteName, sprite);
+		}
+	}
+
+	internal static (byte[], Visual.SpriteInfo) SpriteToPng(Sprite sprite)
+	{
+		Texture2D bakedTexture = BakeSpriteToTexture(sprite);
+
+		byte[] pngBytes = ImageConversion.EncodeToPNG(bakedTexture);
+		UnityEngine.Object.Destroy(bakedTexture);
+
+		return (pngBytes, new Visual.SpriteInfo(sprite.pixelsPerUnit, sprite.pivot));
+	}
+
+    private static Texture2D BakeSpriteToTexture(Sprite sourceSprite)
+    {
+        Texture2D atlasTexture = sourceSprite.texture;
+        int spriteWidth = (int)sourceSprite.rect.width;
+        int spriteHeight = (int)sourceSprite.rect.height;
+        float sourcePixelsPerUnit = sourceSprite.pixelsPerUnit;
+        Vector2 sourcePivotInPixels = sourceSprite.pivot;
+
+        var meshVertices = sourceSprite.vertices;
+        var meshUvs = sourceSprite.uv;
+        var meshTriangles = sourceSprite.triangles;
+
+        RenderTexture renderTexture = RenderTexture.GetTemporary(
+            spriteWidth, spriteHeight, 0,
+            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        RenderTexture previousActiveRenderTexture = RenderTexture.active;
+        RenderTexture.active = renderTexture;
+        GL.Clear(true, true, Color.clear);
+
+        Material spriteMaterial = new Material(Shader.Find("Sprites/Default"));
+        spriteMaterial.mainTexture = atlasTexture;
+        spriteMaterial.SetPass(0);
+
+        GL.PushMatrix();
+        GL.LoadPixelMatrix(0, spriteWidth, 0, spriteHeight);
+        GL.Begin(GL.TRIANGLES);
+        for (int triangleCornerIndex = 0; triangleCornerIndex < meshTriangles.Length; triangleCornerIndex++)
+        {
+            int vertexIndex = meshTriangles[triangleCornerIndex];
+            Vector2 uv = meshUvs[vertexIndex];
+            Vector2 vertex = meshVertices[vertexIndex];
+
+            GL.TexCoord(new Vector3(uv.x, uv.y, 0));
+            GL.Vertex3(
+                vertex.x * sourcePixelsPerUnit + sourcePivotInPixels.x,
+                vertex.y * sourcePixelsPerUnit + sourcePivotInPixels.y,
+                0);
+        }
+        GL.End();
+        GL.PopMatrix();
+
+        Texture2D bakedTexture = new Texture2D(spriteWidth, spriteHeight, TextureFormat.RGBA32, false);
+        bakedTexture.ReadPixels(new Rect(0, 0, spriteWidth, spriteHeight), 0, 0);
+        bakedTexture.Apply();
+        bakedTexture.wrapMode = TextureWrapMode.Clamp;
+
+        RenderTexture.active = previousActiveRenderTexture;
+        RenderTexture.ReleaseTemporary(renderTexture);
+        UnityEngine.Object.Destroy(spriteMaterial);
+
+        return bakedTexture;
+    }
+
+	public static void CreateInnerOriginSprites()
+	{
+		SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
+
+		foreach (KeyValuePair<string, SpriteInfo> spriteInfoPair in pendingInnerOriginSpriteInfos)
+		{
+			Console.Write(spriteInfoPair.Key);
+			string spriteName = spriteInfoPair.Key;
+			SpriteInfo spriteData = spriteInfoPair.Value;
+
+			Sprite originalSprite = spriteAtlasManager
+				.DoSpriteLookup(spriteData.spriteOrigin!.name, TribeType.None, SkinType.Default)
+				.sprite;
+
+			if (originalSprite == null)
+			{
+				Plugin.logger.LogWarning($"Inner origin sprite '{spriteData.spriteOrigin.name}' not found for '{spriteName}'");
+				continue;
+			}
+
+			bool hasPivotOverride = spriteData.pivot != null;
+			bool hasPixelsPerUnitOverride = spriteData.pixelsPerUnit != null;
+
+			Sprite sprite = originalSprite;
+
+			if (hasPivotOverride || hasPixelsPerUnitOverride)
+			{
+				Vector2 normalizedOriginalPivot = new(
+					originalSprite.pivot.x / originalSprite.rect.width,
+					originalSprite.pivot.y / originalSprite.rect.height
+				);
+
+				Vector2 finalPivot = hasPivotOverride ? spriteData.pivot!.Value : normalizedOriginalPivot;
+				float finalPixelsPerUnit = hasPixelsPerUnitOverride ? spriteData.pixelsPerUnit!.Value : originalSprite.pixelsPerUnit;
+
+				Texture2D bakedTexture = BakeSpriteToTexture(originalSprite);
+				sprite = BuildSpriteWithTexture(bakedTexture, finalPivot, finalPixelsPerUnit);
+				sprite.name = spriteName;
+			}
+
+			RegisterSprite(spriteAtlasManager, spriteName, sprite);
+		}
+
+		pendingInnerOriginSpriteInfos.Clear();
 	}
 
 	/// <summary>Initializes the Visual manager by patching the necessary methods.</summary>

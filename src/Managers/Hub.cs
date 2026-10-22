@@ -145,35 +145,36 @@ internal static class Hub
     /// <summary>
     /// Updates sprite information from dumped files.
     /// </summary>
-    internal static void UpdateSpriteInfos()
+    internal static void HotReload()
     {
-        string message = string.Empty;
-        Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
+        NotificationManager.Notify("FAILED: wip");
+        // string message = string.Empty;
+        // Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
 
-        foreach (var file in Directory.GetFiles(Plugin.DUMPED_DATA_PATH))
-        {
-            string? name = Path.GetFileNameWithoutExtension(file);
-            List<string> subnames = new();
-            if (name.Contains("sprites_"))
-            {
-                subnames = name.Split('_').ToList();
-                Mod.File spriteInfo = new(Path.GetFileNameWithoutExtension(file), File.ReadAllBytes(file));
-                Dictionary<string, Visual.SpriteInfo>? deserialized = Loader.LoadSpriteInfoFile(Registry.mods[subnames[1]], spriteInfo);
-                if (deserialized != null)
-                {
-                    foreach (var kvp in deserialized)
-                    {
-                        Loader.UpdateSprite(kvp.Key);
-                    }
-                    message += Localization.Get("polymod.hotreload.success", new Il2CppSystem.Object[] { subnames[1] });
-                }
-            }
-        }
-        if (message == string.Empty)
-        {
-            message = Localization.Get("polymod.hotreload.failure");
-        }
-        NotificationManager.Notify(message);
+        // foreach (var file in Directory.GetFiles(Plugin.DUMPED_DATA_PATH))
+        // {
+        //     string? name = Path.GetFileNameWithoutExtension(file);
+        //     List<string> subnames = new();
+        //     if (name.Contains("sprites_"))
+        //     {
+        //         subnames = name.Split('_').ToList();
+        //         Mod.File spriteInfo = new(Path.GetFileNameWithoutExtension(file), File.ReadAllBytes(file));
+        //         Dictionary<string, Visual.SpriteInfo>? deserialized = Loader.LoadSpriteInfoFile(Registry.mods[subnames[1]], spriteInfo);
+        //         if (deserialized != null)
+        //         {
+        //             foreach (var kvp in deserialized)
+        //             {
+        //                 Loader.UpdateSprite(kvp.Key);
+        //             }
+        //             message += Localization.Get("polymod.hotreload.success", new Il2CppSystem.Object[] { subnames[1] });
+        //         }
+        //     }
+        // }
+        // if (message == string.Empty)
+        // {
+        //     message = Localization.Get("polymod.hotreload.failure");
+        // }
+        // NotificationManager.Notify(message);
     }
 
     /// <summary>
@@ -269,7 +270,7 @@ internal static class Hub
                 Sprite sprite = spriteAtlasManager.GetSprite(spriteName, atlasName);
                 if (sprite == null) continue;
 
-                (byte[] bytes, Visual.SpriteInfo spriteInfo) =  SpriteToPng(sprite);
+                (byte[] bytes, Visual.SpriteInfo spriteInfo) = Visual.SpriteToPng(sprite);
                 File.WriteAllBytesAsync(Path.Combine(dir, spriteName + ".png"), bytes);
                 atlasSpriteInfo.Add(spriteName, spriteInfo);
             }
@@ -278,59 +279,6 @@ internal static class Hub
                 JsonSerializer.Serialize(atlasSpriteInfo, new JsonSerializerOptions { WriteIndented = true, Converters = { new PolyMod.Json.Vector2Json() }})
             );
         }
-    }
-
-    private static (byte[], Visual.SpriteInfo) SpriteToPng(Sprite sprite)
-    {
-        Texture2D atlasTexture = sprite.texture;
-        int spriteWidth = (int)sprite.rect.width;
-        int spriteHeight = (int)sprite.rect.height;
-        float pixelsPerUnit = sprite.pixelsPerUnit;
-        Vector2 spritePivot = sprite.pivot;
-
-        var meshVertices = sprite.vertices;
-        var meshUvs = sprite.uv;
-        var meshTriangles = sprite.triangles;
-
-        RenderTexture renderTexture = RenderTexture.GetTemporary(
-            spriteWidth, spriteHeight, 0,
-            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
-        RenderTexture previousActiveRenderTexture = RenderTexture.active;
-        RenderTexture.active = renderTexture;
-        GL.Clear(true, true, Color.clear);
-
-        var spriteMaterial = new Material(Shader.Find("Sprites/Default"));
-        spriteMaterial.mainTexture = atlasTexture;
-        spriteMaterial.SetPass(0);
-
-        GL.PushMatrix();
-        GL.LoadPixelMatrix(0, spriteWidth, 0, spriteHeight);
-        GL.Begin(GL.TRIANGLES);
-        for (int triangleCornerIndex = 0; triangleCornerIndex < meshTriangles.Length; triangleCornerIndex++)
-        {
-            int vertexIndex = meshTriangles[triangleCornerIndex];
-            Vector2 uv = meshUvs[vertexIndex];
-            Vector2 vertex = meshVertices[vertexIndex];
-
-            GL.TexCoord(new Vector3(uv.x, uv.y, 0));
-            GL.Vertex3(vertex.x * pixelsPerUnit + spritePivot.x,
-                    vertex.y * pixelsPerUnit + spritePivot.y, 0);
-        }
-        GL.End();
-        GL.PopMatrix();
-
-        var croppedTexture = new Texture2D(spriteWidth, spriteHeight, TextureFormat.RGBA32, false);
-        croppedTexture.ReadPixels(new Rect(0, 0, spriteWidth, spriteHeight), 0, 0);
-        croppedTexture.Apply();
-
-        RenderTexture.active = previousActiveRenderTexture;
-        RenderTexture.ReleaseTemporary(renderTexture);
-
-        byte[] pngBytes = ImageConversion.EncodeToPNG(croppedTexture);
-        UnityEngine.Object.Destroy(croppedTexture);
-        UnityEngine.Object.Destroy(spriteMaterial);
-        UnityEngine.Object.Destroy(sprite);
-        return (pngBytes, new Visual.SpriteInfo(pixelsPerUnit, spritePivot));
     }
 
     internal static void DumpTribePreviewLegacy()
@@ -528,7 +476,7 @@ internal static class Hub
             ));
             popupButtons.Add(new(
                 "polymod.hub.hotreload",
-                callback:  DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(UpdateSpriteInfos),
+                callback:  DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(HotReload),
                 closesPopup: false
             ));
         }
@@ -577,7 +525,7 @@ internal static class Hub
 
         void OnUpdateSpritesButtonClicked()
         {
-            UpdateSpriteInfos();
+            HotReload();
             isConfigPopupActive = false;
         }
 
