@@ -15,6 +15,7 @@ public static class Prefabs
 
 	internal static Material? cachedUnitMaterial;
 	internal static Material? cachedSharedMaterial;
+	internal const string CACHED_SHARED_MATERIAL_NAME = "SpriteMaterial";
 
 	public static List<UnitPrefabInfo> unitInfos = new();
 
@@ -173,13 +174,14 @@ public static class Prefabs
 		Material[] allLoadedMaterials = Resources.FindObjectsOfTypeAll<Material>();
 		foreach (Material loadedMaterial in allLoadedMaterials)
 		{
-			if(loadedMaterial.name == "SpriteMaterial")
+			// Plugin.logger.LogInfo($"Material: {loadedMaterial.name}, shader: {loadedMaterial.shader.name}");
+
+			if(loadedMaterial.name == CACHED_SHARED_MATERIAL_NAME)
 			{
 				cachedSharedMaterial = loadedMaterial;
 				GameObject.DontDestroyOnLoad(cachedSharedMaterial);
 				break;
 			}
-			Plugin.logger.LogInfo($"Material: {loadedMaterial.name}, shader: {loadedMaterial.shader.name}");
 		}
 
 		// creates dummy improvements. those have one visual part, and default name is the enum cache name of the type
@@ -304,7 +306,6 @@ public static class Prefabs
 				nextOutlineSortingOrder++;
 			}
 			nextPartSortingOrder++;
-			Console.Write($"{visualPartInfos.Count} New orders {nextPartSortingOrder} {nextOutlineSortingOrder}");
 		}
 
 		return parts;
@@ -512,7 +513,6 @@ public static class Prefabs
 				nextOutlineSortingOrder++;
 			}
 			nextPartSortingOrder++;
-			Console.Write($"{visualPartInfos.Count} New orders {nextPartSortingOrder} {nextOutlineSortingOrder}");
 		}
 
 		return parts;

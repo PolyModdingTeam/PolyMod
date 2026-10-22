@@ -460,13 +460,13 @@ public static class Visual
 		SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
 		const float defaultPixelsPerUnit = 2112f;
 
-		foreach (KeyValuePair<string, Visual.SpriteInfo> spriteInfoPair in Registry.spriteInfos)
+		foreach (KeyValuePair<string, SpriteInfo> spriteInfoPair in Registry.spriteInfos)
 		{
 			string spriteName = spriteInfoPair.Key;
-			Visual.SpriteInfo spriteData = spriteInfoPair.Value;
+			SpriteInfo spriteInfo = spriteInfoPair.Value;
 
-			bool isInnerOrigin = spriteData.spriteOrigin != null
-				&& spriteData.spriteOrigin.originType == Visual.OriginType.Inner;
+			bool isInnerOrigin = spriteInfo.spriteOrigin != null
+				&& spriteInfo.spriteOrigin.originType == OriginType.Inner;
 
 			if (isInnerOrigin)
 			{
@@ -474,13 +474,21 @@ public static class Visual
 				continue;
 			}
 
-			if (!Registry.textures.TryGetValue(spriteName, out KeyValuePair<Texture2D, bool> textureEntry))
+			KeyValuePair<Texture2D, bool> textureEntry;
+			if (!Registry.textures.TryGetValue(spriteName, out textureEntry)) // search texture
 			{
-				continue;
+				if (spriteInfo.spriteOrigin == null ||
+					spriteInfo.spriteOrigin.originType != OriginType.Outer ||
+					spriteInfo.spriteOrigin.name == null ||
+					!Registry.textures.TryGetValue(spriteInfo.spriteOrigin.name, out textureEntry)) // search texture in outer sprite origin
+				{
+					continue;
+				}
 			}
 
-			Vector2 pivot = spriteData.pivot ?? GetPivotPreset(spriteName);
-			float pixelsPerUnit = spriteData.pixelsPerUnit ?? defaultPixelsPerUnit;
+
+			Vector2 pivot = spriteInfo.pivot ?? GetPivotPreset(spriteName);
+			float pixelsPerUnit = spriteInfo.pixelsPerUnit ?? defaultPixelsPerUnit;
 
 			Sprite sprite = Visual.BuildSpriteWithTexture(textureEntry.Key, pivot, pixelsPerUnit);
 			Registry.textures[spriteName] = new KeyValuePair<Texture2D, bool>(textureEntry.Key, true);
@@ -569,7 +577,6 @@ public static class Visual
 
 		foreach (KeyValuePair<string, SpriteInfo> spriteInfoPair in pendingInnerOriginSpriteInfos)
 		{
-			Console.Write(spriteInfoPair.Key);
 			string spriteName = spriteInfoPair.Key;
 			SpriteInfo spriteData = spriteInfoPair.Value;
 
