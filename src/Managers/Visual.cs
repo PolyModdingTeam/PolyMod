@@ -26,11 +26,19 @@ public static class Visual
 		[JsonInclude]
 		public SpriteOrigin? spriteOrigin = null;
 
-		public SpriteInfo(float? pixelsPerUnit, Vector2? pivot, SpriteOrigin? spriteOrigin = null)
+		[JsonInclude]
+		public bool transformToOutline = false;
+
+		[JsonInclude]
+		public float? gaussianBlurRadius = null;
+
+		public SpriteInfo(float? pixelsPerUnit, Vector2? pivot, bool transformToOutline = false, SpriteOrigin? spriteOrigin = null, float? gaussianBlurRadius = null)
 		{
 			this.pixelsPerUnit = pixelsPerUnit;
 			this.pivot = pivot;
 			this.spriteOrigin = spriteOrigin;
+			this.transformToOutline = transformToOutline;
+			this.gaussianBlurRadius = gaussianBlurRadius;
 		}
 	}
 
@@ -413,9 +421,9 @@ public static class Visual
 	/// <param name="pivot">The pivot point of the sprite.</param>
 	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
 	/// <returns>The created sprite.</returns>
-	public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
+	public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f, bool transformToOutline = false, float? gaussianBlurRadius = null)
 	{
-		return BuildSpriteWithTexture(BuildTexture(data), pivot, pixelsPerUnit);
+		return BuildSpriteWithTexture(BuildTexture(data), pivot, pixelsPerUnit, transformToOutline, gaussianBlurRadius);
 	}
 
 	/// <summary>Builds a sprite from a texture.</summary>
@@ -423,17 +431,184 @@ public static class Visual
 	/// <param name="pivot">The pivot point of the sprite.</param>
 	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
 	/// <returns>The created sprite.</returns>
-	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f)
+	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f, bool transformToOutline = false, float? gaussianBlurRadius = null)
 	{
+		if(transformToOutline) texture = TransformToOutline(texture);
+
+		if(gaussianBlurRadius != null) texture = ApplyGaussianBlur(texture, gaussianBlurRadius.Value);
+
 		return Sprite.Create(
 			texture,
 			new(0, 0, texture.width, texture.height),
 			pivot ?? new(0.5f, 0.5f),
 			pixelsPerUnit ?? 2112f
-		);
+		);;
 	}
 
-	internal static List<KeyValuePair<string, Visual.SpriteInfo>> pendingInnerOriginSpriteInfos = new();
+    public static Texture2D TransformToOutline(Texture2D sourceTexture, int borderSizeInPixels = 8, Color? color = null)
+    {
+		Plugin.logger.LogInfo("Transforming texture to outline...");
+		if(color == null)
+			color = Color.white;
+
+        int sourceWidthInPixels = sourceTexture.width;
+        int sourceHeightInPixels = sourceTexture.height;
+        int outputWidthInPixels = sourceWidthInPixels + borderSizeInPixels * 2;
+        int outputHeightInPixels = sourceHeightInPixels + borderSizeInPixels * 2;
+
+        Color[] sourcePixels = sourceTexture.GetPixels();
+        bool[] filledMask = new bool[outputWidthInPixels * outputHeightInPixels];
+        int borderSquared = borderSizeInPixels * borderSizeInPixels;
+
+        for (int pixelY = 0; pixelY < sourceHeightInPixels; pixelY++)
+        {
+            for (int pixelX = 0; pixelX < sourceWidthInPixels; pixelX++)
+            {
+                if (sourcePixels[pixelY * sourceWidthInPixels + pixelX].a <= 0.01f) continue;
+
+                int centerX = pixelX + borderSizeInPixels;
+                int centerY = pixelY + borderSizeInPixels;
+
+                for (int offsetY = -borderSizeInPixels; offsetY <= borderSizeInPixels; offsetY++)
+                {
+                    for (int offsetX = -borderSizeInPixels; offsetX <= borderSizeInPixels; offsetX++)
+                    {
+                        if (offsetX * offsetX + offsetY * offsetY > borderSquared) continue;
+
+                        filledMask[(centerY + offsetY) * outputWidthInPixels + (centerX + offsetX)] = true;
+                    }
+                }
+            }
+        }
+
+        Color[] outputPixels = new Color[filledMask.Length];
+        for (int pixelIndex = 0; pixelIndex < outputPixels.Length; pixelIndex++)
+        {
+            outputPixels[pixelIndex] = filledMask[pixelIndex] ? color.Value : Color.clear;
+        }
+
+        Texture2D whiteSilhouetteTexture = new Texture2D(outputWidthInPixels, outputHeightInPixels, TextureFormat.RGBA32, false);
+        whiteSilhouetteTexture.SetPixels(outputPixels);
+        whiteSilhouetteTexture.Apply();
+        return whiteSilhouetteTexture;
+    }
+
+	private static float[] BuildGaussianKernelWeights(float sigma, int kernelRadiusInPixels)
+	{
+		float[] kernelWeights = new float[kernelRadiusInPixels * 2 + 1];
+		float kernelWeightSum = 0f;
+		for (int kernelIndex = 0; kernelIndex < kernelWeights.Length; kernelIndex++)
+		{
+			int distanceFromCenter = kernelIndex - kernelRadiusInPixels;
+			kernelWeights[kernelIndex] = MathF.Exp(-(distanceFromCenter * distanceFromCenter) / (2f * sigma * sigma));
+			kernelWeightSum += kernelWeights[kernelIndex];
+		}
+		for (int kernelIndex = 0; kernelIndex < kernelWeights.Length; kernelIndex++)
+		{
+			kernelWeights[kernelIndex] /= kernelWeightSum;
+		}
+		return kernelWeights;
+	}
+
+	private static byte ConvertUnitFloatToByte(float unitValue)
+	{
+		return (byte)Math.Clamp(unitValue * 255f + 0.5f, 0f, 255f);
+	}
+
+	// basically ai generated as my bs was working, but 15 times slower
+	public static Texture2D ApplyGaussianBlur(Texture2D sourceTexture, float radius = 2f)
+	{
+		Plugin.logger.LogInfo($"Applying blur with radius {radius}...");
+		int textureWidthInPixels = sourceTexture.width;
+		int textureHeightInPixels = sourceTexture.height;
+
+		float sigma = Math.Max(radius / 2f, 0.01f);
+		int kernelRadiusInPixels = Math.Max(1, (int)MathF.Ceiling(sigma * 3f));
+		float[] kernelWeights = BuildGaussianKernelWeights(sigma, kernelRadiusInPixels);
+
+		Color32[] sourcePixels = sourceTexture.GetPixels32();
+		int totalPixelCount = sourcePixels.Length;
+		const float byteToUnitFloat = 1f / 255f;
+
+		float[] premultipliedChannels = new float[totalPixelCount * 4];
+		for (int pixelIndex = 0; pixelIndex < totalPixelCount; pixelIndex++)
+		{
+			Color32 sourcePixel = sourcePixels[pixelIndex];
+			float alpha = sourcePixel.a * byteToUnitFloat;
+			int channelOffset = pixelIndex * 4;
+			premultipliedChannels[channelOffset + 0] = sourcePixel.r * byteToUnitFloat * alpha;
+			premultipliedChannels[channelOffset + 1] = sourcePixel.g * byteToUnitFloat * alpha;
+			premultipliedChannels[channelOffset + 2] = sourcePixel.b * byteToUnitFloat * alpha;
+			premultipliedChannels[channelOffset + 3] = alpha;
+		}
+
+		float[] horizontallyBlurredChannels = new float[premultipliedChannels.Length];
+		Parallel.For(0, textureHeightInPixels, pixelY =>
+		{
+			int rowStartPixelIndex = pixelY * textureWidthInPixels;
+			for (int pixelX = 0; pixelX < textureWidthInPixels; pixelX++)
+			{
+				float accumulatedRed = 0f, accumulatedGreen = 0f, accumulatedBlue = 0f, accumulatedAlpha = 0f;
+				for (int kernelIndex = 0; kernelIndex < kernelWeights.Length; kernelIndex++)
+				{
+					int sampleX = pixelX + kernelIndex - kernelRadiusInPixels;
+					if (sampleX < 0) sampleX = 0;
+					else if (sampleX >= textureWidthInPixels) sampleX = textureWidthInPixels - 1;
+
+					int sampleOffset = (rowStartPixelIndex + sampleX) * 4;
+					float kernelWeight = kernelWeights[kernelIndex];
+					accumulatedRed += premultipliedChannels[sampleOffset + 0] * kernelWeight;
+					accumulatedGreen += premultipliedChannels[sampleOffset + 1] * kernelWeight;
+					accumulatedBlue += premultipliedChannels[sampleOffset + 2] * kernelWeight;
+					accumulatedAlpha += premultipliedChannels[sampleOffset + 3] * kernelWeight;
+				}
+				int outputOffset = (rowStartPixelIndex + pixelX) * 4;
+				horizontallyBlurredChannels[outputOffset + 0] = accumulatedRed;
+				horizontallyBlurredChannels[outputOffset + 1] = accumulatedGreen;
+				horizontallyBlurredChannels[outputOffset + 2] = accumulatedBlue;
+				horizontallyBlurredChannels[outputOffset + 3] = accumulatedAlpha;
+			}
+		});
+
+		Color32[] blurredPixels = new Color32[totalPixelCount];
+		Parallel.For(0, textureHeightInPixels, pixelY =>
+		{
+			for (int pixelX = 0; pixelX < textureWidthInPixels; pixelX++)
+			{
+				float accumulatedRed = 0f, accumulatedGreen = 0f, accumulatedBlue = 0f, accumulatedAlpha = 0f;
+				for (int kernelIndex = 0; kernelIndex < kernelWeights.Length; kernelIndex++)
+				{
+					int sampleY = pixelY + kernelIndex - kernelRadiusInPixels;
+					if (sampleY < 0) sampleY = 0;
+					else if (sampleY >= textureHeightInPixels) sampleY = textureHeightInPixels - 1;
+
+					int sampleOffset = (sampleY * textureWidthInPixels + pixelX) * 4;
+					float kernelWeight = kernelWeights[kernelIndex];
+					accumulatedRed += horizontallyBlurredChannels[sampleOffset + 0] * kernelWeight;
+					accumulatedGreen += horizontallyBlurredChannels[sampleOffset + 1] * kernelWeight;
+					accumulatedBlue += horizontallyBlurredChannels[sampleOffset + 2] * kernelWeight;
+					accumulatedAlpha += horizontallyBlurredChannels[sampleOffset + 3] * kernelWeight;
+				}
+
+				Color32 blurredPixel = default;
+				if (accumulatedAlpha > 0.0001f)
+				{
+					blurredPixel.r = ConvertUnitFloatToByte(accumulatedRed / accumulatedAlpha);
+					blurredPixel.g = ConvertUnitFloatToByte(accumulatedGreen / accumulatedAlpha);
+					blurredPixel.b = ConvertUnitFloatToByte(accumulatedBlue / accumulatedAlpha);
+					blurredPixel.a = ConvertUnitFloatToByte(accumulatedAlpha);
+				}
+				blurredPixels[pixelY * textureWidthInPixels + pixelX] = blurredPixel;
+			}
+		});
+
+		Texture2D blurredTexture = new Texture2D(textureWidthInPixels, textureHeightInPixels, TextureFormat.RGBA32, false);
+		blurredTexture.SetPixels32(blurredPixels);
+		blurredTexture.Apply();
+		return blurredTexture;
+	}
+
+	internal static List<KeyValuePair<string, SpriteInfo>> pendingInnerOriginSpriteInfos = new();
 
 	private static Vector2 GetPivotPreset(string spriteName)
 	{
@@ -447,6 +622,7 @@ public static class Visual
 
 	internal static void RegisterSprite(SpriteAtlasManager spriteAtlasManager, string spriteName, Sprite sprite)
 	{
+		Plugin.logger.LogInfo($"Registering sprite {spriteName}");
 		spriteAtlasManager.cachedSprites.TryAdd("Heads", new());
 		spriteAtlasManager.cachedSprites["Heads"][spriteName] = sprite;
 		Registry.sprites[spriteName] = sprite;
@@ -455,6 +631,7 @@ public static class Visual
 	// Runs early: only touches your own textures, nothing from SpriteAtlasManager's lookup state.
 	public static void CreateSprites()
 	{
+		Plugin.logger.LogInfo($"Creating sprites with outer origin...");
 		pendingInnerOriginSpriteInfos.Clear();
 
 		SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
@@ -489,8 +666,10 @@ public static class Visual
 
 			Vector2 pivot = spriteInfo.pivot ?? GetPivotPreset(spriteName);
 			float pixelsPerUnit = spriteInfo.pixelsPerUnit ?? defaultPixelsPerUnit;
+			bool transformToOutline = spriteInfo.transformToOutline;
+			float? gaussianBlurRadius = spriteInfo.gaussianBlurRadius;
 
-			Sprite sprite = Visual.BuildSpriteWithTexture(textureEntry.Key, pivot, pixelsPerUnit);
+			Sprite sprite = BuildSpriteWithTexture(textureEntry.Key, pivot, pixelsPerUnit, transformToOutline, gaussianBlurRadius);
 			Registry.textures[spriteName] = new KeyValuePair<Texture2D, bool>(textureEntry.Key, true);
 			RegisterSprite(spriteAtlasManager, spriteName, sprite);
 		}
@@ -503,19 +682,29 @@ public static class Visual
 			}
 
 			string spriteName = texturePair.Key;
-			Sprite sprite = Visual.BuildSpriteWithTexture(texturePair.Value.Key, GetPivotPreset(spriteName), defaultPixelsPerUnit);
+			Sprite sprite = BuildSpriteWithTexture(texturePair.Value.Key, GetPivotPreset(spriteName), defaultPixelsPerUnit);
 			RegisterSprite(spriteAtlasManager, spriteName, sprite);
 		}
 	}
 
-	internal static (byte[], Visual.SpriteInfo) SpriteToPng(Sprite sprite)
+	internal static (byte[], SpriteInfo) SpriteToPng(Sprite sprite)
 	{
 		Texture2D bakedTexture = BakeSpriteToTexture(sprite);
 
 		byte[] pngBytes = ImageConversion.EncodeToPNG(bakedTexture);
 		UnityEngine.Object.Destroy(bakedTexture);
 
-		return (pngBytes, new Visual.SpriteInfo(sprite.pixelsPerUnit, sprite.pivot));
+		Vector2 normalizedPivot = GetNormalizedPivot(sprite);
+
+		return (pngBytes, new SpriteInfo(sprite.pixelsPerUnit, normalizedPivot));
+	}
+
+	private static Vector2 GetNormalizedPivot(Sprite sourceSprite)
+	{
+		return new Vector2(
+			sourceSprite.pivot.x / sourceSprite.rect.width,
+			sourceSprite.pivot.y / sourceSprite.rect.height
+		);
 	}
 
     private static Texture2D BakeSpriteToTexture(Sprite sourceSprite)
@@ -573,25 +762,26 @@ public static class Visual
 
 	public static void CreateInnerOriginSprites()
 	{
+		Plugin.logger.LogInfo($"Creating sprites with inner origin...");
 		SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
 
 		foreach (KeyValuePair<string, SpriteInfo> spriteInfoPair in pendingInnerOriginSpriteInfos)
 		{
 			string spriteName = spriteInfoPair.Key;
-			SpriteInfo spriteData = spriteInfoPair.Value;
+			SpriteInfo spriteInfo = spriteInfoPair.Value;
 
 			Sprite originalSprite = spriteAtlasManager
-				.DoSpriteLookup(spriteData.spriteOrigin!.name, TribeType.None, SkinType.Default)
+				.DoSpriteLookup(spriteInfo.spriteOrigin!.name, TribeType.None, SkinType.Default)
 				.sprite;
 
 			if (originalSprite == null)
 			{
-				Plugin.logger.LogWarning($"Inner origin sprite '{spriteData.spriteOrigin.name}' not found for '{spriteName}'");
+				Plugin.logger.LogWarning($"Inner origin sprite '{spriteInfo.spriteOrigin.name}' not found for '{spriteName}'");
 				continue;
 			}
 
-			bool hasPivotOverride = spriteData.pivot != null;
-			bool hasPixelsPerUnitOverride = spriteData.pixelsPerUnit != null;
+			bool hasPivotOverride = spriteInfo.pivot != null;
+			bool hasPixelsPerUnitOverride = spriteInfo.pixelsPerUnit != null;
 
 			Sprite sprite = originalSprite;
 
@@ -602,11 +792,13 @@ public static class Visual
 					originalSprite.pivot.y / originalSprite.rect.height
 				);
 
-				Vector2 finalPivot = hasPivotOverride ? spriteData.pivot!.Value : normalizedOriginalPivot;
-				float finalPixelsPerUnit = hasPixelsPerUnitOverride ? spriteData.pixelsPerUnit!.Value : originalSprite.pixelsPerUnit;
+				Vector2 finalPivot = hasPivotOverride ? spriteInfo.pivot!.Value : normalizedOriginalPivot;
+				float finalPixelsPerUnit = hasPixelsPerUnitOverride ? spriteInfo.pixelsPerUnit!.Value : originalSprite.pixelsPerUnit;
+				bool transformToOutline = spriteInfo.transformToOutline;
+				float? gaussianBlurRadius = spriteInfo.gaussianBlurRadius;
 
 				Texture2D bakedTexture = BakeSpriteToTexture(originalSprite);
-				sprite = BuildSpriteWithTexture(bakedTexture, finalPivot, finalPixelsPerUnit);
+				sprite = BuildSpriteWithTexture(bakedTexture, finalPivot, finalPixelsPerUnit, transformToOutline, gaussianBlurRadius);
 				sprite.name = spriteName;
 			}
 
