@@ -286,26 +286,30 @@ internal static class Hub
         // TODO legacy tribe preview dump. i have to update that
         foreach (TribeType type in Enum.GetValues(typeof(TribeType)))
         {
+            SaveStateData saveStateData = TribePreviewRegistry.GetTribePreviewData(type, SkinType.Default); // we should add to dump and create previews for skins
+
             List<TribePreviews.PreviewTile> previewTiles = new();
+
             SelectTribePopup popup = PopupManager.GetSelectTribePopup();
-            for (int x = -3; x <= 3; x++)
+            if (DiskSerializationHelpers.FromLZ4CompressedByteArray<ClientSerializationWrapper>(
+                saveStateData.byteArray, out ClientSerializationWrapper clientSerializationWrapper, out int version))
             {
-                for (int y = -7; y <= 7; y++)
+                GameState currentGameState = clientSerializationWrapper.GetCurrentGameState();
+
+                foreach (var tileData in currentGameState.Map.Tiles)
                 {
-                    Vector2Int pos = new Vector2Int(x, y);
-                    if (popup.UIWorldPreview.worldPreviewData.TryGetData(pos, type, out UITileData tileData))
+                    TribePreviews.PreviewTile previewTile = new TribePreviews.PreviewTile
                     {
-                        TribePreviews.PreviewTile previewTile = new TribePreviews.PreviewTile
-                        {
-                            x = tileData.Position.x,
-                            y = tileData.Position.y,
-                            terrainType = tileData.terrainType,
-                            resourceType = tileData.resourceType,
-                            unitType = tileData.unitType,
-                            improvementType = tileData.improvementType
-                        };
-                        previewTiles.Add(previewTile);
-                    }
+                        x = tileData.coordinates.x,
+                        y = tileData.coordinates.y,
+                        terrainType = tileData.terrain,
+                        resourceType = tileData.resource != null ? tileData.resource.type : null,
+                        unitType = tileData.unit != null ? tileData.unit.type : null,
+                        improvementType = tileData.improvement != null ? tileData.improvement.type : null,
+                        tileEffects = tileData.effects.ToArray().ToList()
+                    };
+
+                    previewTiles.Add(previewTile);
                 }
             }
             File.WriteAllTextAsync(
@@ -315,7 +319,7 @@ internal static class Hub
         }
     }
 
-    internal static void DumpPrefabs() // TODO
+    internal static void DumpPrefabs()
     {
         Directory.CreateDirectory(Plugin.PREFABS_DUMP_PATH);
         PrefabsInfo prefabsInfo = new();

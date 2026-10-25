@@ -38,6 +38,10 @@ public static class TribePreviews
 		[JsonInclude]
 		[JsonConverter(typeof(EnumCacheJson<ImprovementData.Type>))]
 		public ImprovementData.Type? improvementType = null;
+		/// <summary>The effect types on the tile.</summary>
+		[JsonInclude]
+		[JsonConverter(typeof(EnumCacheListJson<TileData.EffectType>))]
+		public List<TileData.EffectType> tileEffects = new();
 	}
 
     public record PreviewInfo(int arrayIdx, SaveStateData saveStateData, PreviewTile[] customPreview);
@@ -161,6 +165,11 @@ public static class TribePreviews
 							founder = currentGameState.CurrentPlayer
 						};
 					}
+				}
+
+				foreach (TileData.EffectType tileEffect in previewTile.tileEffects)
+				{
+					tileData.AddEffect(tileEffect);
 				}
 			}
 
