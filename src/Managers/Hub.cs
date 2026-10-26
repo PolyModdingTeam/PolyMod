@@ -186,7 +186,7 @@ internal static class Hub
         DumpLogic();
         DumpLocalization();
         DumpSprites();
-        DumpTribePreviewLegacy();
+        DumpTribePreview();
         DumpPrefabs();
         NotificationManager.Notify(Localization.Get("polymod.hub.dumped"));
     }
@@ -281,9 +281,8 @@ internal static class Hub
         }
     }
 
-    internal static void DumpTribePreviewLegacy()
+    internal static void DumpTribePreview()
     {
-        // TODO legacy tribe preview dump. i have to update that
         foreach (TribeType type in Enum.GetValues(typeof(TribeType)))
         {
             SaveStateData saveStateData = TribePreviewRegistry.GetTribePreviewData(type, SkinType.Default); // we should add to dump and create previews for skins

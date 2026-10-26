@@ -6,6 +6,7 @@ using PolytopiaBackendBase.Common;
 using Il2CppInterop.Runtime;
 using System.Text.Json.Serialization;
 using PolyMod.Json;
+using TMPro;
 
 namespace PolyMod.Managers;
 
@@ -224,6 +225,28 @@ public static class Visual
 
 	#endregion
 	#region Level
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(Tile), nameof(Tile.RenderDebug))]
+	public static void Tile_RenderDebug(Tile __instance)
+	{
+		if(!Plugin.config.debug)
+			return;
+
+		GameObject textObj = new GameObject("CoordinateText");
+		textObj.transform.SetParent(__instance.transform);
+		textObj.transform.localPosition = new Vector3(0, 0.0f, 0);
+
+		TextMeshPro textMesh = textObj.AddComponent<TextMeshPro>();
+		textMesh.text = __instance.Data.coordinates.ToString();
+		textMesh.fontSize = 3;
+		textMesh.alignment = TextAlignmentOptions.Center;
+		textMesh.color = Color.white;
+
+		MeshRenderer renderer = textObj.GetComponent<MeshRenderer>();
+		renderer.sortingLayerID = MeshCache.TERRAIN_LAYER_ID;
+		renderer.sortingOrder = __instance.Depth + 10;
+	}
 
 	private static string GetLandSpriteName(TileData tileData)
 	{

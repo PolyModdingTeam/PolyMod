@@ -5,7 +5,6 @@ using Il2CppSystem.Linq;
 using PolyMod.Json;
 using System.Text.Json.Serialization;
 using PolytopiaBackendBase.Common;
-using TMPro;
 
 namespace PolyMod.Managers;
 
@@ -46,9 +45,6 @@ public static class TribePreviews
 
     public record PreviewInfo(int arrayIdx, SaveStateData saveStateData, PreviewTile[] customPreview);
 
-	private static bool isTakingSnapshot = false;
-	private static float? baseOrthographicCameraSize = null;
-
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(TribePreviewRegistry), nameof(TribePreviewRegistry.PreloadTribePreviews))]
 	public static void PreloadTribePreviews()
@@ -58,7 +54,7 @@ public static class TribePreviews
 		SaveStateData fallbackSaveStateData = TribePreviewRegistry.saveStateDatas[TribePreviewRegistry.fallbackStateIndex];
 		foreach(string tribe in Registry.tribePreviews.Keys)
 		{
-			string previewId = GetTribePreviewName(tribe);
+			string previewId = "worldpreview_" + tribe;
 			PreviewTile[] customPreview = Registry.tribePreviews[tribe];
 			previewSaveStateDatas[previewId] = new(TribePreviewRegistry.fallbackStateIndex, fallbackSaveStateData, customPreview);
 		}
@@ -90,11 +86,6 @@ public static class TribePreviews
 				TribePreviewRegistry.saveStateDatas[data.arrayIdx] = customSaveStateData;
 			}
 		}
-	}
-
-	private static string GetTribePreviewName(string tribeType)
-	{
-		return "worldpreview_" + tribeType;
 	}
 
 	private static SaveStateData? ApplyCustomPreview(string previewId, SaveStateData originalPreview, PreviewTile[] preview)
@@ -184,52 +175,55 @@ public static class TribePreviews
 		return saveStateData;
 	}
 
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(SpriteCamera), nameof(SpriteCamera.TakeSnapshotOfMapState))]
-	private static bool SpriteCamera_TakeSnapshotOfMapState(ref Texture2D __result, SpriteCamera.SnapshotMapData mapSnapshot,
-		float w, float h, TribeType tribe, SkinType skin, TribeType climate, int color, bool clearMapAfterwards)
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SelectTribePopup), nameof(SelectTribePopup.SetBackground))]
+	private static void SelectTribePopup_SetBackground(SelectTribePopup __instance)
 	{
 		if(!Plugin.config.debug)
-			return true;
-
-		var instance = SpriteCamera.instance;
-		if(baseOrthographicCameraSize == null)
-			baseOrthographicCameraSize = instance.spriteCamera.orthographicSize;
-
-		instance.spriteCamera.orthographicSize = (float)baseOrthographicCameraSize * 2;
-		isTakingSnapshot = true;
-
-		return true;
-	}
-
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(SpriteCamera), nameof(SpriteCamera.TakeSnapshotOfMapState))]
-	private static void SpriteCamera_TakeSnapshotOfMapState_Postfix(ref Texture2D __result, SpriteCamera.SnapshotMapData mapSnapshot,
-		float w, float h, TribeType tribe, SkinType skin, TribeType climate, int color, bool clearMapAfterwards)
-	{
-		if(isTakingSnapshot)
-			isTakingSnapshot = false;
-	}
-
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(Tile), nameof(Tile.RenderDebug))]
-	public static void Tile_RenderDebug(Tile __instance)
-	{
-		if(!isTakingSnapshot)
 			return;
 
-		GameObject textObj = new GameObject("CoordinateText");
-		textObj.transform.SetParent(__instance.transform);
-		textObj.transform.localPosition = new Vector3(0, 0.0f, 0);
+		try
+		{
+			TribeType tribeType = (__instance.mixTribeData != null) ? __instance.mixTribeData.type : __instance.tribeData.type;
 
-		TextMeshPro textMesh = textObj.AddComponent<TextMeshPro>();
-		textMesh.text = __instance.Data.coordinates.ToString();
-		textMesh.fontSize = 3;
-		textMesh.alignment = TextAlignmentOptions.Center;
-		textMesh.color = Color.white;
+			__instance.mapSnapshot = new SpriteCamera.SnapshotMapData();
+			__instance.mapSnapshot.LoadMapState(
+				TribePreviewRegistry.GetTribePreviewData(tribeType, __instance.SkinType)
+			);
 
-		MeshRenderer renderer = textObj.GetComponent<MeshRenderer>();
-		renderer.sortingLayerID = MeshCache.TERRAIN_LAYER_ID;
-		renderer.sortingOrder = __instance.Depth + 10;
+			float width = __instance.worldPreviewRawImage.rectTransform.GetWidth();
+			float height = __instance.worldPreviewRawImage.rectTransform.GetHeight();
+
+			int tribeColor = PolytopiaDataManager.GetGameLogicData(
+				VersionManager.GameLogicDataVersion
+			).GetTribeColor(
+				tribeType,
+				__instance.SkinType
+			);
+			
+			var instance = SpriteCamera.instance;
+			float baseOrthographicCameraSize = instance.spriteCamera.orthographicSize;
+
+			instance.spriteCamera.orthographicSize = (float)baseOrthographicCameraSize * 2;
+
+			Texture2D texture2D = SpriteCamera.TakeSnapshotOfMapState(
+				__instance.mapSnapshot,
+				width,
+				height,
+				tribeType,
+				__instance.SkinType,
+				tribeType,
+				tribeColor
+			);
+
+			instance.spriteCamera.orthographicSize = baseOrthographicCameraSize;
+
+			__instance.worldPreviewRawImage.texture = texture2D;
+			__instance.worldPreviewRawImage.color = Color.white;
+		}
+		catch (Exception ex)
+		{
+			Plugin.logger.LogWarning($"Failed to load debug tribe preview {ex.Message}");
+		}
 	}
 }
