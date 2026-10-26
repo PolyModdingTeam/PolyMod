@@ -167,6 +167,9 @@ public static class TribePreviews
 					}
 				}
 
+				if(previewTile.tileEffects.Count > 0)
+					tileData.effects = new();
+
 				foreach (TileData.EffectType tileEffect in previewTile.tileEffects)
 				{
 					tileData.AddEffect(tileEffect);
