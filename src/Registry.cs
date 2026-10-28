@@ -70,16 +70,17 @@ public static class Registry
 
 	public static Dictionary<Mod, Mod.File> filesQueueToBeProcessedAfterGLDMerge = new(); // I dont know whether I should do sum abt it
 
-	public static Sprite? GetSprite(string baseName, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default, int level = -1)
+	public static Sprite? GetSprite(string baseName, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default, int level = -1, bool outline = false)
 	{
 		string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
 		string skinText = (skin == SkinType.Default) ? "" : EnumCache<SkinType>.GetName(skin);
-		return GetSpriteByText(baseName, tribeText, skinText, level);
+		string levelText = (level == -1) ? "" : level.ToString();
+		return GetSpriteByText(baseName, tribeText, skinText, levelText, outline);
 	}
 	/// <summary>
 	/// Gets a sprite from the registry, trying to find the best match.
 	/// </summary>
-	public static Sprite? GetSpriteByText(string baseName, string tribeText = "", string skinText = "", int level = -1)
+	public static Sprite? GetSpriteByText(string baseName, string tribeText = "", string skinText = "", string levelText = "", bool outline = false)
 	{
 		Sprite? sprite = null;
 		baseName = baseName.ToLower();
@@ -88,25 +89,17 @@ public static class Registry
 
 		List<string> spriteNameVariants = new();
 
-		if (level >= 0)
-		{
-			string levelText = level.ToString();
-			spriteNameVariants.Add(baseName + "_" + levelText);
-			spriteNameVariants.Add(baseName + "_" + levelText + "_" + tribeText);
-			spriteNameVariants.Add(baseName + "_" + levelText + "_" + skinText);
-			spriteNameVariants.Add(baseName + "_" + levelText + "_" + tribeText + "_" + skinText);
-		}
-		else
-		{
-			spriteNameVariants.Add(baseName);
-			spriteNameVariants.Add(baseName + "_" + tribeText);
-			spriteNameVariants.Add(baseName + "_" + skinText);
-			spriteNameVariants.Add(baseName + "_" + tribeText + "_" + skinText);
-		}
+		if (levelText != string.Empty)
+			baseName += $"_{levelText}";
+
+		spriteNameVariants.Add(baseName);
+		spriteNameVariants.Add(baseName + "_" + tribeText);
+		spriteNameVariants.Add(baseName + "_" + skinText);
+		spriteNameVariants.Add(baseName + "_" + tribeText + "_" + skinText);
 
 		foreach(string spriteName in spriteNameVariants)
 		{
-			sprite = sprites.GetOrDefault(spriteName, sprite);
+			sprite = sprites.GetOrDefault(outline ? spriteName + "_outline" : spriteName, sprite);
 		}
 
 		return sprite;

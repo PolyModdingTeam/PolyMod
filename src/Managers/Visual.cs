@@ -63,9 +63,20 @@ public static class Visual
 	public record SkinInfo(int idx, string id, SkinData? skinData);
 
 	/// <summary>A dictionary of custom widths for basic popups.</summary>
-	public static Dictionary<int, int> basicPopupWidths = new();
+	public static Dictionary<int, PopupWidth> basicPopupWidths = new();
+
+	public record PopupWidth(BasicPopupLegacy popup, float share, float maximum);
 
 	private const int BASIC_POPUP_LEGACY_ID = 29;
+
+	/// <summary>The width the game gives its own popups, used as the floor for custom widths.</summary>
+	private const float DEFAULT_POPUP_WIDTH = 402f;
+
+	/// <summary>Smallest gap left between two buttons before they are moved onto separate rows.</summary>
+	private const float POPUP_BUTTON_GAP = 8f;
+
+	/// <summary>Vertical gap between two rows of popup buttons.</summary>
+	private const float POPUP_BUTTON_ROW_GAP = 10f;
 	/// <summary>
 	/// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
 	/// </summary>
@@ -230,7 +241,7 @@ public static class Visual
 	[HarmonyPatch(typeof(Tile), nameof(Tile.RenderDebug))]
 	public static void Tile_RenderDebug(Tile __instance)
 	{
-		if(!Plugin.config.debug)
+		if(!Plugin.config.showCoordinates)
 			return;
 
 		GameObject textObj = new GameObject("CoordinateText");
@@ -354,11 +365,140 @@ public static class Visual
 		UpdateWidth(__instance);
 	}
 
-	private static void UpdateWidth(PopupBase __instance)
+	private static void UpdateWidth(PopupBase popup)
 	{
-		int id = __instance.GetInstanceID();
-		if (basicPopupWidths.ContainsKey(id))
-			__instance.rectTransform.SetWidth(basicPopupWidths[id]);
+		if (!basicPopupWidths.TryGetValue(popup.GetInstanceID(), out PopupWidth? width)) return;
+
+		popup.rectTransform.SetWidth(GetResponsivePopupWidth(width.share, width.maximum));
+		BasicPopupLegacy? legacy = popup.TryCast<BasicPopupLegacy>();
+		if (legacy != null && legacy.buttonContainer != null)
+			LayoutPopupButtons(legacy.buttonContainer);
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SystemEvents), nameof(SystemEvents.ScreenSizeChanged))]
+	private static void SystemEvents_ScreenSizeChanged()
+	{
+		RelayoutSizedPopups();
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SystemEvents), nameof(SystemEvents.SafeAreaChanged))]
+	private static void SystemEvents_SafeAreaChanged()
+	{
+		RelayoutSizedPopups();
+	}
+
+	private static void RelayoutSizedPopups()
+	{
+		foreach (PopupWidth width in new List<PopupWidth>(basicPopupWidths.Values))
+		{
+			try
+			{
+				if (width.popup == null || !width.popup.IsShowing()) continue;
+				width.popup.RefreshHeightWhenHeightIsKnownAndDontUseCoroutines(ScreenManager.SafeHeight);
+			}
+			catch (Exception exception)
+			{
+				Plugin.logger.LogError($"Could not lay a popup out after a screen size change: {exception}");
+			}
+		}
+	}
+
+	/// <summary>
+	/// Turns a share of the usable screen width into a popup width in canvas units.
+	/// The safe area is reported in screen pixels, so it is converted with the canvas scale the
+	/// game itself uses when it sizes popups.
+	/// </summary>
+	/// <param name="share">Share of the usable width to take, between 0 and 1.</param>
+	/// <param name="maximum">Widest the popup may get, so that text stays readable on wide screens.</param>
+	/// <returns>A width in canvas units, never below the width of the game's own popups.</returns>
+	public static int GetResponsivePopupWidth(float share, float maximum)
+	{
+		if (share <= 0f) return Mathf.RoundToInt(maximum);
+		float usable = ScreenManager.SafeWidth * UICanvasScalerHelper.GetInvertedUIScale();
+		float width = Mathf.Min(usable * share, maximum);
+		return Mathf.RoundToInt(Mathf.Max(width, DEFAULT_POPUP_WIDTH));
+	}
+
+	/// <summary>
+	/// Replaces the game's popup button layout. The game spaces the buttons with an integer division,
+	/// which stacks every button but the last on the left edge, and it never wraps, so a popup too
+	/// narrow for its buttons draws them on top of each other.
+	/// </summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(PopupButtonContainer), nameof(PopupButtonContainer.SetButtonData))]
+	private static void PopupButtonContainer_SetButtonData(PopupButtonContainer __instance)
+	{
+		LayoutPopupButtons(__instance);
+	}
+
+	/// <summary>
+	/// Lays a popup's buttons out in as many rows as the container's width needs.
+	/// </summary>
+	internal static void LayoutPopupButtons(PopupButtonContainer container)
+	{
+		if (container.buttons == null || container.buttons.Length == 0) return;
+
+		float available = container.rectTransform.rect.width;
+		if (available <= 0f) return;
+
+		List<List<UITextButton>> rows = PackButtonsIntoRows(container, available);
+
+		float rowHeight = 0f;
+		foreach (UITextButton button in container.buttons)
+		{
+			rowHeight = Mathf.Max(rowHeight, button.rectTransform.rect.height);
+		}
+		float stackHeight = rows.Count * rowHeight + (rows.Count - 1) * POPUP_BUTTON_ROW_GAP;
+
+		// The container sits at the bottom of the popup with a bottom pivot, so it grows upwards.
+		container.rectTransform.SetHeight(stackHeight);
+
+		for (int row = 0; row < rows.Count; row++)
+		{
+			float offsetY = stackHeight / 2f - rowHeight / 2f - row * (rowHeight + POPUP_BUTTON_ROW_GAP);
+			PlaceButtonRow(rows[row], offsetY);
+		}
+	}
+
+	/// <summary>
+	/// Fills one row at a time until the next button would no longer fit beside the previous ones.
+	/// </summary>
+	private static List<List<UITextButton>> PackButtonsIntoRows(PopupButtonContainer container, float available)
+	{
+		List<List<UITextButton>> rows = new() { new() };
+		float rowWidth = 0f;
+		foreach (UITextButton button in container.buttons)
+		{
+			float width = button.rectTransform.rect.width;
+			if (rows[^1].Count > 0 && rowWidth + POPUP_BUTTON_GAP + width > available)
+			{
+				rows.Add(new());
+				rowWidth = 0f;
+			}
+			rowWidth += (rows[^1].Count > 0 ? POPUP_BUTTON_GAP : 0f) + width;
+			rows[^1].Add(button);
+		}
+		return rows;
+	}
+
+	/// <summary>
+	/// Spreads one row of buttons across the container, or centres it when it holds a single button.
+	/// </summary>
+	private static void PlaceButtonRow(List<UITextButton> row, float offsetY)
+	{
+		for (int i = 0; i < row.Count; i++)
+		{
+			// Anchoring to a fraction of the container keeps the row spread as the popup resizes,
+			// which is how the game places the buttons of its own popups.
+			Vector2 anchor = new((row.Count == 1) ? 0.5f : (i / (row.Count - 1.0f)), 0.5f);
+			RectTransform rect = row[i].rectTransform;
+			rect.anchorMin = anchor;
+			rect.anchorMax = anchor;
+			rect.pivot = anchor;
+			rect.anchoredPosition = new Vector2(0f, offsetY);
+		}
 	}
 
 	/// <summary>Removes a popup's custom width when it is hidden.</summary>
@@ -410,7 +550,14 @@ public static class Visual
 	/// <summary>Shows a basic popup with a custom width.</summary>
 	public static void ShowSetWidth(this BasicPopupLegacy self, int width)
 	{
-		basicPopupWidths.Add(self.GetInstanceID(), width);
+		basicPopupWidths[self.GetInstanceID()] = new(self, 0f, width);
+		self.Show();
+	}
+
+	/// <summary>Shows a basic popup sized to a share of the usable screen width.</summary>
+	public static void ShowSetWidth(this BasicPopupLegacy self, float share, float maximum)
+	{
+		basicPopupWidths[self.GetInstanceID()] = new(self, share, maximum);
 		self.Show();
 	}
 

@@ -179,7 +179,7 @@ public static class TribePreviews
 	[HarmonyPatch(typeof(SelectTribePopup), nameof(SelectTribePopup.SetBackground))]
 	private static void SelectTribePopup_SetBackground(SelectTribePopup __instance)
 	{
-		if(!Plugin.config.debug)
+		if(!Plugin.config.showCoordinates)
 			return;
 
 		try

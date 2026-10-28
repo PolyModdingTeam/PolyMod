@@ -24,6 +24,7 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	/// <param name="debug">Whether to enable debug mode.</param>
 	internal record PolyConfig(
 		bool debug = false,
+		bool showCoordinates = false,
 		bool allowUnsafeIndexes = false,
 		string overrideDeviceId = ""
 	)
