@@ -658,11 +658,24 @@ public static class Loader
 	/// <param name="file">The audio file to load.</param>
 	public static void LoadAudioFile(Mod mod, Mod.File file)
 	{
-		// AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
-		// GameObject.DontDestroyOnLoad(audioSource);
-		// audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
-		// Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
-		// TODO: issue #71
+		string name = Path.GetFileNameWithoutExtension(file.name).ToLower();
+		try
+		{
+			AudioClip clip = Managers.Audio.BuildAudioClip(file.bytes, name);
+			AudioSource audioSource = new GameObject($"PolyModAudio_{name}").AddComponent<AudioSource>();
+			UnityEngine.Object.DontDestroyOnLoad(audioSource.gameObject);
+			audioSource.clip = clip;
+			Registry.audioClips[name] = audioSource;
+
+			Plugin.logger.LogInfo(
+				$"Registered audio {name} file from {mod.id} mod"
+					+ $" ({clip.channels}ch {clip.frequency}Hz {clip.length:F2}s)."
+			);
+		}
+		catch (Exception e)
+		{
+			Plugin.logger.LogError($"Error on loading audio {name} file from {mod.id} mod: {e.Message}");
+		}
 	}
 
 	public static void LoadPrefabsFile(Mod mod, Mod.File file)

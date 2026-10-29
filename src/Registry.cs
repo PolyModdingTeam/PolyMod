@@ -113,13 +113,34 @@ public static class Registry
 	/// <returns>The requested audio clip, or null if not found.</returns>
 	public static AudioClip? GetAudioClip(string name, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default)
 	{
-		AudioSource? audioSource = null;
-		name = name.ToLower();
 		string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
 		string skinText = (skin == SkinType.Default) ? "" : EnumCache<SkinType>.GetName(skin);
+		return GetAudioClipByText(name, tribeText, skinText);
+	}
+
+	/// <summary>
+	/// Gets an audio clip from the registry, trying to find the best match.
+	/// </summary>
+	public static AudioClip? GetAudioClipByText(string baseName, string tribeText = "", string skinText = "")
+	{
+		AudioSource? audioSource = null;
+		baseName = baseName.ToLower();
 		tribeText = tribeText.ToLower();
 		skinText = skinText.ToLower();
-		audioSource = audioClips.GetOrDefault($"{name}_{tribeText}_{skinText}", audioSource);
+
+		List<string> audioNameVariants = new()
+		{
+			baseName,
+			baseName + "_" + tribeText,
+			baseName + "_" + skinText,
+			baseName + "_" + tribeText + "_" + skinText,
+		};
+
+		foreach (string audioName in audioNameVariants)
+		{
+			audioSource = audioClips.GetOrDefault(audioName, audioSource);
+		}
+
 		if (audioSource == null) return null;
 		return audioSource.clip;
 	}
