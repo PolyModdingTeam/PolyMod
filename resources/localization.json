@@ -60,9 +60,13 @@
 		"German (Germany)": "DATENDUMP"
 	},
 	"polymod_hub_dumped": {
-		"English": "Dump completed successfully!",
-		"Russian": "Дамп завершен успешно!",
-		"German (Germany)": "Dump erfolgreich beendet!"
+		"English": "Dump completed successfully!\n\n{0}",
+		"Russian": "Дамп завершен успешно!\n\n{0}",
+		"German (Germany)": "Dump erfolgreich beendet!\n\n{0}"
+	},
+	"polymod_hub_openfolder": {
+		"English": "OPEN FOLDER",
+		"Russian": "ОТКРЫТЬ ПАПКУ"
 	},
 	"polymod_cycle": {
 		"English": "Dependency cycle detected",
@@ -218,18 +222,14 @@
 		"Russian": "{0} задан на {1}!",
 		"Elyrion": "{0} iȓ ȓ∑Ŧ Ŧȱ {1}!"
 	},
-	"polymod_hub_spriteinfo_update": {
-		"English": "UPDATE SPRITES",
-		"Russian": "ОБНОВИТЬ СПРАЙТЫ",
-		"Elyrion": "₺πΔaŦ∑ ȓπriŦ∑ȓ"
+	"polymod_hub_hotreload": {
+		"English": "HOT RELOAD"
 	},
-	"polymod_spriteinfo_updated": {
-		"English": "Sprite info for mod {0} updated!",
-		"Russian": "Данные спрайтов обновлены для мода {0}!",
-		"Elyrion": "ȓπriŦ∑ iŋ₼ȱ ₼ȱr mȱΔ {0} ₺πΔaŦ∑Δ!"
+	"polymod_hotreload_success": {
+		"English": "Hot reload completed for the mod {0}!"
 	},
-	"polymod_spriteinfo_notupdated": {
-		"English": "No sprite infos were found!",
+	"polymod_hotreload_failure": {
+		"English": "No mods for hot reload!",
 		"Russian": "Данные спрайтов не найдены!",
 		"Elyrion": "ŋȱ ȓπriŦ∑ iŋ₼ȱȓ ~∑r∑ ₼ȱ₺ŋΔ!"
 	},
@@ -242,5 +242,61 @@
 		"English": "PROCEED",
 		"Russian": "ПРОДОЛЖИТЬ",
 		"Elyrion": "πrȱ#∑∑Δ"
+	},
+	"polymod_title_invalid": {
+		"English": "Invalid Launch",
+		"Russian": "Неверный Запуск"
+	},
+	"polymod_description_invalid": {
+		"English": "PolyMod launch was invalid. Please, open the game via the PolyMod Launcher or proceed to our site to install it :)",
+		"Russian": "PolyMod запущен неккоректно. Пожалуйста, откройте игру через PolyMod Launcher или перейдите на наш сайт и установите его :)"
+	},
+	"buttons_download_launcher": {
+		"English": "OUR SITE",
+		"Russian": "НАШ САЙТ"
+	},
+	"polymod_hub_summary": {
+		"English": "{0} of {1} mods loaded.",
+		"Russian": "Загружено модов: {0} из {1}."
+	},
+	"polymod_hub_mods_none": {
+		"English": "No mods are installed yet. Put mod archives into the Mods folder next to the game and restart it.",
+		"Russian": "Моды пока не установлены. Положите архивы модов в папку Mods рядом с игрой и перезапустите её."
+	},
+	"polymod_hub_mod_authors": {
+		"English": "by {0}",
+		"Russian": "от {0}"
+	},
+	"polymod_hub_config_debug": {
+		"English": "DEBUG",
+		"Russian": "ОТЛАДКА"
+	},
+	"polymod_hub_config_coordinates": {
+		"English": "COORDINATES",
+		"Russian": "КООРДИНАТЫ"
+	},
+	"polymod_debug_description": {
+		"English": "Opens the developer console and writes verbose logs.",
+		"Russian": "Открывает консоль разработчика и включает подробные логи."
+	},
+	"polymod_coordinates": {
+		"English": "Coordinates",
+		"Russian": "Координаты"
+	},
+	"polymod_coordinates_description": {
+		"English": "Shows the coordinates of every tile on the map.",
+		"Russian": "Показывает координаты каждой клетки на карте."
+	},
+	"polymod_on": {
+		"English": "ON",
+		"Russian": "ВКЛ"
+	},
+	"polymod_off": {
+		"English": "OFF",
+		"Russian": "ВЫКЛ"
+	},
+	"polymod_hotreload_unavailable": {
+		"English": "Hot reload is not available yet.",
+		"Russian": "Горячая перезагрузка пока недоступна."
 	}
 }

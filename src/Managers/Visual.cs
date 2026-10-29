@@ -1,14 +1,11 @@
-using System.Reflection;
 using HarmonyLib;
 using Polytopia.Data;
 using UnityEngine;
-using UnityEngine.U2D;
-using UnityEngine.UI;
 using Il2CppSystem.Linq;
-using PolyMod.Json;
-using System.Text.Json.Serialization;
 using PolytopiaBackendBase.Common;
 using Il2CppInterop.Runtime;
+using System.Text.Json.Serialization;
+using PolyMod.Json;
 using TMPro;
 
 namespace PolyMod.Managers;
@@ -18,109 +15,76 @@ namespace PolyMod.Managers;
 /// </summary>
 public static class Visual
 {
-    /// <summary>
-    /// Represents a tile in a tribe preview.
-    /// </summary>
-    public class PreviewTile
-    {
-        /// <summary>The x-coordinate of the tile.</summary>
-        [JsonInclude]
-        public int? x = null;
-        /// <summary>The y-coordinate of the tile.</summary>
-        [JsonInclude]
-        public int? y = null;
-        /// <summary>The terrain type of the tile.</summary>
-        [JsonInclude]
-        [JsonConverter(typeof(EnumCacheJson<Polytopia.Data.TerrainData.Type>))]
-        public Polytopia.Data.TerrainData.Type terrainType = Polytopia.Data.TerrainData.Type.None;
-        /// <summary>The resource type on the tile.</summary>
-        [JsonInclude]
-        [JsonConverter(typeof(EnumCacheJson<ResourceData.Type>))]
-        public ResourceData.Type? resourceType = null;
-        /// <summary>The unit type on the tile.</summary>
-        [JsonInclude]
-        [JsonConverter(typeof(EnumCacheJson<UnitData.Type>))]
-        public UnitData.Type? unitType = null;
-        /// <summary>The improvement type on the tile.</summary>
-        [JsonInclude]
-        [JsonConverter(typeof(EnumCacheJson<ImprovementData.Type>))]
-        public ImprovementData.Type? improvementType = null;
-    }
+	/// <summary>Represents information about a sprite, such as its pivot and pixels per unit.</summary>
+	public class SpriteInfo
+	{
+		[JsonInclude]
+		public float? pixelsPerUnit;
 
-    /// <summary>Represents information about a sprite, such as its pivot and pixels per unit.</summary>
-    public record SpriteInfo(float? pixelsPerUnit, Vector2? pivot);
+		[JsonInclude]
+		public Vector2? pivot;
+
+		[JsonInclude]
+		public SpriteOrigin? spriteOrigin = null;
+
+		[JsonInclude]
+		public bool transformToOutline = false;
+
+		[JsonInclude]
+		public float? gaussianBlurRadius = null;
+
+		public SpriteInfo(float? pixelsPerUnit, Vector2? pivot, bool transformToOutline = false, SpriteOrigin? spriteOrigin = null, float? gaussianBlurRadius = null)
+		{
+			this.pixelsPerUnit = pixelsPerUnit;
+			this.pivot = pivot;
+			this.spriteOrigin = spriteOrigin;
+			this.transformToOutline = transformToOutline;
+			this.gaussianBlurRadius = gaussianBlurRadius;
+		}
+	}
+
+	public class SpriteOrigin
+	{
+		[JsonInclude]
+		public string? name;
+
+		[JsonInclude]
+		[JsonConverter(typeof(EnumNameJson<OriginType>))]
+		public OriginType originType = OriginType.Outer;
+	}
+
+	public enum OriginType
+	{
+		Outer, // Outer means sprite comes from a mod, and not from game's files
+		Inner // Inner means sprite is to be fetched from game's files
+	}
 
     /// <summary>Represents information about a custom skin.</summary>
     public record SkinInfo(int idx, string id, SkinData? skinData);
 
-    /// <summary>A dictionary of custom widths for basic popups.</summary>
-    public static Dictionary<int, int> basicPopupWidths = new();
-    /// <summary>Represents information about a unit prefab.</summary>
-    public struct UnitPrefabInfo
-    {
-        public UnitPrefabInfo(string type, string tribe, string skin)
-        {
-            this.type = type;
-            this.tribe = tribe;
-            this.skin = skin;
-        }
-        public string type;
-        public string tribe;
-        public string skin;
-    }
-    private const int BASIC_POPUP_LEGACY_ID = 29;
-    public static Dictionary<UnitPrefabInfo, Unit> customPrefabs = new();
-    private static UnitData.Type currentUnitTypeUI = UnitData.Type.None;
-    private static TribeType attackerTribe = TribeType.None;
-    /// <summary>
-    /// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
-    /// </summary>
-    internal static Dictionary<TileData.EffectType, SkinType> customFloodingSkins = new();
-    private static bool isTakingSnapshot = false;
-    private static float? baseOrthographicCameraSize = null;
+	/// <summary>A dictionary of custom widths for basic popups.</summary>
+	public static Dictionary<int, PopupWidth> basicPopupWidths = new();
 
-    /// <summary>The type of a custom prefab.</summary>
-    public enum PrefabType
-    {
-        Unit,
-        Improvement,
-        Resource
-    }
+	public record PopupWidth(BasicPopupLegacy popup, float share, float maximum);
 
-    /// <summary>Represents information about a custom prefab.</summary>
-    public record PrefabInfo
-    {
-        public PrefabType type { get; init; }
-        public string name { get; init; }
-        public List<VisualPartInfo> visualParts { get; init; }
-        public string headPositionMarker { get; init; }
+	private const int BASIC_POPUP_LEGACY_ID = 29;
 
-        [JsonConstructor]
-        public PrefabInfo(
-            PrefabType type,
-            List<VisualPartInfo> visualParts,
-            string name = "",
-            string headPositionMarker = "")
-        {
-            this.type = type;
-            this.name = name.ToLowerInvariant();
-            this.visualParts = visualParts;
-            this.headPositionMarker = headPositionMarker;
-        }
-    }
+	/// <summary>The width the game gives its own popups, used as the floor for custom widths.</summary>
+	private const float DEFAULT_POPUP_WIDTH = 402f;
 
-    /// <summary>Represents information about a visual part of a prefab.</summary>
-    public record VisualPartInfo(
-        string gameObjectName,
-        string baseName,
-        float rotation = 0f,
-        Vector2 coordinates = new Vector2(),
-        Vector2 scale = new Vector2(),
-        bool tintable = false
-    );
-    private static bool enableOutlines = false;
-    private static bool seenWarningWCPopup = false;
-    public record PreviewInfo(int arrayIdx, SaveStateData saveStateData, PreviewTile[] customPreview);
+	/// <summary>Smallest gap left between two buttons before they are moved onto separate rows.</summary>
+	private const float POPUP_BUTTON_GAP = 8f;
+
+	/// <summary>Vertical gap between two rows of popup buttons.</summary>
+	private const float POPUP_BUTTON_ROW_GAP = 10f;
+	/// <summary>
+	/// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
+	/// </summary>
+	internal static Dictionary<TileData.EffectType, SkinType> customFloodingSkins = new();
+	private static bool seenWarningWCPopup = false;
+
+    private static Dictionary<string, string>? cachedSpriteDataReverse = null;
+	private static Dictionary<string, string> cachedReversedNames = new();
 
     #region General
 
@@ -131,242 +95,222 @@ public static class Visual
     {
     }
 
-    /// <summary>Patches the sprite atlas manager to load custom sprites.</summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), typeof(string), typeof(string), typeof(SpriteCallback))]
-    private static bool SpriteAtlasManager_LoadSprite(SpriteAtlasManager __instance, string atlas, string sprite, SpriteCallback completion)
-    {
-        bool found = false;
-        __instance.LoadSpriteAtlas(atlas, (Il2CppSystem.Action<UnityEngine.U2D.SpriteAtlas>)GetAtlas);
-
-        return !found;
-
-        void GetAtlas(SpriteAtlas spriteAtlas)
+	/// <summary>Patches the sprite atlas manager to look up custom sprites.</summary>
+	internal static void CacheSpriteNames()
+	{
+		cachedSpriteDataReverse = new();
+		foreach (Polytopia.Data.TerrainData.Type terrainType in Enum.GetValues<Polytopia.Data.TerrainData.Type>())
         {
-            if (spriteAtlas != null)
+            string result = SpriteData.TerrainToString(terrainType);
+            if(terrainType == Polytopia.Data.TerrainData.Type.Wetland)
             {
-                List<string> names = sprite.Split('_').ToList();
-                List<string> filteredNames = new List<string>(names);
-                string style = "";
-                foreach (string item in names)
-                {
-                    string upperitem = char.ToUpper(item[0]) + item[1..];
-                    if (EnumCache<TribeType>.TryGetType(item, out TribeType tribe) || EnumCache<SkinType>.TryGetType(item, out SkinType skin)
-                    || EnumCache<TribeType>.TryGetType(upperitem, out TribeType tribeUpper) || EnumCache<SkinType>.TryGetType(upperitem, out SkinType skinUpper))
-                    {
-                        filteredNames.Remove(item);
-                        style = item;
-                        continue;
-                    }
-                }
-                string name = string.Join("_", filteredNames);
-                Sprite? newSprite = Registry.GetSprite(name, style);
-                if (newSprite != null)
-                {
-                    completion?.Invoke(atlas, sprite, newSprite);
-                    found = true;
-                }
+                cachedSpriteDataReverse.TryAdd(result, EnumCache<Polytopia.Data.TerrainData.Type>.GetName(Polytopia.Data.TerrainData.Type.Field) + "_flooded");
+                continue;
             }
+
+            if(result == SpriteData.TILE_UNKNOWN)
+                continue;
+
+            cachedSpriteDataReverse.TryAdd(result, EnumCache<Polytopia.Data.TerrainData.Type>.GetName(terrainType));
         }
-    }
 
-    /// <summary>Patches the sprite atlas manager to look up custom sprites.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
-    private static void SpriteAtlasManager_DoSpriteLookup(ref SpriteAtlasManager.SpriteLookupResult __result, SpriteAtlasManager __instance, string baseName, TribeType tribe, SkinType skin, int level)
-    {
-        baseName = Util.FormatSpriteName(baseName);
-
-        Sprite? sprite = Registry.GetSprite(baseName, Util.GetStyle(tribe, skin), level);
-        if (sprite != null)
-            __result.sprite = sprite;
-    }
-
-    #endregion
-    #region Units
-
-    /// <summary>Enables outlines when the interaction bar is shown.</summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.Show))]
-    private static bool InteractionBar_Show(InteractionBar __instance, bool instant, bool force)
-    {
-        enableOutlines = true;
-        return true;
-    }
-
-    /// <summary>Prevents outlines from being created when they are disabled.</summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(UISpriteDuplicator), nameof(UISpriteDuplicator.CreateImage), typeof(SpriteRenderer), typeof(Transform), typeof(Transform), typeof(float), typeof(Vector2), typeof(bool))]
-    private static bool UISpriteDuplicator_CreateImage(SpriteRenderer spriteRenderer, Transform source, Transform destination, float scale, Vector2 offset, bool forceFullAlpha)
-    {
-        return !(spriteRenderer.sortingOrder == -1 && !enableOutlines);
-    }
-
-    /// <summary>Disables outlines after the interaction bar is shown.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(InteractionBar), nameof(InteractionBar.Show))]
-    private static void InteractionBar_Show_Postfix(InteractionBar __instance, bool instant, bool force)
-    {
-        enableOutlines = false;
-    }
-
-    /// <summary>Sets the current unit type being rendered in the UI.</summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
-    private static bool UIUnitRenderer_CreateUnit_Prefix(UIUnitRenderer __instance)
-    {
-        currentUnitTypeUI = __instance.unitType;
-        return true;
-    }
-
-    /// <summary>Resets the current unit type being rendered in the UI.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(UIUnitRenderer), nameof(UIUnitRenderer.CreateUnit))]
-    private static void UIUnitRenderer_CreateUnit_Postfix(UIUnitRenderer __instance)
-    {
-        currentUnitTypeUI = UnitData.Type.None;
-    }
-
-    /// <summary>Skins the visual parts of a unit with custom sprites.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(SkinVisualsRenderer), nameof(SkinVisualsRenderer.SkinWorldObject))]
-    private static void SkinVisualsRenderer_SkinWorldObject(
-        SkinVisualsRenderer.SkinWorldType type,
-        SkinVisualsReference skinVisuals,
-        SkinVisualsTransientData transientSkinData,
-        bool checkOutlines,
-        int level)
-    {
-        if (type != SkinVisualsRenderer.SkinWorldType.Unit || skinVisuals == null ||
-            skinVisuals.visualParts == null || transientSkinData == null)
-            return;
-
-        Unit unit = skinVisuals.gameObject.GetComponent<Unit>();
-
-        string unitTypeName = EnumCache<UnitData.Type>.GetName(UnitData.Type.Warrior);
-
-        if (unit != null && unit.UnitData != null)
-            unitTypeName = EnumCache<UnitData.Type>.GetName(unit.unitData.type);
-        if (currentUnitTypeUI != UnitData.Type.None)
-            unitTypeName = EnumCache<UnitData.Type>.GetName(currentUnitTypeUI);
-
-        string style = Util.GetStyle(transientSkinData.unitSettings.tribe, transientSkinData.unitSettings.skin);
-
-        foreach (var visualPart in skinVisuals.visualParts)
+        foreach (ResourceData.Type resourceType in Enum.GetValues<ResourceData.Type>())
         {
-            if (visualPart.visualPart != null)
-                UpdateVisualPart(visualPart, $"{visualPart.visualPart.name}_{unitTypeName}", style);
+            string result = SpriteData.ResourceToString(resourceType);
+            if(result == SpriteData.IMPROVEMENT_PLACEHOLDER)
+                continue;
+
+            cachedSpriteDataReverse.TryAdd(result, EnumCache<ResourceData.Type>.GetName(resourceType));
         }
+
+        foreach (ImprovementData.Type improvementType in Enum.GetValues<ImprovementData.Type>())
+        {
+            string result = SpriteData.ImprovementToString(improvementType);
+            if(result == SpriteData.IMPROVEMENT_PLACEHOLDER)
+                continue;
+
+            cachedSpriteDataReverse.TryAdd(result, EnumCache<ImprovementData.Type>.GetName(improvementType));
+        }
+	}
+    internal static string FormatSpriteName(string baseName)
+    {
+		if(cachedSpriteDataReverse == null)
+			CacheSpriteNames();
+
+		if(cachedReversedNames.ContainsKey(baseName))
+			return cachedReversedNames[baseName];
+
+		string formattedName = baseName;
+		foreach (var valuePair in cachedSpriteDataReverse!)
+		{
+			formattedName = formattedName.Replace(valuePair.Key, valuePair.Value);
+		}
+		cachedReversedNames[baseName] = formattedName;
+        return formattedName;
     }
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.GetPrefab),
-        typeof(UnitData.Type), typeof(TribeType), typeof(SkinType)
-    )]
-    private static void PrefabManager_GetPrefab(ref Unit __result, UnitData.Type type, TribeType tribe, SkinType skin)
-    {
-        UnitPrefabInfo unitPrefabInfo = new(
-            EnumCache<UnitData.Type>.GetName(type),
-            EnumCache<TribeType>.GetName(TribeType.None),
-            EnumCache<SkinType>.GetName(SkinType.Default)
-        );
-        if (customPrefabs.ContainsKey(
-            unitPrefabInfo
-        ))
-        {
-            __result = customPrefabs[unitPrefabInfo];
-        }
-    }
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.TrySolveSpriteNameForLevelSprites))]
+	private static void SpriteAtlasManager_TrySolveSpriteNameForLevelSprites(
+		ref bool __result,
+		SpriteAtlasManager __instance,
+		Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppStringArray spriteNameVariants, int level, ref string result)
+	{
+		if(!__result) __result = true; // will crash original lookup if false....
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.DoSpriteLookup))]
+	private static void SpriteAtlasManager_DoSpriteLookup(
+		ref SpriteAtlasManager.SpriteLookupResult __result,
+		SpriteAtlasManager __instance,
+		string baseName, TribeType tribe, SkinType skin, int level)
+	{
+		ApplyRegisteredSprites(ref __result, baseName, tribe, skin, level);
+
+		string formattedName = FormatSpriteName(baseName);
+		if (formattedName != baseName)
+		{
+			ApplyRegisteredSprites(ref __result, formattedName, tribe, skin, level);
+		}
+	}
+
+	private static void ApplyRegisteredSprites(
+		ref SpriteAtlasManager.SpriteLookupResult lookupResult,
+		string spriteName, TribeType tribe, SkinType skin, int level)
+	{
+		Sprite? registeredSprite = Registry.GetSprite(spriteName, tribe, skin, level);
+		if (registeredSprite != null)
+			lookupResult.sprite = registeredSprite;
+
+		Sprite? registeredOutlineSprite = Registry.GetSprite(spriteName + "_outline", tribe, skin, level);
+		if (registeredOutlineSprite != null)
+			lookupResult.outlineSprite = registeredOutlineSprite;
+	}
+
+	[HarmonyPrefix] // its obsolete so may be removed soon by midjiwan
+	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), new Type[]{ typeof(string), typeof(string), typeof(SpriteCallback) })]
+    private static bool LoadSprite(string atlas, string sprite, SpriteCallback completion)
+	{
+		string formattedName = FormatSpriteName(sprite);
+
+		Sprite? resolvedSprite = Registry.GetSprite(formattedName);
+
+		if (resolvedSprite == null && formattedName != sprite)
+		{
+			resolvedSprite = Registry.GetSprite(sprite);
+		}
+
+		if (resolvedSprite == null)
+		{
+			return true;
+		}
+
+		completion.Invoke(atlas, sprite, resolvedSprite);
+		return false;
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.TerrainToString))]
+	private static void SpriteData_TerrainToString(ref string __result, Polytopia.Data.TerrainData.Type terrain)
+	{
+		if((int)terrain >= Plugin.AUTOIDX_STARTS_FROM)
+			__result = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(terrain);
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.ResourceToString))]
+	private static void SpriteData_ResourceToString(ref string __result, ResourceData.Type resource)
+	{
+		if((int)resource >= Plugin.AUTOIDX_STARTS_FROM)
+			__result = EnumCache<ResourceData.Type>.GetName(resource);
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.ImprovementToString))]
+	private static void SpriteData_ImprovementToString(ref string __result, ImprovementData.Type improvement)
+	{
+		if((int)improvement >= Plugin.AUTOIDX_STARTS_FROM)
+			__result = EnumCache<ImprovementData.Type>.GetName(improvement);
+	}
 
     #endregion
     #region Level
 
-    /// <summary>Updates the visual parts of a resource with custom sprites.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Resource), nameof(Resource.UpdateObject), typeof(MapRenderContext), typeof(SkinVisualsTransientData))]
-    private static void Resource_UpdateObject(Resource __instance, MapRenderContext ctx, SkinVisualsTransientData transientSkinData)
-    {
-        if (__instance.data != null)
-        {
-            string style = Util.GetStyle(__instance.tile.data.climate, __instance.tile.data.Skin);
-            string name = EnumCache<ResourceData.Type>.GetName(__instance.tile.data.resource.type);
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(Tile), nameof(Tile.RenderDebug))]
+	public static void Tile_RenderDebug(Tile __instance)
+	{
+		if(!Plugin.config.showCoordinates)
+			return;
 
-            foreach (SkinVisualsReference.VisualPart visualPart in __instance.GetSkinVisualsReference().visualParts)
-            {
-                UpdateVisualPart(visualPart, name, style);
-            }
-        }
-    }
+		GameObject textObj = new GameObject("CoordinateText");
+		textObj.transform.SetParent(__instance.transform);
+		textObj.transform.localPosition = new Vector3(0, 0.0f, 0);
 
-    /// <summary>Updates a building with a custom sprite.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Building), nameof(Building.UpdateObject), typeof(MapRenderContext), typeof(SkinVisualsTransientData))]
-    private static void Building_UpdateObject(Building __instance, MapRenderContext ctx, SkinVisualsTransientData transientSkinData)
-    {
-        string style = Util.GetStyle(transientSkinData.foundingTribeSettings.tribe, transientSkinData.foundingTribeSettings.skin);
-        string name = EnumCache<ImprovementData.Type>.GetName(__instance.tile.data.improvement.type);
-        Sprite? sprite = Registry.GetSprite(name, style, __instance.Level);
-        if (sprite != null)
-        {
-            __instance.Sprite = sprite;
-        }
-    }
+		TextMeshPro textMesh = textObj.AddComponent<TextMeshPro>();
+		textMesh.text = __instance.Data.coordinates.ToString();
+		textMesh.fontSize = 3;
+		textMesh.alignment = TextAlignmentOptions.Center;
+		textMesh.color = Color.white;
 
-    /// <summary>Updates the terrain graphics with custom sprites.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))]
-    private static void TerrainRenderer_UpdateGraphics(TerrainRenderer __instance, Tile tile)
-    {
-        string terrain = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(tile.data.terrain) ?? string.Empty;
+		MeshRenderer renderer = textObj.GetComponent<MeshRenderer>();
+		renderer.sortingLayerID = MeshCache.TERRAIN_LAYER_ID;
+		renderer.sortingOrder = __instance.Depth + 10;
+	}
 
-        TribeType tribe = tile.data.climate;
-        SkinType skinType = tile.data.Skin;
+	private static string GetLandSpriteName(TileData tileData)
+	{
+		if (!tileData.HasEffect(TileData.EffectType.Flooded))
+		{
+			return SpriteData.TerrainToString(Polytopia.Data.TerrainData.Type.Field);
+		}
 
-        string flood = "";
-        if (
-            tile.data.effects.Contains(TileData.EffectType.Flooded) ||
-            (tribe == TribeType.Aquarion && tile.data.terrain == Polytopia.Data.TerrainData.Type.Mountain)
-        ) // TODO: Check all tribes with flooded abil instead of Aquarion only.
-        {
-            foreach (var effect in tile.data.effects)
-            {
-                if (customFloodingSkins.ContainsKey(effect))
-                {
-                    skinType = customFloodingSkins[effect];
-                    break;
-                }
-            }
-            flood = "_flooded";
-        }
-        if (tile.data.terrain is Polytopia.Data.TerrainData.Type.Forest or Polytopia.Data.TerrainData.Type.Mountain)
-        {
-            string propertyName = terrain.ToLower();
-            terrain = "field";
+		string wetlandSpriteName = SpriteData.TerrainToString(Polytopia.Data.TerrainData.Type.Wetland);
 
-            PropertyInfo? rendererProperty = tile.GetType().GetProperty(propertyName + "Renderer",
-                BindingFlags.Public | BindingFlags.Instance);
+		if (tileData.HasEffect(TileData.EffectType.Swamped))
+		{
+			return wetlandSpriteName + "_swamp";
+		}
 
-            if (rendererProperty != null)
-            {
-                PolytopiaSpriteRenderer? renderer = (PolytopiaSpriteRenderer?)rendererProperty.GetValue(tile);
-                if (renderer != null)
-                {
-                    Sprite? additionalSprite = Registry.GetSprite(propertyName + flood, Util.GetStyle(tribe, skinType));
-                    if (additionalSprite != null)
-                    {
-                        renderer.Sprite = additionalSprite;
-                        rendererProperty.SetValue(tile, renderer);
-                    }
-                }
-            }
-        }
+		foreach (TileData.EffectType effectType in tileData.effects)
+		{
+			if (customFloodingSkins.TryGetValue(effectType, out SkinType skinType))
+			{
+				return $"{wetlandSpriteName}_{EnumCache<SkinType>.GetName(skinType)}";
+			}
+		}
 
-        Sprite? sprite = Registry.GetSprite(terrain + flood, Util.GetStyle(tribe, skinType));
-        if (sprite != null)
-        {
-            __instance.spriteRenderer.Sprite = sprite;
-        }
-    }
+		return wetlandSpriteName;
+	}
+
+	/// <summary>Updates the terrain graphics with custom sprites.</summary>
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))] // Why prefix? I really hate repeating the logic. I would have to do the same bs 2 times.... anyway reviewers tell me ok?
+	private static bool TerrainRenderer_UpdateGraphics(TerrainRenderer __instance, Tile tile, TribeType climate, SkinType skin, bool shouldDesaturate)
+	{
+
+		string spriteName = tile.Data.terrain switch
+		{
+			Polytopia.Data.TerrainData.Type.Water => __instance.waterSprites.GetSpriteName(tile),
+			Polytopia.Data.TerrainData.Type.Ocean => __instance.oceanSprites.GetSpriteName(tile),
+			Polytopia.Data.TerrainData.Type.Ice   => __instance.iceSprites.GetSpriteName(tile),
+			_                                     => GetLandSpriteName(tile.Data),
+		};
+
+		SpriteAtlasManager.SpriteLookupResult spriteLookupResult = GameManager.GetSpriteAtlasManager().DoSpriteLookup(spriteName, climate, skin);
+		if (spriteLookupResult.HasSprite())
+		{
+			__instance.spriteRenderer.Sprite = spriteLookupResult.sprite;
+		}
+		if (shouldDesaturate != __instance.isDesaturated)
+		{
+			TerrainMaterialHelper.SetSpriteSaturated(__instance.SpriteRenderer, shouldDesaturate);
+			__instance.isDesaturated = shouldDesaturate;
+		}
+
+		return false;
+	}
 
     /// <summary>Adds custom flood tile effect when tile is flooded for custom aqua skins.</summary>
     [HarmonyPostfix]
@@ -396,372 +340,19 @@ public static class Visual
         }
     }
 
-    /// <summary>Forces an update of the mesh for a PolytopiaSpriteRenderer with a custom sprite.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(PolytopiaSpriteRenderer), nameof(PolytopiaSpriteRenderer.ForceUpdateMesh))]
-    private static void PolytopiaSpriteRenderer_ForceUpdateMesh(PolytopiaSpriteRenderer __instance)
-    {
-        if (__instance.sprite != null && string.IsNullOrEmpty(__instance.atlasName))
-        {
-            MaterialPropertyBlock materialPropertyBlock = new();
-            materialPropertyBlock.SetVector("_Flip", new Vector4(1f, 1f, 0f, 0f));
-            materialPropertyBlock.SetTexture("_MainTex", __instance.sprite.texture);
-            __instance.meshRenderer.SetPropertyBlock(materialPropertyBlock);
-        }
-    }
+	/// <summary>Forces an update of the mesh for a PolytopiaSpriteRenderer with a custom sprite.</summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(PolytopiaSpriteRenderer), nameof(PolytopiaSpriteRenderer.ForceUpdateMesh))]
+	private static void PolytopiaSpriteRenderer_ForceUpdateMesh(PolytopiaSpriteRenderer __instance)
+	{
+		if (__instance.sprite == null || !string.IsNullOrEmpty(__instance.atlasName))
+			return;
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Tile), nameof(Tile.Render), typeof(MapRenderContext), typeof(SkinVisualsTransientData))]
-    private static void Tile_Render(Tile __instance, MapRenderContext ctx, SkinVisualsTransientData transientSkinningData)
-    {
-        Sprite? sprite = Registry.GetSprite("hidden");
-        if (sprite != null)
-        {
-            __instance.fogOfWarRenderer.atlasName = "";
-            __instance.fogOfWarRenderer.sprite = sprite;
-            __instance.fogOfWarRenderer.spriteRenderer.sprite = sprite;
-        }
-    }
-
-    #endregion
-    #region Tribe Preview
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(TribePreviewRegistry), nameof(TribePreviewRegistry.PreloadTribePreviews))]
-    public static void PreloadTribePreviews()
-    {
-        Dictionary<string, PreviewInfo> previewSaveStateDatas = new();
-
-        SaveStateData fallbackSaveStateData = TribePreviewRegistry.saveStateDatas[TribePreviewRegistry.fallbackStateIndex];
-        foreach (string tribe in Registry.tribePreviews.Keys)
-        {
-            string previewId = GetTribePreviewName(tribe);
-            PreviewTile[] customPreview = Registry.tribePreviews[tribe];
-            previewSaveStateDatas[previewId] = new(TribePreviewRegistry.fallbackStateIndex, fallbackSaveStateData, customPreview);
-        }
-
-        for (int i = 0; i < TribePreviewRegistry.saveStateDatas.Length; i++)
-        {
-            SaveStateData saveStateData = TribePreviewRegistry.saveStateDatas[i];
-            if (previewSaveStateDatas.ContainsKey(saveStateData.name))
-            {
-                previewSaveStateDatas[saveStateData.name] = new(i, saveStateData, previewSaveStateDatas[saveStateData.name].customPreview);
-            }
-        }
-
-        foreach (string previewId in previewSaveStateDatas.Keys)
-        {
-            var data = previewSaveStateDatas[previewId];
-            SaveStateData? customSaveStateData = ApplyCustomPreview(previewId, data.saveStateData, data.customPreview);
-            if (customSaveStateData == null)
-                continue;
-
-            if (data.arrayIdx == TribePreviewRegistry.fallbackStateIndex)
-            {
-                List<SaveStateData> saveStateDatas = TribePreviewRegistry.saveStateDatas.ToList();
-                saveStateDatas.Add(customSaveStateData);
-                TribePreviewRegistry.saveStateDatas = saveStateDatas.ToArray();
-            }
-            else
-            {
-                TribePreviewRegistry.saveStateDatas[data.arrayIdx] = customSaveStateData;
-            }
-        }
-    }
-
-    private static string GetTribePreviewName(string tribeType)
-    {
-        return "worldpreview_" + tribeType;
-    }
-
-    private static SaveStateData? ApplyCustomPreview(string previewId, SaveStateData originalPreview, PreviewTile[] preview)
-    {
-        SaveStateData? saveStateData = null;
-        if (DiskSerializationHelpers.FromLZ4CompressedByteArray<ClientSerializationWrapper>(
-            originalPreview.byteArray, out ClientSerializationWrapper clientSerializationWrapper, out int version))
-        {
-            GameState currentGameState = clientSerializationWrapper.GetCurrentGameState();
-            foreach (var previewTile in preview)
-            {
-                if (previewTile.x == null || previewTile.y == null)
-                    continue;
-
-                WorldCoordinates coordinates = new((int)previewTile.x, (int)previewTile.y);
-                TileData? tileData = currentGameState.Map.GetTile(coordinates);
-                if (tileData == null)
-                    continue;
-
-                if (previewTile.terrainType != Polytopia.Data.TerrainData.Type.None)
-                    tileData.terrain = previewTile.terrainType;
-
-                if (previewTile.resourceType != null)
-                {
-                    ResourceState? resourceState = null;
-                    ResourceData.Type resourceType = (ResourceData.Type)previewTile.resourceType;
-                    if (resourceType != ResourceData.Type.None)
-                    {
-                        resourceState = new ResourceState { type = resourceType };
-                    }
-                    tileData.resource = resourceState;
-                }
-
-                if (previewTile.unitType != null)
-                {
-                    tileData.unit = null;
-                    if (previewTile.unitType != Polytopia.Data.UnitData.Type.None &&
-                        currentGameState.TryGetPlayer(currentGameState.CurrentPlayer, out PlayerState playerState) &&
-                        currentGameState.GameLogicData.TryGetData((UnitData.Type)previewTile.unitType, out UnitData unitData))
-                    {
-                        UnitState unitState = ActionUtils.TrainUnit(currentGameState, playerState, tileData, unitData);
-                        unitState.moved = false;
-                        unitState.attacked = false;
-                    }
-                }
-
-
-                if (previewTile.improvementType != null)
-                {
-                    tileData.improvement = null;
-                    ImprovementData.Type improvementType = (ImprovementData.Type)previewTile.improvementType;
-                    if (
-                        previewTile.improvementType != ImprovementData.Type.None &&
-                        currentGameState.GameLogicData.TryGetData(
-                            improvementType,
-                            out ImprovementData improvementData)
-                        )
-                    {
-                        tileData.improvement = new ImprovementState
-                        {
-                            type = improvementData.type,
-                            borderSize = (ushort)improvementData.borderSize,
-                            level = 0,
-                            xp = 0,
-                            production = 1,
-                            founded = (ushort)currentGameState.CurrentTurn,
-                            baseScore = (ushort)improvementData.GetScoreReward(),
-                            founder = currentGameState.CurrentPlayer
-                        };
-                    }
-                }
-            }
-
-            saveStateData = ScriptableObject.CreateInstance<SaveStateData>();
-            saveStateData.name = previewId;
-            saveStateData.byteArray = DiskSerializationHelpers.ToLZ4CompressedByteArray(clientSerializationWrapper, version);
-        }
-
-        return saveStateData;
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(SpriteCamera), nameof(SpriteCamera.TakeSnapshotOfMapState))]
-    private static bool SpriteCamera_TakeSnapshotOfMapState(ref Texture2D __result, SpriteCamera.SnapshotMapData mapSnapshot,
-        float w, float h, TribeType tribe, SkinType skin, TribeType climate, int color, bool clearMapAfterwards)
-    {
-        if (!Plugin.config.debug)
-            return true;
-
-        var instance = SpriteCamera.instance;
-        if (baseOrthographicCameraSize == null)
-            baseOrthographicCameraSize = instance.spriteCamera.orthographicSize;
-
-        instance.spriteCamera.orthographicSize = (float)baseOrthographicCameraSize * 2;
-        isTakingSnapshot = true;
-
-        return true;
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(SpriteCamera), nameof(SpriteCamera.TakeSnapshotOfMapState))]
-    private static void SpriteCamera_TakeSnapshotOfMapState_Postfix(ref Texture2D __result, SpriteCamera.SnapshotMapData mapSnapshot,
-        float w, float h, TribeType tribe, SkinType skin, TribeType climate, int color, bool clearMapAfterwards)
-    {
-        if (isTakingSnapshot)
-            isTakingSnapshot = false;
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Tile), nameof(Tile.RenderDebug))]
-    public static void Tile_RenderDebug(Tile __instance)
-    {
-        if (!isTakingSnapshot)
-            return;
-
-        GameObject textObj = new GameObject("CoordinateText");
-        textObj.transform.SetParent(__instance.transform);
-        textObj.transform.localPosition = new Vector3(0, 0.0f, 0);
-
-        TextMeshPro textMesh = textObj.AddComponent<TextMeshPro>();
-        textMesh.text = __instance.Data.coordinates.ToString();
-        textMesh.fontSize = 3;
-        textMesh.alignment = TextAlignmentOptions.Center;
-        textMesh.color = Color.white;
-
-        MeshRenderer renderer = textObj.GetComponent<MeshRenderer>();
-        renderer.sortingLayerID = MeshCache.TERRAIN_LAYER_ID;
-        renderer.sortingOrder = __instance.Depth + 10;
-    }
-
-    #endregion
-    #region UI
-
-    /// <summary>Provides custom sprites for improvements in the UI.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(ImprovementData.Type), typeof(TribeType), typeof(SkinType), typeof(SpriteAtlasManager))]
-    private static void UIUtils_GetImprovementSprite(ref Sprite __result, ImprovementData.Type improvement, TribeType tribe, SkinType skin, SpriteAtlasManager atlasManager)
-    {
-        Sprite? sprite = Registry.GetSprite(EnumCache<ImprovementData.Type>.GetName(improvement), Util.GetStyle(tribe, skin));
-        if (sprite != null)
-        {
-            __result = sprite;
-        }
-    }
-
-    /// <summary>Provides custom sprites for improvements in the UI.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetImprovementSprite), typeof(SkinVisualsTransientData), typeof(ImprovementData.Type), typeof(SpriteAtlasManager))]
-    private static void UIUtils_GetImprovementSprite_2(ref Sprite __result, SkinVisualsTransientData data, ImprovementData.Type improvement, SpriteAtlasManager atlasManager)
-    {
-        UIUtils_GetImprovementSprite(ref __result, improvement, data.foundingTribeSettings.tribe, data.foundingTribeSettings.skin, atlasManager);
-    }
-
-    /// <summary>Provides custom sprites for resources in the UI.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(UIUtils), nameof(UIUtils.GetResourceSprite))]
-    private static void UIUtils_GetResourceSprite(ref Sprite __result, SkinVisualsTransientData data, ResourceData.Type resource, SpriteAtlasManager atlasManager)
-    {
-        Sprite? sprite = Registry.GetSprite(EnumCache<ResourceData.Type>.GetName(resource), Util.GetStyle(data.tileClimateSettings.tribe, data.tileClimateSettings.skin));
-        if (sprite != null)
-        {
-            __result = sprite;
-        }
-    }
-
-    #endregion
-    #region Houses
-
-    /// <summary>Provides custom sprites for houses in the city view.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(CityRenderer), nameof(CityRenderer.GetHouse))]
-    private static void CityRenderer_GetHouse(ref PolytopiaSpriteRenderer __result, CityRenderer __instance, TribeType tribe, int type, SkinType skinType)
-    {
-        PolytopiaSpriteRenderer polytopiaSpriteRenderer = __result;
-
-        if (type != __instance.HOUSE_WORKSHOP && type != __instance.HOUSE_PARK)
-        {
-            Sprite? sprite = Registry.GetSprite("house", Util.GetStyle(tribe, skinType), type);
-            if (sprite != null)
-            {
-                polytopiaSpriteRenderer.Sprite = sprite;
-                TerrainMaterialHelper.SetSpriteSaturated(polytopiaSpriteRenderer, __instance.IsEnemyCity);
-                __result = polytopiaSpriteRenderer;
-            }
-        }
-    }
-
-    /// <summary>Provides custom sprites for houses in the UI city renderer.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(UICityRenderer), nameof(UICityRenderer.GetResource))]
-    private static void UICityRenderer_GetResource(ref GameObject __result, string baseName, TribeType tribe, SkinType skin)
-    {
-        Image imageComponent = __result.GetComponent<Image>();
-        string[] tokens = baseName.Split('_');
-        if (tokens.Length > 0)
-        {
-            if (tokens[0] == "House")
-            {
-                int level = 0;
-                if (tokens.Length > 1)
-                {
-                    _ = int.TryParse(tokens[1], out level);
-                }
-
-                Sprite? sprite = Registry.GetSprite("house", Util.GetStyle(tribe, skin), level);
-                if (sprite == null)
-                {
-                    return;
-                }
-                imageComponent.sprite = sprite;
-                imageComponent.SetNativeSize();
-            }
-        }
-    }
-
-    #endregion
-    #region Icons
-
-    /// <summary>Provides custom sprites for UI icons.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(UIIconData), nameof(UIIconData.GetImage))]
-    private static void UIIconData_GetImage(ref Image __result, string id)
-    {
-        Sprite? sprite;
-        if (GameManager.LocalPlayer != null)
-        {
-            sprite = Registry.GetSprite(id, Util.GetStyle(GameManager.LocalPlayer.tribe, GameManager.LocalPlayer.skinType));
-        }
-        else
-        {
-            sprite = Registry.GetSprite(id);
-        }
-        if (sprite != null)
-        {
-            __result.sprite = sprite;
-            __result.useSpriteMesh = true;
-            __result.SetNativeSize();
-        }
-    }
-
-    /// <summary>Provides custom sprites for face icons in the game info row.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(GameInfoRow), nameof(GameInfoRow.LoadFaceIcon), typeof(TribeType), typeof(SkinType))]
-    private static void GameInfoRow_LoadFaceIcon(GameInfoRow __instance, TribeType type, SkinType skinType)
-    {
-        string style = EnumCache<TribeType>.GetName(type);
-
-        if (style == "None")
-        {
-            for (int i = 0; i < 20; i++)
-            {
-                type += byte.MaxValue + 1;
-                style = EnumCache<TribeType>.GetName(type);
-
-                if (style != "None")
-                {
-                    break;
-                }
-            }
-        }
-
-        Sprite? sprite = Registry.GetSprite("head", Util.GetStyle(type, skinType));
-
-        if (sprite != null)
-        {
-            __instance.SetFaceIcon(sprite);
-        }
-
-        if (__instance.icon.sprite == null)
-        {
-            __instance.LoadFaceIcon(SpriteData.SpecialFaceIcon.neutral);
-        }
-    }
-
-    /// <summary>Provides custom sprites for player info icons.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(PlayerInfoIcon), nameof(PlayerInfoIcon.SetData), typeof(TribeType), typeof(SkinType), typeof(SpriteData.SpecialFaceIcon), typeof(Color), typeof(DiplomacyRelationState), typeof(PlayerInfoIcon.Mood))]
-    private static void PlayerInfoIcon_SetData(PlayerInfoIcon __instance, TribeType tribe, SkinType skin, SpriteData.SpecialFaceIcon face, Color color, DiplomacyRelationState diplomacyState, PlayerInfoIcon.Mood mood)
-    {
-        if (face == SpriteData.SpecialFaceIcon.tribe)
-        {
-            Sprite? sprite = Registry.GetSprite("head", Util.GetStyle(tribe, skin));
-            if (sprite != null)
-            {
-                __instance.HeadImage.sprite = sprite;
-                Vector2 size = sprite.rect.size;
-                __instance.HeadImage.rectTransform.sizeDelta = size * __instance.rectTransform.GetHeight() / 512f;
-            }
-        }
-    }
+		MaterialPropertyBlock materialPropertyBlock = new();
+		materialPropertyBlock.SetVector("_Flip", new Vector4(1f, 1f, 0f, 0f));
+		materialPropertyBlock.SetTexture("_MainTex", __instance.sprite.texture);
+		__instance.meshRenderer.SetPropertyBlock(materialPropertyBlock);
+	}
 
     #endregion
     #region Popups
@@ -774,40 +365,141 @@ public static class Visual
         UpdateWidth(__instance);
     }
 
-    private static void UpdateWidth(PopupBase __instance)
-    {
-        int id = __instance.GetInstanceID();
-        if (basicPopupWidths.ContainsKey(id))
-            __instance.rectTransform.SetWidth(basicPopupWidths[id]);
-    }
+	private static void UpdateWidth(PopupBase popup)
+	{
+		if (!basicPopupWidths.TryGetValue(popup.GetInstanceID(), out PopupWidth? width)) return;
 
-    /// <summary>Sets the attacker's tribe before a unit attacks.</summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Unit), nameof(Unit.Attack))]
-    private static bool Unit_Attack(Unit __instance, WorldCoordinates target, bool moveToTarget, Il2CppSystem.Action onComplete)
-    {
-        if (__instance.Owner != null)
-        {
-            attackerTribe = __instance.Owner.tribe;
-        }
-        return true;
-    }
+		popup.rectTransform.SetWidth(GetResponsivePopupWidth(width.share, width.maximum));
+		BasicPopupLegacy? legacy = popup.TryCast<BasicPopupLegacy>();
+		if (legacy != null && legacy.buttonContainer != null)
+			LayoutPopupButtons(legacy.buttonContainer);
+	}
 
-    /// <summary>Sets the skin of a weapon's graphics, using custom sprites if available.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.SetSkin))]
-    private static void WeaponGFX_SetSkin(WeaponGFX __instance, SkinType skinType)
-    {
-        if (attackerTribe != TribeType.None)
-        {
-            Sprite? sprite = Registry.GetSprite(__instance.defaultSprite.name, Util.GetStyle(attackerTribe, skinType));
-            if (sprite != null)
-            {
-                __instance.spriteRenderer.sprite = sprite;
-            }
-            attackerTribe = TribeType.None;
-        }
-    }
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SystemEvents), nameof(SystemEvents.ScreenSizeChanged))]
+	private static void SystemEvents_ScreenSizeChanged()
+	{
+		RelayoutSizedPopups();
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(SystemEvents), nameof(SystemEvents.SafeAreaChanged))]
+	private static void SystemEvents_SafeAreaChanged()
+	{
+		RelayoutSizedPopups();
+	}
+
+	private static void RelayoutSizedPopups()
+	{
+		foreach (PopupWidth width in new List<PopupWidth>(basicPopupWidths.Values))
+		{
+			try
+			{
+				if (width.popup == null || !width.popup.IsShowing()) continue;
+				width.popup.RefreshHeightWhenHeightIsKnownAndDontUseCoroutines(ScreenManager.SafeHeight);
+			}
+			catch (Exception exception)
+			{
+				Plugin.logger.LogError($"Could not lay a popup out after a screen size change: {exception}");
+			}
+		}
+	}
+
+	/// <summary>
+	/// Turns a share of the usable screen width into a popup width in canvas units.
+	/// The safe area is reported in screen pixels, so it is converted with the canvas scale the
+	/// game itself uses when it sizes popups.
+	/// </summary>
+	/// <param name="share">Share of the usable width to take, between 0 and 1.</param>
+	/// <param name="maximum">Widest the popup may get, so that text stays readable on wide screens.</param>
+	/// <returns>A width in canvas units, never below the width of the game's own popups.</returns>
+	public static int GetResponsivePopupWidth(float share, float maximum)
+	{
+		if (share <= 0f) return Mathf.RoundToInt(maximum);
+		float usable = ScreenManager.SafeWidth * UICanvasScalerHelper.GetInvertedUIScale();
+		float width = Mathf.Min(usable * share, maximum);
+		return Mathf.RoundToInt(Mathf.Max(width, DEFAULT_POPUP_WIDTH));
+	}
+
+	/// <summary>
+	/// Replaces the game's popup button layout. The game spaces the buttons with an integer division,
+	/// which stacks every button but the last on the left edge, and it never wraps, so a popup too
+	/// narrow for its buttons draws them on top of each other.
+	/// </summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(PopupButtonContainer), nameof(PopupButtonContainer.SetButtonData))]
+	private static void PopupButtonContainer_SetButtonData(PopupButtonContainer __instance)
+	{
+		LayoutPopupButtons(__instance);
+	}
+
+	/// <summary>
+	/// Lays a popup's buttons out in as many rows as the container's width needs.
+	/// </summary>
+	internal static void LayoutPopupButtons(PopupButtonContainer container)
+	{
+		if (container.buttons == null || container.buttons.Length == 0) return;
+
+		float available = container.rectTransform.rect.width;
+		if (available <= 0f) return;
+
+		List<List<UITextButton>> rows = PackButtonsIntoRows(container, available);
+
+		float rowHeight = 0f;
+		foreach (UITextButton button in container.buttons)
+		{
+			rowHeight = Mathf.Max(rowHeight, button.rectTransform.rect.height);
+		}
+		float stackHeight = rows.Count * rowHeight + (rows.Count - 1) * POPUP_BUTTON_ROW_GAP;
+
+		// The container sits at the bottom of the popup with a bottom pivot, so it grows upwards.
+		container.rectTransform.SetHeight(stackHeight);
+
+		for (int row = 0; row < rows.Count; row++)
+		{
+			float offsetY = stackHeight / 2f - rowHeight / 2f - row * (rowHeight + POPUP_BUTTON_ROW_GAP);
+			PlaceButtonRow(rows[row], offsetY);
+		}
+	}
+
+	/// <summary>
+	/// Fills one row at a time until the next button would no longer fit beside the previous ones.
+	/// </summary>
+	private static List<List<UITextButton>> PackButtonsIntoRows(PopupButtonContainer container, float available)
+	{
+		List<List<UITextButton>> rows = new() { new() };
+		float rowWidth = 0f;
+		foreach (UITextButton button in container.buttons)
+		{
+			float width = button.rectTransform.rect.width;
+			if (rows[^1].Count > 0 && rowWidth + POPUP_BUTTON_GAP + width > available)
+			{
+				rows.Add(new());
+				rowWidth = 0f;
+			}
+			rowWidth += (rows[^1].Count > 0 ? POPUP_BUTTON_GAP : 0f) + width;
+			rows[^1].Add(button);
+		}
+		return rows;
+	}
+
+	/// <summary>
+	/// Spreads one row of buttons across the container, or centres it when it holds a single button.
+	/// </summary>
+	private static void PlaceButtonRow(List<UITextButton> row, float offsetY)
+	{
+		for (int i = 0; i < row.Count; i++)
+		{
+			// Anchoring to a fraction of the container keeps the row spread as the popup resizes,
+			// which is how the game places the buttons of its own popups.
+			Vector2 anchor = new((row.Count == 1) ? 0.5f : (i / (row.Count - 1.0f)), 0.5f);
+			RectTransform rect = row[i].rectTransform;
+			rect.anchorMin = anchor;
+			rect.anchorMax = anchor;
+			rect.pivot = anchor;
+			rect.anchoredPosition = new Vector2(0f, offsetY);
+		}
+	}
 
     /// <summary>Removes a popup's custom width when it is hidden.</summary>
     [HarmonyPostfix]
@@ -817,12 +509,19 @@ public static class Visual
         basicPopupWidths.Remove(__instance.GetInstanceID());
     }
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnWeeklyChallengeClicked))]
-    private static bool StartScreen_OnWeeklyChallengeClicked(StartScreen_UI2 __instance)
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
+    private static void StartScreen_UI2_OnShow()
     {
-        if (seenWarningWCPopup)
-            return true;
+        CreateInnerOriginSprites();
+	}
+
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnWeeklyChallengeClicked))]
+	private static bool StartScreen_OnWeeklyChallengeClicked(StartScreen_UI2 __instance)
+	{
+		if(seenWarningWCPopup)
+			return true;
 
         BasicPopup popup = PopupManager.GetBasicPopup();
         popup.Header = Localization.Get("polymod.hub");
@@ -848,30 +547,19 @@ public static class Visual
         return false;
     }
 
-    /// <summary>Shows a basic popup with a custom width.</summary>
-    public static void ShowSetWidth(this BasicPopupLegacy self, int width)
-    {
-        basicPopupWidths.Add(self.GetInstanceID(), width);
-        self.Show();
-    }
+	/// <summary>Shows a basic popup with a custom width.</summary>
+	public static void ShowSetWidth(this BasicPopupLegacy self, int width)
+	{
+		basicPopupWidths[self.GetInstanceID()] = new(self, 0f, width);
+		self.Show();
+	}
 
-    // [HarmonyPrefix]
-    // [HarmonyPatch(typeof(BasicPopup), nameof(BasicPopup.SetButtonData))]
-    // public static bool SetButtonData(BasicPopup __instance, PopupBase.PopupButtonData[] buttonDatas, bool updateOmniCursor)
-    // {
-    // 	if (buttonDatas == null)
-    // 	{
-    // 		__instance.SetDefaultOkbutton();
-    // 		return false;
-    // 	}
-    // 	foreach (var buttonData in buttonDatas)
-    // 	{
-    // 		var MainButton = __instance.createButton(buttonData.text, buttonData.callback, UIButtonBase_UI2.ButtonStyle.Suggested);
-    // 		MainButton.OnClickedSignal.Add(DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(__instance.Hide));
-    // 	}
-    // 	__instance.RunLayout();
-    // 	return false;
-    // }
+	/// <summary>Shows a basic popup sized to a share of the usable screen width.</summary>
+	public static void ShowSetWidth(this BasicPopupLegacy self, float share, float maximum)
+	{
+		basicPopupWidths[self.GetInstanceID()] = new(self, share, maximum);
+		self.Show();
+	}
 
     #endregion
 
@@ -889,71 +577,410 @@ public static class Visual
         return basicPopupLegacy;
     }
 
-    /// <summary>Updates a visual part with a custom sprite.</summary>
-    private static void UpdateVisualPart(SkinVisualsReference.VisualPart? visualPart, string name, string style)
+	public static Texture2D BuildTexture(byte[] data)
+	{
+		Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
+		texture.LoadImage(data);
+		texture.filterMode = FilterMode.Trilinear;
+		texture.Apply();
+		return texture;
+	}
+
+	/// <summary>Builds a sprite from raw byte data.</summary>
+	/// <param name="data">The raw byte data of the image.</param>
+	/// <param name="pivot">The pivot point of the sprite.</param>
+	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
+	/// <returns>The created sprite.</returns>
+	public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f, bool transformToOutline = false, float? gaussianBlurRadius = null)
+	{
+		return BuildSpriteWithTexture(BuildTexture(data), pivot, pixelsPerUnit, transformToOutline, gaussianBlurRadius);
+	}
+
+	/// <summary>Builds a sprite from a texture.</summary>
+	/// <param name="texture">The texture to create the sprite from.</param>
+	/// <param name="pivot">The pivot point of the sprite.</param>
+	/// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
+	/// <returns>The created sprite.</returns>
+	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f, bool transformToOutline = false, float? gaussianBlurRadius = null)
+	{
+		if(transformToOutline) texture = TransformToOutline(texture);
+
+		if(gaussianBlurRadius != null) texture = ApplyGaussianBlur(texture, gaussianBlurRadius.Value);
+
+		return Sprite.Create(
+			texture,
+			new(0, 0, texture.width, texture.height),
+			pivot ?? new(0.5f, 0.5f),
+			pixelsPerUnit ?? 2112f
+		);;
+	}
+
+    public static Texture2D TransformToOutline(Texture2D sourceTexture, int borderSizeInPixels = 8, Color? color = null)
     {
-        if (visualPart == null || visualPart.visualPart == null)
-            return;
+		Plugin.logger.LogInfo("Transforming texture to outline...");
+		if(color == null)
+			color = Color.white;
 
-        Sprite? sprite = Registry.GetSprite(name, style) ?? Registry.GetSprite(visualPart.visualPart.name, style);
+        int sourceWidthInPixels = sourceTexture.width;
+        int sourceHeightInPixels = sourceTexture.height;
+        int outputWidthInPixels = sourceWidthInPixels + borderSizeInPixels * 2;
+        int outputHeightInPixels = sourceHeightInPixels + borderSizeInPixels * 2;
 
-        if (sprite != null && visualPart.renderer != null)
+        Color[] sourcePixels = sourceTexture.GetPixels();
+        bool[] filledMask = new bool[outputWidthInPixels * outputHeightInPixels];
+        int borderSquared = borderSizeInPixels * borderSizeInPixels;
+
+        for (int pixelY = 0; pixelY < sourceHeightInPixels; pixelY++)
         {
-            if (visualPart.renderer.spriteRenderer != null)
-                visualPart.renderer.spriteRenderer.sprite = sprite;
-            else if (visualPart.renderer.polytopiaSpriteRenderer != null)
-                visualPart.renderer.polytopiaSpriteRenderer.sprite = sprite;
+            for (int pixelX = 0; pixelX < sourceWidthInPixels; pixelX++)
+            {
+                if (sourcePixels[pixelY * sourceWidthInPixels + pixelX].a <= 0.01f) continue;
+
+                int centerX = pixelX + borderSizeInPixels;
+                int centerY = pixelY + borderSizeInPixels;
+
+                for (int offsetY = -borderSizeInPixels; offsetY <= borderSizeInPixels; offsetY++)
+                {
+                    for (int offsetX = -borderSizeInPixels; offsetX <= borderSizeInPixels; offsetX++)
+                    {
+                        if (offsetX * offsetX + offsetY * offsetY > borderSquared) continue;
+
+                        filledMask[(centerY + offsetY) * outputWidthInPixels + (centerX + offsetX)] = true;
+                    }
+                }
+            }
         }
 
-        Sprite? outlineSprite = Registry.GetSprite($"{name}_outline", style) ?? Registry.GetSprite($"{visualPart.visualPart.name}_outline", style);
-
-        if (outlineSprite != null && visualPart.outlineRenderer != null)
+        Color[] outputPixels = new Color[filledMask.Length];
+        for (int pixelIndex = 0; pixelIndex < outputPixels.Length; pixelIndex++)
         {
-            if (visualPart.outlineRenderer.spriteRenderer != null)
-                visualPart.outlineRenderer.spriteRenderer.sprite = outlineSprite;
-            else if (visualPart.outlineRenderer.polytopiaSpriteRenderer != null)
-                visualPart.outlineRenderer.polytopiaSpriteRenderer.sprite = outlineSprite;
+            outputPixels[pixelIndex] = filledMask[pixelIndex] ? color.Value : Color.clear;
         }
+
+        Texture2D whiteSilhouetteTexture = new Texture2D(outputWidthInPixels, outputHeightInPixels, TextureFormat.RGBA32, false);
+        whiteSilhouetteTexture.SetPixels(outputPixels);
+        whiteSilhouetteTexture.Apply();
+        return whiteSilhouetteTexture;
     }
 
-    /// <summary>Builds a sprite from raw byte data.</summary>
-    /// <param name="data">The raw byte data of the image.</param>
-    /// <param name="pivot">The pivot point of the sprite.</param>
-    /// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
-    /// <returns>The created sprite.</returns>
-    public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f)
+	private static float[] BuildGaussianKernelWeights(float sigma, int kernelRadiusInPixels)
+	{
+		float[] kernelWeights = new float[kernelRadiusInPixels * 2 + 1];
+		float kernelWeightSum = 0f;
+		for (int kernelIndex = 0; kernelIndex < kernelWeights.Length; kernelIndex++)
+		{
+			int distanceFromCenter = kernelIndex - kernelRadiusInPixels;
+			kernelWeights[kernelIndex] = MathF.Exp(-(distanceFromCenter * distanceFromCenter) / (2f * sigma * sigma));
+			kernelWeightSum += kernelWeights[kernelIndex];
+		}
+		for (int kernelIndex = 0; kernelIndex < kernelWeights.Length; kernelIndex++)
+		{
+			kernelWeights[kernelIndex] /= kernelWeightSum;
+		}
+		return kernelWeights;
+	}
+
+	private static byte ConvertUnitFloatToByte(float unitValue)
+	{
+		return (byte)Math.Clamp(unitValue * 255f + 0.5f, 0f, 255f);
+	}
+
+	// basically ai generated as my bs was working, but 15 times slower
+	public static Texture2D ApplyGaussianBlur(Texture2D sourceTexture, float radius = 2f)
+	{
+		Plugin.logger.LogInfo($"Applying blur with radius {radius}...");
+		int textureWidthInPixels = sourceTexture.width;
+		int textureHeightInPixels = sourceTexture.height;
+
+		float sigma = Math.Max(radius / 2f, 0.01f);
+		int kernelRadiusInPixels = Math.Max(1, (int)MathF.Ceiling(sigma * 3f));
+		float[] kernelWeights = BuildGaussianKernelWeights(sigma, kernelRadiusInPixels);
+
+		Color32[] sourcePixels = sourceTexture.GetPixels32();
+		int totalPixelCount = sourcePixels.Length;
+		const float byteToUnitFloat = 1f / 255f;
+
+		float[] premultipliedChannels = new float[totalPixelCount * 4];
+		for (int pixelIndex = 0; pixelIndex < totalPixelCount; pixelIndex++)
+		{
+			Color32 sourcePixel = sourcePixels[pixelIndex];
+			float alpha = sourcePixel.a * byteToUnitFloat;
+			int channelOffset = pixelIndex * 4;
+			premultipliedChannels[channelOffset + 0] = sourcePixel.r * byteToUnitFloat * alpha;
+			premultipliedChannels[channelOffset + 1] = sourcePixel.g * byteToUnitFloat * alpha;
+			premultipliedChannels[channelOffset + 2] = sourcePixel.b * byteToUnitFloat * alpha;
+			premultipliedChannels[channelOffset + 3] = alpha;
+		}
+
+		float[] horizontallyBlurredChannels = new float[premultipliedChannels.Length];
+		Parallel.For(0, textureHeightInPixels, pixelY =>
+		{
+			int rowStartPixelIndex = pixelY * textureWidthInPixels;
+			for (int pixelX = 0; pixelX < textureWidthInPixels; pixelX++)
+			{
+				float accumulatedRed = 0f, accumulatedGreen = 0f, accumulatedBlue = 0f, accumulatedAlpha = 0f;
+				for (int kernelIndex = 0; kernelIndex < kernelWeights.Length; kernelIndex++)
+				{
+					int sampleX = pixelX + kernelIndex - kernelRadiusInPixels;
+					if (sampleX < 0) sampleX = 0;
+					else if (sampleX >= textureWidthInPixels) sampleX = textureWidthInPixels - 1;
+
+					int sampleOffset = (rowStartPixelIndex + sampleX) * 4;
+					float kernelWeight = kernelWeights[kernelIndex];
+					accumulatedRed += premultipliedChannels[sampleOffset + 0] * kernelWeight;
+					accumulatedGreen += premultipliedChannels[sampleOffset + 1] * kernelWeight;
+					accumulatedBlue += premultipliedChannels[sampleOffset + 2] * kernelWeight;
+					accumulatedAlpha += premultipliedChannels[sampleOffset + 3] * kernelWeight;
+				}
+				int outputOffset = (rowStartPixelIndex + pixelX) * 4;
+				horizontallyBlurredChannels[outputOffset + 0] = accumulatedRed;
+				horizontallyBlurredChannels[outputOffset + 1] = accumulatedGreen;
+				horizontallyBlurredChannels[outputOffset + 2] = accumulatedBlue;
+				horizontallyBlurredChannels[outputOffset + 3] = accumulatedAlpha;
+			}
+		});
+
+		Color32[] blurredPixels = new Color32[totalPixelCount];
+		Parallel.For(0, textureHeightInPixels, pixelY =>
+		{
+			for (int pixelX = 0; pixelX < textureWidthInPixels; pixelX++)
+			{
+				float accumulatedRed = 0f, accumulatedGreen = 0f, accumulatedBlue = 0f, accumulatedAlpha = 0f;
+				for (int kernelIndex = 0; kernelIndex < kernelWeights.Length; kernelIndex++)
+				{
+					int sampleY = pixelY + kernelIndex - kernelRadiusInPixels;
+					if (sampleY < 0) sampleY = 0;
+					else if (sampleY >= textureHeightInPixels) sampleY = textureHeightInPixels - 1;
+
+					int sampleOffset = (sampleY * textureWidthInPixels + pixelX) * 4;
+					float kernelWeight = kernelWeights[kernelIndex];
+					accumulatedRed += horizontallyBlurredChannels[sampleOffset + 0] * kernelWeight;
+					accumulatedGreen += horizontallyBlurredChannels[sampleOffset + 1] * kernelWeight;
+					accumulatedBlue += horizontallyBlurredChannels[sampleOffset + 2] * kernelWeight;
+					accumulatedAlpha += horizontallyBlurredChannels[sampleOffset + 3] * kernelWeight;
+				}
+
+				Color32 blurredPixel = default;
+				if (accumulatedAlpha > 0.0001f)
+				{
+					blurredPixel.r = ConvertUnitFloatToByte(accumulatedRed / accumulatedAlpha);
+					blurredPixel.g = ConvertUnitFloatToByte(accumulatedGreen / accumulatedAlpha);
+					blurredPixel.b = ConvertUnitFloatToByte(accumulatedBlue / accumulatedAlpha);
+					blurredPixel.a = ConvertUnitFloatToByte(accumulatedAlpha);
+				}
+				blurredPixels[pixelY * textureWidthInPixels + pixelX] = blurredPixel;
+			}
+		});
+
+		Texture2D blurredTexture = new Texture2D(textureWidthInPixels, textureHeightInPixels, TextureFormat.RGBA32, false);
+		blurredTexture.SetPixels32(blurredPixels);
+		blurredTexture.Apply();
+		return blurredTexture;
+	}
+
+	internal static List<KeyValuePair<string, SpriteInfo>> pendingInnerOriginSpriteInfos = new();
+
+	private static Vector2 GetPivotPreset(string spriteName)
+	{
+		return spriteName.Split("_")[0] switch
+		{
+			"field" => new Vector2(0.5f, 0.0f),
+			"mountain" => new Vector2(0.5f, -0.375f),
+			_ => new Vector2(0.5f, 0.5f),
+		};
+	}
+
+	internal static void RegisterSprite(SpriteAtlasManager spriteAtlasManager, string spriteName, Sprite sprite)
+	{
+		Plugin.logger.LogInfo($"Registering sprite {spriteName}");
+		spriteAtlasManager.cachedSprites.TryAdd("Heads", new());
+		spriteAtlasManager.cachedSprites["Heads"][spriteName] = sprite;
+		Registry.sprites[spriteName] = sprite;
+	}
+
+	// Runs early: only touches your own textures, nothing from SpriteAtlasManager's lookup state.
+	public static void CreateSprites()
+	{
+		Plugin.logger.LogInfo($"Creating sprites with outer origin...");
+		pendingInnerOriginSpriteInfos.Clear();
+
+		SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
+		const float defaultPixelsPerUnit = 2112f;
+
+		foreach (KeyValuePair<string, SpriteInfo> spriteInfoPair in Registry.spriteInfos)
+		{
+			string spriteName = spriteInfoPair.Key;
+			SpriteInfo spriteInfo = spriteInfoPair.Value;
+
+			bool isInnerOrigin = spriteInfo.spriteOrigin != null
+				&& spriteInfo.spriteOrigin.originType == OriginType.Inner;
+
+			if (isInnerOrigin)
+			{
+				pendingInnerOriginSpriteInfos.Add(spriteInfoPair);
+				continue;
+			}
+
+			KeyValuePair<Texture2D, bool> textureEntry;
+			if (!Registry.textures.TryGetValue(spriteName, out textureEntry)) // search texture
+			{
+				if (spriteInfo.spriteOrigin == null ||
+					spriteInfo.spriteOrigin.originType != OriginType.Outer ||
+					spriteInfo.spriteOrigin.name == null ||
+					!Registry.textures.TryGetValue(spriteInfo.spriteOrigin.name, out textureEntry)) // search texture in outer sprite origin
+				{
+					continue;
+				}
+			}
+
+
+			Vector2 pivot = spriteInfo.pivot ?? GetPivotPreset(spriteName);
+			float pixelsPerUnit = spriteInfo.pixelsPerUnit ?? defaultPixelsPerUnit;
+			bool transformToOutline = spriteInfo.transformToOutline;
+			float? gaussianBlurRadius = spriteInfo.gaussianBlurRadius;
+
+			Sprite sprite = BuildSpriteWithTexture(textureEntry.Key, pivot, pixelsPerUnit, transformToOutline, gaussianBlurRadius);
+			Registry.textures[spriteName] = new KeyValuePair<Texture2D, bool>(textureEntry.Key, true);
+			RegisterSprite(spriteAtlasManager, spriteName, sprite);
+		}
+
+		foreach (KeyValuePair<string, KeyValuePair<Texture2D, bool>> texturePair in Registry.textures)
+		{
+			if (texturePair.Value.Value)
+			{
+				continue;
+			}
+
+			string spriteName = texturePair.Key;
+			Sprite sprite = BuildSpriteWithTexture(texturePair.Value.Key, GetPivotPreset(spriteName), defaultPixelsPerUnit);
+			RegisterSprite(spriteAtlasManager, spriteName, sprite);
+		}
+	}
+
+	internal static (byte[], SpriteInfo) SpriteToPng(Sprite sprite)
+	{
+		Texture2D bakedTexture = BakeSpriteToTexture(sprite);
+
+		byte[] pngBytes = ImageConversion.EncodeToPNG(bakedTexture);
+		UnityEngine.Object.Destroy(bakedTexture);
+
+		Vector2 normalizedPivot = GetNormalizedPivot(sprite);
+
+		return (pngBytes, new SpriteInfo(sprite.pixelsPerUnit, normalizedPivot));
+	}
+
+	private static Vector2 GetNormalizedPivot(Sprite sourceSprite)
+	{
+		return new Vector2(
+			sourceSprite.pivot.x / sourceSprite.rect.width,
+			sourceSprite.pivot.y / sourceSprite.rect.height
+		);
+	}
+
+    private static Texture2D BakeSpriteToTexture(Sprite sourceSprite)
     {
-        Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
-        texture.LoadImage(data);
-        Color[] pixels = texture.GetPixels();
-        for (int i = 0; i < pixels.Length; i++)
+        Texture2D atlasTexture = sourceSprite.texture;
+        int spriteWidth = (int)sourceSprite.rect.width;
+        int spriteHeight = (int)sourceSprite.rect.height;
+        float sourcePixelsPerUnit = sourceSprite.pixelsPerUnit;
+        Vector2 sourcePivotInPixels = sourceSprite.pivot;
+
+        var meshVertices = sourceSprite.vertices;
+        var meshUvs = sourceSprite.uv;
+        var meshTriangles = sourceSprite.triangles;
+
+        RenderTexture renderTexture = RenderTexture.GetTemporary(
+            spriteWidth, spriteHeight, 0,
+            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        RenderTexture previousActiveRenderTexture = RenderTexture.active;
+        RenderTexture.active = renderTexture;
+        GL.Clear(true, true, Color.clear);
+
+        Material spriteMaterial = new Material(Shader.Find("Sprites/Default"));
+        spriteMaterial.mainTexture = atlasTexture;
+        spriteMaterial.SetPass(0);
+
+        GL.PushMatrix();
+        GL.LoadPixelMatrix(0, spriteWidth, 0, spriteHeight);
+        GL.Begin(GL.TRIANGLES);
+        for (int triangleCornerIndex = 0; triangleCornerIndex < meshTriangles.Length; triangleCornerIndex++)
         {
-            pixels[i] = new Color(pixels[i].r, pixels[i].g, pixels[i].b, pixels[i].a);
+            int vertexIndex = meshTriangles[triangleCornerIndex];
+            Vector2 uv = meshUvs[vertexIndex];
+            Vector2 vertex = meshVertices[vertexIndex];
+
+            GL.TexCoord(new Vector3(uv.x, uv.y, 0));
+            GL.Vertex3(
+                vertex.x * sourcePixelsPerUnit + sourcePivotInPixels.x,
+                vertex.y * sourcePixelsPerUnit + sourcePivotInPixels.y,
+                0);
         }
-        texture.SetPixels(pixels);
-        texture.filterMode = FilterMode.Trilinear;
-        texture.Apply();
-        return BuildSpriteWithTexture(texture, pivot, pixelsPerUnit);
+        GL.End();
+        GL.PopMatrix();
+
+        Texture2D bakedTexture = new Texture2D(spriteWidth, spriteHeight, TextureFormat.RGBA32, false);
+        bakedTexture.ReadPixels(new Rect(0, 0, spriteWidth, spriteHeight), 0, 0);
+        bakedTexture.Apply();
+        bakedTexture.wrapMode = TextureWrapMode.Clamp;
+
+        RenderTexture.active = previousActiveRenderTexture;
+        RenderTexture.ReleaseTemporary(renderTexture);
+        UnityEngine.Object.Destroy(spriteMaterial);
+
+        return bakedTexture;
     }
 
-    /// <summary>Builds a sprite from a texture.</summary>
-    /// <param name="texture">The texture to create the sprite from.</param>
-    /// <param name="pivot">The pivot point of the sprite.</param>
-    /// <param name="pixelsPerUnit">The number of pixels per unit for the sprite.</param>
-    /// <returns>The created sprite.</returns>
-    public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f)
-    {
-        return Sprite.Create(
-            texture,
-            new(0, 0, texture.width, texture.height),
-            pivot ?? new(0.5f, 0.5f),
-            pixelsPerUnit ?? 2112f
-        );
-    }
+	public static void CreateInnerOriginSprites()
+	{
+		Plugin.logger.LogInfo($"Creating sprites with inner origin...");
+		SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
 
-    /// <summary>Initializes the Visual manager by patching the necessary methods.</summary>
-    internal static void Init()
-    {
-        Harmony.CreateAndPatchAll(typeof(Visual));
-    }
+		foreach (KeyValuePair<string, SpriteInfo> spriteInfoPair in pendingInnerOriginSpriteInfos)
+		{
+			string spriteName = spriteInfoPair.Key;
+			SpriteInfo spriteInfo = spriteInfoPair.Value;
+
+			Sprite originalSprite = spriteAtlasManager
+				.DoSpriteLookup(spriteInfo.spriteOrigin!.name, TribeType.None, SkinType.Default)
+				.sprite;
+
+			if (originalSprite == null)
+			{
+				Plugin.logger.LogWarning($"Inner origin sprite '{spriteInfo.spriteOrigin.name}' not found for '{spriteName}'");
+				continue;
+			}
+
+			bool hasPivotOverride = spriteInfo.pivot != null;
+			bool hasPixelsPerUnitOverride = spriteInfo.pixelsPerUnit != null;
+
+			Sprite sprite = originalSprite;
+
+			if (hasPivotOverride || hasPixelsPerUnitOverride)
+			{
+				Vector2 normalizedOriginalPivot = new(
+					originalSprite.pivot.x / originalSprite.rect.width,
+					originalSprite.pivot.y / originalSprite.rect.height
+				);
+
+				Vector2 finalPivot = hasPivotOverride ? spriteInfo.pivot!.Value : normalizedOriginalPivot;
+				float finalPixelsPerUnit = hasPixelsPerUnitOverride ? spriteInfo.pixelsPerUnit!.Value : originalSprite.pixelsPerUnit;
+				bool transformToOutline = spriteInfo.transformToOutline;
+				float? gaussianBlurRadius = spriteInfo.gaussianBlurRadius;
+
+				Texture2D bakedTexture = BakeSpriteToTexture(originalSprite);
+				sprite = BuildSpriteWithTexture(bakedTexture, finalPivot, finalPixelsPerUnit, transformToOutline, gaussianBlurRadius);
+				sprite.name = spriteName;
+			}
+
+			RegisterSprite(spriteAtlasManager, spriteName, sprite);
+		}
+
+		pendingInnerOriginSpriteInfos.Clear();
+	}
+
+	/// <summary>Initializes the Visual manager by patching the necessary methods.</summary>
+	internal static void Init()
+	{
+		Harmony.CreateAndPatchAll(typeof(Visual));
+	}
 }

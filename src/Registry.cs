@@ -21,50 +21,32 @@ public static class Registry
     /// </summary>
     public static Dictionary<string, Sprite> sprites = new();
 
-    /// <summary>
-    /// A dictionary of all loaded audio clips, keyed by their name.
-    /// </summary>
-    public static Dictionary<string, AudioSource> audioClips = new();
+	public static Dictionary<string, KeyValuePair<Texture2D, bool>> textures = new(); // string = texture name, bool, whether texture was processed or not. reviwers, pls tell me how to improve
+
+	/// <summary>
+	/// A dictionary of all loaded audio clips, keyed by their name.
+	/// </summary>
+	public static Dictionary<string, AudioSource> audioClips = new();
 
     /// <summary>
     /// A dictionary of all loaded mods, keyed by their ID.
     /// </summary>
     public static Dictionary<string, Mod> mods = new();
 
-    /// <summary>
-    /// A dictionary of tribe previews, keyed by tribe name.
-    /// </summary>
-    public static Dictionary<string, Visual.PreviewTile[]> tribePreviews = new();
+	/// <summary>
+	/// A dictionary of tribe previews, keyed by tribe name.
+	/// </summary>
+	public static Dictionary<string, TribePreviews.PreviewTile[]> tribePreviews = new();
 
     /// <summary>
     /// A dictionary of sprite information, keyed by sprite name.
     /// </summary>
     public static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
 
-    /// <summary>
-    /// A dictionary of prefab names, keyed by their enum value.
-    /// </summary>
-    public static Dictionary<int, string> prefabNames = new();
-
-    /// <summary>
-    /// A dictionary of custom unit prefabs, keyed by their prefab info.
-    /// </summary>
-    public static Dictionary<Visual.PrefabInfo, Unit> unitPrefabs = new();
-
-    /// <summary>
-    /// A dictionary of custom resource prefabs, keyed by their prefab info.
-    /// </summary>
-    public static Dictionary<Visual.PrefabInfo, Resource> resourcePrefabs = new();
-
-    /// <summary>
-    /// A dictionary of custom improvement prefabs, keyed by their prefab info.
-    /// </summary>
-    public static Dictionary<Visual.PrefabInfo, Building> improvementsPrefabs = new();
-
-    /// <summary>
-    /// A dictionary of loaded asset bundles, keyed by their name.
-    /// </summary>
-    public static Dictionary<string, AssetBundle> assetBundles = new();
+	/// <summary>
+	/// A dictionary of loaded asset bundles, keyed by their name.
+	/// </summary>
+	public static Dictionary<string, AssetBundle> assetBundles = new();
 
     /// <summary>
     /// A list of custom tribes.
@@ -86,40 +68,80 @@ public static class Registry
     /// </summary>
     public static int gameModesAutoidx = Enum.GetValues(typeof(GameMode)).Length;
 
-    /// <summary>
-    /// Gets a sprite from the registry, trying to find the best match.
-    /// </summary>
-    /// <param name="name">The name of the sprite.</param>
-    /// <param name="style">The style of the sprite (e.g., tribe or skin).</param>
-    /// <param name="level">The level of the sprite (e.g., for cities).</param>
-    /// <returns>The requested sprite, or null if not found. The lookup priority is: name_style_level, name__level, name_style_, name__.</returns>
-    public static Sprite? GetSprite(string name, string style = "", int level = 0)
-    {
-        Sprite? sprite = null;
-        name = name.ToLower();
-        style = style.ToLower();
-        // This looks backwards, but GetOrDefault returns the provided default value if the key isn't found.
-        // This means `sprite` is updated sequentially, and the last, most-specific match is the one that is kept.
-        sprite = sprites.GetOrDefault($"{name}__", sprite);
-        sprite = sprites.GetOrDefault($"{name}_{style}_", sprite);
-        sprite = sprites.GetOrDefault($"{name}__{level}", sprite);
-        sprite = sprites.GetOrDefault($"{name}_{style}_{level}", sprite);
-        return sprite;
-    }
+	public static Dictionary<Mod, Mod.File> filesQueueToBeProcessedAfterGLDMerge = new(); // I dont know whether I should do sum abt it
 
-    /// <summary>
-    /// Gets an audio clip from the registry.
-    /// </summary>
-    /// <param name="name">The name of the audio clip.</param>
-    /// <param name="style">The style of the audio clip.</param>
-    /// <returns>The requested audio clip, or null if not found.</returns>
-    public static AudioClip? GetAudioClip(string name, string style)
-    {
-        AudioSource? audioSource = null;
-        name = name.ToLower();
-        style = style.ToLower();
-        audioSource = audioClips.GetOrDefault($"{name}_{style}", audioSource);
-        if (audioSource == null) return null;
-        return audioSource.clip;
-    }
+	public static Sprite? GetSprite(string baseName, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default, int level = -1, bool outline = false)
+	{
+		string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
+		string skinText = (skin == SkinType.Default) ? "" : EnumCache<SkinType>.GetName(skin);
+		string levelText = (level == -1) ? "" : level.ToString();
+		return GetSpriteByText(baseName, tribeText, skinText, levelText, outline);
+	}
+	/// <summary>
+	/// Gets a sprite from the registry, trying to find the best match.
+	/// </summary>
+	public static Sprite? GetSpriteByText(string baseName, string tribeText = "", string skinText = "", string levelText = "", bool outline = false)
+	{
+		Sprite? sprite = null;
+		baseName = baseName.ToLower();
+		tribeText = tribeText.ToLower();
+		skinText = skinText.ToLower();
+
+		List<string> spriteNameVariants = new();
+
+		if (levelText != string.Empty)
+			baseName += $"_{levelText}";
+
+		spriteNameVariants.Add(baseName);
+		spriteNameVariants.Add(baseName + "_" + tribeText);
+		spriteNameVariants.Add(baseName + "_" + skinText);
+		spriteNameVariants.Add(baseName + "_" + tribeText + "_" + skinText);
+
+		foreach(string spriteName in spriteNameVariants)
+		{
+			sprite = sprites.GetOrDefault(outline ? spriteName + "_outline" : spriteName, sprite);
+		}
+
+		return sprite;
+	}
+
+	/// <summary>
+	/// Gets an audio clip from the registry.
+	/// </summary>
+	/// <param name="name">The name of the audio clip.</param>
+	/// <param name="style">The style of the audio clip.</param>
+	/// <returns>The requested audio clip, or null if not found.</returns>
+	public static AudioClip? GetAudioClip(string name, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default)
+	{
+		string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
+		string skinText = (skin == SkinType.Default) ? "" : EnumCache<SkinType>.GetName(skin);
+		return GetAudioClipByText(name, tribeText, skinText);
+	}
+
+	/// <summary>
+	/// Gets an audio clip from the registry, trying to find the best match.
+	/// </summary>
+	public static AudioClip? GetAudioClipByText(string baseName, string tribeText = "", string skinText = "")
+	{
+		AudioSource? audioSource = null;
+		baseName = baseName.ToLower();
+		tribeText = tribeText.ToLower();
+		skinText = skinText.ToLower();
+
+		List<string> audioNameVariants = new()
+		{
+			baseName,
+			baseName + "_" + tribeText,
+			baseName + "_" + skinText,
+			baseName + "_" + tribeText + "_" + skinText,
+		};
+
+		foreach (string audioName in audioNameVariants)
+		{
+			audioSource = audioClips.GetOrDefault(audioName, audioSource);
+		}
+
+		if (audioSource == null) return null;
+		return audioSource.clip;
+	}
 }

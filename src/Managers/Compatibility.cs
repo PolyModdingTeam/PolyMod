@@ -1,4 +1,5 @@
 using HarmonyLib;
+using Il2CppInterop.Runtime;
 using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -20,6 +21,12 @@ internal static class Compatibility
     /// </summary>
     internal static bool shouldResetSettings = false;
     private static bool sawSignatureWarning;
+    private const string downloadLink = "https://polymod.dev/download/";
+
+    // TODO: rewrite all of this bullshit! each mod should have a checksum. and then using per mod checksum, we should calculate overall checksum
+    // why? launcher will let you install a mod if u dont have it. if u have a mod with this id, but it doesnt match any checksum of any ver of
+    // this mod on polymod.dev, then we just leave it as "install". if there is a new ver, we can simply put "update"
+    // also add a client mod check or whatever
 
     /// <summary>
     /// Hashes the signatures of all loaded mods to create a checksum.
@@ -87,6 +94,36 @@ internal static class Compatibility
     [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
     private static void StartScreen_UI2_OnShow()
     {
+        if(!Plugin.ValidLaunch && Application.platform != RuntimePlatform.Android)
+        {
+            PopupManager.GetBasicPopupWithData(
+                new(
+                    Localization.Get("polymod.title.invalid"),
+                    Localization.Get("polymod.description.invalid"),
+                    new PopupBase.PopupButtonData[] {
+                        new(
+                            "buttons.exitgame",
+                            PopupBase.PopupButtonData.States.None,
+                            callback: (Il2CppSystem.Action)Application.Quit,
+                            closesPopup: false
+                        ),
+                        new(
+                            "buttons.download.launcher",
+                            PopupBase.PopupButtonData.States.None,
+                            callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OpenSite),
+                            closesPopup: false
+                        )
+                    }
+                )
+            ).Show();
+
+            void OpenSite()
+            {
+                NativeHelpers.OpenURL(downloadLink, false);
+                Application.Quit();
+            }
+            return;
+        }
         string lastChecksum = checksum;
         try
         {
