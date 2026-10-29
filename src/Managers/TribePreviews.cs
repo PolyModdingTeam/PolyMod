@@ -226,4 +226,9 @@ public static class TribePreviews
 			Plugin.logger.LogWarning($"Failed to load debug tribe preview {ex.Message}");
 		}
 	}
+
+	internal static void Init()
+	{
+		Harmony.CreateAndPatchAll(typeof(TribePreviews));
+	}
 }

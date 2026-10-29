@@ -29,6 +29,7 @@ internal static class Hub
 	private const float SETTINGS_POPUP_MAX_WIDTH = 900f;
 	private const float START_SCREEN_MARGIN = 50f;
 	private const float VERSION_LABEL_FONT_SIZE = 18f;
+	private const string INTRO = "intro.mp4";
 
 	private const KeyCode HOTKEY_MODIFIER = KeyCode.LeftControl;
 	private const KeyCode HOTKEY_MODIFIER_ALTERNATIVE = KeyCode.RightControl;
@@ -83,9 +84,8 @@ internal static class Hub
 	[HarmonyPatch(typeof(SplashController), nameof(SplashController.LoadAndPlayClip))]
 	private static bool SplashController_LoadAndPlayClip(SplashController __instance)
 	{
-		string name = "intro.mp4";
-		string path = Path.Combine(Application.persistentDataPath, name);
-		File.WriteAllBytesAsync(path, Plugin.GetResource(name).ReadBytes());
+		string path = Path.Combine(Application.persistentDataPath, INTRO);
+		File.WriteAllBytesAsync(path, Plugin.GetResource(INTRO).ReadBytes());
 		__instance.lastPlayTime = Time.realtimeSinceStartup;
 		__instance.videoPlayer.url = path;
 		__instance.videoPlayer.Play();

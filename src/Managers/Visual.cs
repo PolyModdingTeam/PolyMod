@@ -982,7 +982,5 @@ public static class Visual
 	internal static void Init()
 	{
 		Harmony.CreateAndPatchAll(typeof(Visual));
-		Harmony.CreateAndPatchAll(typeof(Prefabs));
-		Harmony.CreateAndPatchAll(typeof(TribePreviews));
 	}
 }

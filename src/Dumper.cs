@@ -237,6 +237,25 @@ internal static class Dumper
 				});
 			}
 
+			foreach (var entry in PrefabManager.weapons)
+			{
+				WeaponGFX weaponGFX = entry.Value;
+				prefabsInfo.weapons.Add(new WeaponPrefabInfo
+				{
+					weaponEnum = entry.Key,
+					spriteName = weaponGFX.defaultSprite.name,
+					pathType = weaponGFX.pathType,
+					pathMode = weaponGFX.pathMode,
+					pathResolution = weaponGFX.pathResolution,
+					pathEase = weaponGFX.pathEase,
+					lookAheadOffset = weaponGFX.lookAheadOffset,
+					handleAngleOffset = weaponGFX.handleAngleOffset,
+					sfxType = SFXTypes.None, //TODO
+					weaponPuffInfo = null, //TODO
+					weaponRangedInfo = null //TODO
+				});
+			}
+
 			File.WriteAllText(
 				Path.Combine(Plugin.PREFABS_DUMP_PATH, "prefabs.json"),
 				JsonSerializer.Serialize(prefabsInfo, INDENTED_WITH_VECTORS)

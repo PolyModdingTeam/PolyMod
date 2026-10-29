@@ -145,11 +145,15 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 			return;
 
 		Compatibility.Init();
+
 		Audio.Init();
 		Loc.Init();
-		Visual.Init();
-		Hub.Init();
 
+		Visual.Init();
+		Prefabs.Init();
+		TribePreviews.Init();
+
+		Hub.Init();
 		Main.Init();
 	}
 

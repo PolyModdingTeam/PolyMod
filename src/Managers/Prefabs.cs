@@ -1,4 +1,5 @@
 using HarmonyLib;
+using Il2CppInterop.Runtime;
 using Polytopia.Data;
 using PolytopiaBackendBase.Common;
 using UnityEngine;
@@ -23,8 +24,22 @@ public static class Prefabs
 
 	public static List<ResourcePrefabInfo> resourceInfos = new();
 
+	public static List<WeaponPrefabInfo> weaponInfos = new();
+
 	internal static Dictionary<ImprovementData.Type, bool> improvementPrefabInfosToCreate = new();
 	internal static List<ResourceData.Type> resourcePrefabsInfosToCreate = new();
+
+	internal static Dictionary<UnitData.WeaponEnum, bool> weaponProjectilesCache = new();
+	internal static Dictionary<UnitData.WeaponEnum, float> weaponAnimTimeCache = new()
+	{
+		{UnitData.WeaponEnum.Sting, 0.5f},
+		{UnitData.WeaponEnum.IceArrow, 1f},
+		{UnitData.WeaponEnum.Gun, 1.5f}, // __instance.Sway(); __instance.Tile.SpawnDarkPuff();
+		{UnitData.WeaponEnum.FireBlow, 2f}, // __instance.Tile.SpawnDarkPuff();
+		{UnitData.WeaponEnum.Poison, 2f}, // __instance.Tile.SpawnPoison(__instance.Owner.GetVisualSkin());
+		{UnitData.WeaponEnum.Pierce, 1f},
+		{UnitData.WeaponEnum.Water, 1.5f}, // __instance.Sway(); __instance.Tile.SpawnPuff();
+	};
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.Awake))]
@@ -131,6 +146,90 @@ public static class Prefabs
 		}
 		visualSetting.hasValidOutline = flag2;
     }
+
+    [HarmonyPrefix] // overrides again.......
+    [HarmonyPatch(typeof(Unit), nameof(Unit.IsProjectile))]
+	private static bool Unit_IsProjectile(ref bool __result, UnitData.WeaponEnum weapon)
+	{
+		if(!weaponProjectilesCache.ContainsKey(weapon))
+			return true;
+
+		__result = weaponProjectilesCache[weapon];
+		return false;
+	}
+
+    [HarmonyPrefix] // overrides again.......
+    [HarmonyPatch(typeof(Unit), nameof(Unit.Attack))]
+	private static bool Unit_Attack(Unit __instance, WorldCoordinates target, bool moveToTarget, Action onComplete)
+	{
+		UnitData.WeaponEnum weaponEnum = __instance.unitData.weapon;
+		List<WeaponPrefabInfo> weaponPrefabInfos = weaponInfos.Where(weaponInfo => weaponInfo.weaponEnum == weaponEnum).ToList();
+		if(weaponPrefabInfos.Count == 0)
+			return true;
+
+		WeaponPrefabInfo weaponPrefabInfo = weaponPrefabInfos.Last();
+		float chebyshevDistance = MapDataExtensions.ChebyshevDistance(__instance.Tile.Coordinates, target);
+
+		float animationTime = 0.2f + chebyshevDistance * 0.05f;
+		Tile targetTile = MapRenderer.Current.GetTileInstance(target);
+
+		WeaponGFX pooledObject = ObjectPool.GetPooledObject<WeaponGFX>(GetPrefab(weaponEnum).gameObject);
+		pooledObject.IsUsed = true;
+		Vector3 center = SkinVisualsRenderer.GetSpriteBounds(__instance.skinVisuals).center;
+		pooledObject.transform.position = __instance.transform.position + center;
+		pooledObject.SetSkin(__instance.Owner.GetVisualSkin());
+
+		if ((bool)targetTile.Unit)
+		{
+			targetTile.Unit.Flipped = targetTile.Unit.UnitState.flipped;
+		}
+		__instance.Flipped = __instance.UnitState.flipped;
+
+		if(weaponPrefabInfo.weaponPuffInfo != null)
+		{
+			animationTime *= weaponPrefabInfo.weaponPuffInfo.animationMultiplier;
+			if(weaponPrefabInfo.weaponPuffInfo.sway)
+				__instance.Sway();
+		}
+		if (Unit.IsProjectile(weaponEnum))
+		{
+			if(weaponPrefabInfo.weaponPuffInfo != null && weaponPrefabInfo.weaponPuffInfo!.animationDelegate != null)
+				pooledObject.AnimateRanged(animationTime, target, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(weaponPrefabInfo.weaponPuffInfo!.animationDelegate!));
+			else
+				pooledObject.AnimateRanged(animationTime, target);
+		}
+		else
+		{
+			pooledObject.AnimateCloseRangeAttack(0.2f);
+		}
+
+		if (__instance.unitData.GetRange() < 2)
+		{
+			__instance.AnimateMeleeAttackMovement(targetTile, moveToTarget, onComplete);
+		}
+		else
+		{
+			GameManager.DelayCall((int)(animationTime * 1000f), onComplete);
+		}
+
+		return false;
+	}
+
+    [HarmonyPrefix] // testing.......
+    [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.AnimateCloseRangeAttack))]
+	public static bool WeaponGFX_AnimateCloseRangeAttack(ref float animTime, Action onComplete)
+	{
+		animTime = 100000f;
+		return true;
+	}
+
+    [HarmonyPrefix] // testing.......
+    [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.AnimateRanged))]
+	public static bool WeaponGFX_AnimateRanged(ref float animTime, WorldCoordinates to, Action onComplete)
+	{
+		animTime = 100000f;
+		return true;
+	}
 
     private static Unit ResolveUnitPrefab(UnitData.Type unitType, TribeType tribeType, SkinType skinType)
     {
@@ -549,4 +648,9 @@ public static class Prefabs
 	}
 
 	#endregion
+
+	internal static void Init()
+	{
+		Harmony.CreateAndPatchAll(typeof(Prefabs));
+	}
 }
