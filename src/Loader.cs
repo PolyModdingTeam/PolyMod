@@ -414,7 +414,8 @@ public static class Loader
 		}
 		Compatibility.HashSignatures(checksumString);
 	}
-	private static void CheckDependencies(Dictionary<string, Mod> mods)
+
+	internal static void CheckDependencies(Dictionary<string, Mod> mods)
 	{
 		foreach (var (id, mod) in mods)
 		{
@@ -458,7 +459,7 @@ public static class Loader
 	/// </summary>
 	/// <param name="mods">The dictionary of mods to sort.</param>
 	/// <returns>True if the mods could be sorted (no circular dependencies), false otherwise.</returns>
-	private static bool SortMods(Dictionary<string, Mod> mods)
+	internal static bool SortMods(Dictionary<string, Mod> mods)
 	{
 		Stopwatch s = new();
 		Dictionary<string, List<string>> graph = new();

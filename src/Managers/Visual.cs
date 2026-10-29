@@ -59,8 +59,8 @@ public static class Visual
 		Inner // Inner means sprite is to be fetched from game's files
 	}
 
-	/// <summary>Represents information about a custom skin.</summary>
-	public record SkinInfo(int idx, string id, SkinData? skinData);
+    /// <summary>Represents information about a custom skin.</summary>
+    public record SkinInfo(int idx, string id, SkinData? skinData);
 
 	/// <summary>A dictionary of custom widths for basic popups.</summary>
 	public static Dictionary<int, PopupWidth> basicPopupWidths = new();
@@ -86,14 +86,14 @@ public static class Visual
     private static Dictionary<string, string>? cachedSpriteDataReverse = null;
 	private static Dictionary<string, string> cachedReversedNames = new();
 
-	#region General
+    #region General
 
-	/// <summary>A placeholder patch for the TechItem.SetupComplete method.</summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(TechItem), nameof(TechItem.SetupComplete))]
-	private static void TechItem_SetupComplete()
-	{
-	}
+    /// <summary>A placeholder patch for the TechItem.SetupComplete method.</summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(TechItem), nameof(TechItem.SetupComplete))]
+    private static void TechItem_SetupComplete()
+    {
+    }
 
 	/// <summary>Patches the sprite atlas manager to look up custom sprites.</summary>
 	internal static void CacheSpriteNames()
@@ -234,8 +234,8 @@ public static class Visual
 			__result = EnumCache<ImprovementData.Type>.GetName(improvement);
 	}
 
-	#endregion
-	#region Level
+    #endregion
+    #region Level
 
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(Tile), nameof(Tile.RenderDebug))]
@@ -312,33 +312,33 @@ public static class Visual
 		return false;
 	}
 
-	/// <summary>Adds custom flood tile effect when tile is flooded for custom aqua skins.</summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(TileData), nameof(TileData.Flood))]
-	private static void TileData_Flood(TileData __instance, PlayerState playerState)
-	{
-		if(customFloodingSkins.ContainsValue(playerState.skinType))
-		{
-			TileData.EffectType effectType = customFloodingSkins.FirstOrDefault(x => x.Value == playerState.skinType).Key;
-			__instance.AddEffect(effectType);	
-		}
-	}
+    /// <summary>Adds custom flood tile effect when tile is flooded for custom aqua skins.</summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(TileData), nameof(TileData.Flood))]
+    private static void TileData_Flood(TileData __instance, PlayerState playerState)
+    {
+        if (customFloodingSkins.ContainsValue(playerState.skinType))
+        {
+            TileData.EffectType effectType = customFloodingSkins.FirstOrDefault(x => x.Value == playerState.skinType).Key;
+            __instance.AddEffect(effectType);
+        }
+    }
 
-	/// <summary>Removes custom flood effect loc from tile tip header.</summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(TileTipGenerator), nameof(TileTipGenerator.GetTileTipHeader))]
-	public static void GetTileTipHeader(ref string __result, TileData tileData, SkinType skin,
-											PlayerState playerState, GameState gameState, GameLogicData gameLogicData)
-	{
-		foreach(var effect in tileData.effects)
-		{
-			if(customFloodingSkins.ContainsKey(effect))
-			{
-				string localizedEffect = Localization.GetSkinned(skin, playerState.tribe, $"tile.effect.{effect.GetName()}");
-				__result = __result.Replace($", {localizedEffect}", string.Empty);
-			}
-		}
-	}
+    /// <summary>Removes custom flood effect loc from tile tip header.</summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(TileTipGenerator), nameof(TileTipGenerator.GetTileTipHeader))]
+    public static void GetTileTipHeader(ref string __result, TileData tileData, SkinType skin,
+                                            PlayerState playerState, GameState gameState, GameLogicData gameLogicData)
+    {
+        foreach (var effect in tileData.effects)
+        {
+            if (customFloodingSkins.ContainsKey(effect))
+            {
+                string localizedEffect = Localization.GetSkinned(skin, playerState.tribe, $"tile.effect.{effect.GetName()}");
+                __result = __result.Replace($", {localizedEffect}", string.Empty);
+            }
+        }
+    }
 
 	/// <summary>Forces an update of the mesh for a PolytopiaSpriteRenderer with a custom sprite.</summary>
 	[HarmonyPostfix]
@@ -354,16 +354,16 @@ public static class Visual
 		__instance.meshRenderer.SetPropertyBlock(materialPropertyBlock);
 	}
 
-	#endregion
-	#region Popups
+    #endregion
+    #region Popups
 
-	/// <summary>Updates the width of a basic popup if a custom width is set.</summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeightWhenHeightIsKnownAndDontUseCoroutines))]
-	private static void PopupBase_RefreshHeightWhenHeightIsKnownAndDontUseCoroutines(PopupBase __instance)
-	{
-		UpdateWidth(__instance);
-	}
+    /// <summary>Updates the width of a basic popup if a custom width is set.</summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeightWhenHeightIsKnownAndDontUseCoroutines))]
+    private static void PopupBase_RefreshHeightWhenHeightIsKnownAndDontUseCoroutines(PopupBase __instance)
+    {
+        UpdateWidth(__instance);
+    }
 
 	private static void UpdateWidth(PopupBase popup)
 	{
@@ -501,13 +501,13 @@ public static class Visual
 		}
 	}
 
-	/// <summary>Removes a popup's custom width when it is hidden.</summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
-	private static void PopupBase_Hide(PopupBase __instance)
-	{
-		basicPopupWidths.Remove(__instance.GetInstanceID());
-	}
+    /// <summary>Removes a popup's custom width when it is hidden.</summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
+    private static void PopupBase_Hide(PopupBase __instance)
+    {
+        basicPopupWidths.Remove(__instance.GetInstanceID());
+    }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
@@ -523,29 +523,29 @@ public static class Visual
 		if(seenWarningWCPopup)
 			return true;
 
-		BasicPopup popup = PopupManager.GetBasicPopup();
-		popup.Header = Localization.Get("polymod.hub");
-		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", new Il2CppSystem.Object[] { }) });
+        BasicPopup popup = PopupManager.GetBasicPopup();
+        popup.Header = Localization.Get("polymod.hub");
+        popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", new Il2CppSystem.Object[] { }) });
 
-		void WCProceed()
-		{
-			seenWarningWCPopup = true;
-			__instance.OnWeeklyChallengeClicked();
-		}
-		List<PopupBase.PopupButtonData> popupButtons = new()
-		{
-			new("buttons.back"),
-			new(
-				"polymod.wc.proceed",
-				PopupBase.PopupButtonData.States.None,
-				callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(WCProceed),
-				customColorStates: ColorConstants.redButtonColorStates
-			)
-		};
-		popup.buttonData = popupButtons.ToArray();
-		popup.Show();
-		return false;
-	}
+        void WCProceed()
+        {
+            seenWarningWCPopup = true;
+            __instance.OnWeeklyChallengeClicked();
+        }
+        List<PopupBase.PopupButtonData> popupButtons = new()
+        {
+            new("buttons.back"),
+            new(
+                "polymod.wc.proceed",
+                PopupBase.PopupButtonData.States.None,
+                callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(WCProceed),
+                customColorStates: ColorConstants.redButtonColorStates
+            )
+        };
+        popup.buttonData = popupButtons.ToArray();
+        popup.Show();
+        return false;
+    }
 
 	/// <summary>Shows a basic popup with a custom width.</summary>
 	public static void ShowSetWidth(this BasicPopupLegacy self, int width)
@@ -561,21 +561,21 @@ public static class Visual
 		self.Show();
 	}
 
-	#endregion
+    #endregion
 
-	internal static BasicPopupLegacy GetBasicPopupLegacy()
-	{
-		WhatsNewPopup whatsNewPopup = PopupManager.GetWhatsNewPopup();
-		BasicPopupLegacy original = PopupManager.instance.popupPrefabs[BASIC_POPUP_LEGACY_ID].Cast<BasicPopupLegacy>();
-		BasicPopupLegacy basicPopupLegacy = UnityEngine.Object.Instantiate(original, PopupManager.instance.transform);
-		basicPopupLegacy.buttonContainer = GameObject.Instantiate(whatsNewPopup.buttonContainer, basicPopupLegacy.transform);
-		basicPopupLegacy.popupId = "basicPopupLegacy";
-		basicPopupLegacy.popupManager = PopupManager.instance;
-		basicPopupLegacy.Init();
-		basicPopupLegacy.identifier = null;
-		basicPopupLegacy.rectTransform.SetAsLastSibling();
-		return basicPopupLegacy;
-	}
+    internal static BasicPopupLegacy GetBasicPopupLegacy()
+    {
+        WhatsNewPopup whatsNewPopup = PopupManager.GetWhatsNewPopup();
+        BasicPopupLegacy original = PopupManager.instance.popupPrefabs[BASIC_POPUP_LEGACY_ID].Cast<BasicPopupLegacy>();
+        BasicPopupLegacy basicPopupLegacy = UnityEngine.Object.Instantiate(original, PopupManager.instance.transform);
+        basicPopupLegacy.buttonContainer = GameObject.Instantiate(whatsNewPopup.buttonContainer, basicPopupLegacy.transform);
+        basicPopupLegacy.popupId = "basicPopupLegacy";
+        basicPopupLegacy.popupManager = PopupManager.instance;
+        basicPopupLegacy.Init();
+        basicPopupLegacy.identifier = null;
+        basicPopupLegacy.rectTransform.SetAsLastSibling();
+        return basicPopupLegacy;
+    }
 
 	public static Texture2D BuildTexture(byte[] data)
 	{

@@ -11,15 +11,15 @@ namespace PolyMod;
 /// </summary>
 public static class Registry
 {
-	/// <summary>
-	/// The next available index for automatically assigned IDs.
-	/// </summary>
-	public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
+    /// <summary>
+    /// The next available index for automatically assigned IDs.
+    /// </summary>
+    public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
 
-	/// <summary>
-	/// A dictionary of all loaded sprites, keyed by their name.
-	/// </summary>
-	public static Dictionary<string, Sprite> sprites = new();
+    /// <summary>
+    /// A dictionary of all loaded sprites, keyed by their name.
+    /// </summary>
+    public static Dictionary<string, Sprite> sprites = new();
 
 	public static Dictionary<string, KeyValuePair<Texture2D, bool>> textures = new(); // string = texture name, bool, whether texture was processed or not. reviwers, pls tell me how to improve
 
@@ -28,45 +28,45 @@ public static class Registry
 	/// </summary>
 	public static Dictionary<string, AudioSource> audioClips = new();
 
-	/// <summary>
-	/// A dictionary of all loaded mods, keyed by their ID.
-	/// </summary>
-	public static Dictionary<string, Mod> mods = new();
+    /// <summary>
+    /// A dictionary of all loaded mods, keyed by their ID.
+    /// </summary>
+    public static Dictionary<string, Mod> mods = new();
 
 	/// <summary>
 	/// A dictionary of tribe previews, keyed by tribe name.
 	/// </summary>
 	public static Dictionary<string, TribePreviews.PreviewTile[]> tribePreviews = new();
 
-	/// <summary>
-	/// A dictionary of sprite information, keyed by sprite name.
-	/// </summary>
-	public static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
+    /// <summary>
+    /// A dictionary of sprite information, keyed by sprite name.
+    /// </summary>
+    public static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
 
 	/// <summary>
 	/// A dictionary of loaded asset bundles, keyed by their name.
 	/// </summary>
 	public static Dictionary<string, AssetBundle> assetBundles = new();
 
-	/// <summary>
-	/// A list of custom tribes.
-	/// </summary>
-	public static List<TribeType> customTribes = new();
+    /// <summary>
+    /// A list of custom tribes.
+    /// </summary>
+    public static List<TribeType> customTribes = new();
 
-	/// <summary>
-	/// A list of custom skin information.
-	/// </summary>
-	public static List<Visual.SkinInfo> skinInfo = new();
+    /// <summary>
+    /// A list of custom skin information.
+    /// </summary>
+    public static List<Visual.SkinInfo> skinInfo = new();
 
-	/// <summary>
-	/// The next available index for climate styles.
-	/// </summary>
-	public static int climateAutoidx = (int)Enum.GetValues(typeof(TribeType)).Cast<TribeType>().Last();
+    /// <summary>
+    /// The next available index for climate styles.
+    /// </summary>
+    public static int climateAutoidx = (int)Enum.GetValues(typeof(TribeType)).Cast<TribeType>().Last();
 
-	/// <summary>
-	/// The next available index for game modes.
-	/// </summary>
-	public static int gameModesAutoidx = Enum.GetValues(typeof(GameMode)).Length;
+    /// <summary>
+    /// The next available index for game modes.
+    /// </summary>
+    public static int gameModesAutoidx = Enum.GetValues(typeof(GameMode)).Length;
 
 	public static Dictionary<Mod, Mod.File> filesQueueToBeProcessedAfterGLDMerge = new(); // I dont know whether I should do sum abt it
 

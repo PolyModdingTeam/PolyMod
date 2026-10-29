@@ -32,16 +32,16 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
     	public List<string> disabledMods { get; init; } = new();
 	};
 
-	/// <summary>
-	/// The starting index for automatically assigned IDs.
-	/// </summary>
-	internal const int AUTOIDX_STARTS_FROM = 1000;
+    /// <summary>
+    /// The starting index for automatically assigned IDs.
+    /// </summary>
+    internal const int AUTOIDX_STARTS_FROM = 1000;
 
-	/// <summary>
-	/// The key used to store the last version for which the incompatibility warning was shown.
-	/// </summary>
-	internal const string INCOMPATIBILITY_WARNING_LAST_VERSION_KEY
-		= "INCOMPATIBILITY_WARNING_LAST_VERSION";
+    /// <summary>
+    /// The key used to store the last version for which the incompatibility warning was shown.
+    /// </summary>
+    internal const string INCOMPATIBILITY_WARNING_LAST_VERSION_KEY
+        = "INCOMPATIBILITY_WARNING_LAST_VERSION";
 
 	internal const int LAUNCH_DATA_TIMEOUT = 2000;
 
@@ -50,25 +50,25 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	/// </summary>
 	public static readonly string BASE_PATH = Path.Combine(BepInEx.Paths.BepInExRootPath, "..");
 
-	/// <summary>
-	/// The path to the mods directory.
-	/// </summary>
-	public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
+    /// <summary>
+    /// The path to the mods directory.
+    /// </summary>
+    public static readonly string MODS_PATH = Path.Combine(BASE_PATH, "Mods");
 
-	/// <summary>
-	/// The path to the directory where game data is dumped.
-	/// </summary>
-	public static readonly string DUMPED_DATA_PATH = Path.Combine(BASE_PATH, "DumpedData");
+    /// <summary>
+    /// The path to the directory where game data is dumped.
+    /// </summary>
+    public static readonly string DUMPED_DATA_PATH = Path.Combine(BASE_PATH, "DumpedData");
 
-	/// <summary>
-	/// The path to the directory where localization is dumped.
-	/// </summary>
-	public static readonly string LOGIC_DUMP_PATH = Path.Combine(DUMPED_DATA_PATH, "Logic");
+    /// <summary>
+    /// The path to the directory where localization is dumped.
+    /// </summary>
+    public static readonly string LOGIC_DUMP_PATH = Path.Combine(DUMPED_DATA_PATH, "Logic");
 
-	/// <summary>
-	/// The path to the directory where gameLogicData and avatarData are dumped.
-	/// </summary>
-	public static readonly string LOCALIZATION_DUMP_PATH = Path.Combine(DUMPED_DATA_PATH, "Localization");
+    /// <summary>
+    /// The path to the directory where gameLogicData and avatarData are dumped.
+    /// </summary>
+    public static readonly string LOCALIZATION_DUMP_PATH = Path.Combine(DUMPED_DATA_PATH, "Localization");
 
 	/// <summary>
 	/// The path to the directory where sprites and sprite infos are dumped.
@@ -85,66 +85,66 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	/// </summary>
 	internal static readonly string CONFIG_PATH = Path.Combine(BASE_PATH, "PolyMod.json");
 
-	/// <summary>
-	/// The path to the checksum file.
-	/// </summary>
-	internal static readonly string CHECKSUM_PATH
-		= Path.Combine(BASE_PATH, "CHECKSUM");
+    /// <summary>
+    /// The path to the checksum file.
+    /// </summary>
+    internal static readonly string CHECKSUM_PATH
+        = Path.Combine(BASE_PATH, "CHECKSUM");
 
-	/// <summary>
-	/// The link to the PolyMod Discord server.
-	/// </summary>
-	internal static readonly string DISCORD_LINK = "https://discord.gg/eWPdhWtfVy";
+    /// <summary>
+    /// The link to the PolyMod Discord server.
+    /// </summary>
+    internal static readonly string DISCORD_LINK = "https://discord.gg/eWPdhWtfVy";
 
-	/// <summary>
-	/// A list of log messages to ignore.
-	/// </summary>
-	internal static readonly List<string> LOG_MESSAGES_IGNORE = new()
-	{
-		"Failed to find atlas",
-		"Could not find sprite",
-		"Couldn't find prefab for type",
-		"MARKET: id:",
-		"Missing name for value",
-	};
+    /// <summary>
+    /// A list of log messages to ignore.
+    /// </summary>
+    internal static readonly List<string> LOG_MESSAGES_IGNORE = new()
+    {
+        "Failed to find atlas",
+        "Could not find sprite",
+        "Couldn't find prefab for type",
+        "MARKET: id:",
+        "Missing name for value",
+    };
 
 
 #pragma warning disable CS8618
-	/// <summary>
-	/// The PolyMod configuration.
-	/// </summary>
-	internal static PolyConfig config;
+    /// <summary>
+    /// The PolyMod configuration.
+    /// </summary>
+    internal static PolyConfig config;
 
-	/// <summary>
-	/// The logger instance for PolyMod.
-	/// </summary>
-	internal static ManualLogSource logger;
+    /// <summary>
+    /// The logger instance for PolyMod.
+    /// </summary>
+    internal static ManualLogSource logger;
 #pragma warning restore CS8618
 
-	/// <summary>
-	/// The entry point for the plugin.
-	/// </summary>
-	public override void Load()
-	{
-		try
-		{
-			config = JsonSerializer.Deserialize<PolyConfig>(File.ReadAllText(CONFIG_PATH))!;
-		}
-		catch
-		{
-			config = new();
-		}
-		WriteConfig();
-		UpdateConsole();
-		logger = Log;
-		ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
+    /// <summary>
+    /// The entry point for the plugin.
+    /// </summary>
+    public override void Load()
+    {
+        try
+        {
+            config = JsonSerializer.Deserialize<PolyConfig>(File.ReadAllText(CONFIG_PATH))!;
+        }
+        catch
+        {
+            config = new();
+        }
+        WriteConfig();
+        UpdateConsole();
+        logger = Log;
+        ConfigFile.CoreConfig[new("Logging.Disk", "WriteUnityLog")].BoxedValue = true;
 
 		CaptureLaunchData();
 
 		if(Disabled)
 			return;
 
-		Compatibility.Init();
+        Compatibility.Init();
 
 		Audio.Init();
 		Loc.Init();
@@ -194,13 +194,13 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 		)!;
 	}
 
-	/// <summary>
-	/// Writes the configuration to disk.
-	/// </summary>
-	internal static void WriteConfig()
-	{
-		File.WriteAllText(CONFIG_PATH, JsonSerializer.Serialize(config));
-	}
+    /// <summary>
+    /// Writes the configuration to disk.
+    /// </summary>
+    internal static void WriteConfig()
+    {
+        File.WriteAllText(CONFIG_PATH, JsonSerializer.Serialize(config));
+    }
 
 	/// <summary>
 	/// Updates the console based on the debug configuration.
