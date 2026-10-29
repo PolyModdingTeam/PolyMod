@@ -29,6 +29,9 @@ internal static class Hub
 	private const float SETTINGS_POPUP_MAX_WIDTH = 900f;
 	private const float START_SCREEN_MARGIN = 50f;
 	private const float VERSION_LABEL_FONT_SIZE = 18f;
+	private const float VERSION_LABEL_GAP = 10f;
+	/// <summary>Margin the game keeps between the safe area and its own corner widgets.</summary>
+	private const float VERSION_LABEL_MARGIN = 15f;
 	private const string INTRO = "intro.mp4";
 
 	private const KeyCode HOTKEY_MODIFIER = KeyCode.LeftControl;
@@ -103,7 +106,10 @@ internal static class Hub
 		brokenModsBadge = UILibrary.NewNotificationBadge(polyModButton.rectTransform).SetValue(CountBrokenMods());
 		polyModButton.SetOverlay(brokenModsBadge, UIButtonBase_UI2.OverlayPosition.TopRight);
 
-		polyModVersion = UILibrary.NewText(transform, "PolyModVersion");
+		// NewHeaderTinyText is the prefab a round button builds its own title from, so the label
+		// keeps the game's header font rather than the lighter body font NewText would give it.
+		polyModVersion = UILibrary.NewHeaderTinyText(transform);
+		polyModVersion.gameObject.name = "PolyModVersion";
 		polyModVersion.textField.fontSize = VERSION_LABEL_FONT_SIZE;
 		polyModVersion.textField.color = Color.white;
 		polyModVersion.Text = $"PolyMod {Plugin.VERSION}";
@@ -117,7 +123,7 @@ internal static class Hub
 	/// </summary>
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.RunLayout))]
-	private static void StartScreen_UI2_RunLayout(ScreenBase_UI2.ScreenSize screenSize)
+	private static void StartScreen_UI2_RunLayout(StartScreen_UI2 __instance, ScreenBase_UI2.ScreenSize screenSize)
 	{
 		if (polyModButton == null || polyModVersion == null)
 		{
@@ -136,10 +142,22 @@ internal static class Hub
 		);
 		brokenModsBadge?.SetValue(CountBrokenMods());
 
-		polyModVersion.SetPosition(
-			screenSize.safeRect.Left + START_SCREEN_MARGIN * 1.15f,
-			screenSize.safeRect.Bottom + START_SCREEN_MARGIN * 1.15f
-		);
+		// Anchored by its edges, not its centre, so a longer version string cannot run off screen.
+		float versionX = screenSize.safeRect.Left + VERSION_LABEL_MARGIN + polyModVersion.GetHalfWidth();
+		float versionY = screenSize.safeRect.Bottom + VERSION_LABEL_MARGIN + polyModVersion.GetHalfHeight();
+		polyModVersion.SetPosition(versionX, versionY);
+
+		// The bottom row of buttons is centred and of fixed width, so a narrow window walks it into
+		// the version label. The row is already laid out by now, so lift the label clear of it.
+		UIRoundButton_UI2 bottomRowStart = __instance.settingsButton;
+		if (bottomRowStart != null
+			&& polyModVersion.GetRight() + VERSION_LABEL_GAP > bottomRowStart.GetLeft())
+		{
+			polyModVersion.SetPosition(
+				versionX,
+				bottomRowStart.GetTop() + polyModVersion.GetHalfHeight() + VERSION_LABEL_GAP
+			);
+		}
 	}
 
 	[HarmonyPostfix]
