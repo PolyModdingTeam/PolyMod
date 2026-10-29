@@ -5,7 +5,7 @@
         <Nullable>enable</Nullable>
         <Configurations>IL2CPP</Configurations>
         <RootNamespace>PolyMod</RootNamespace>
-        <Version>1.2.18</Version>
+        <Version>1.2.19</Version>
         <PolytopiaVersion>2.17.3.16375</PolytopiaVersion>
         <Authors>PolyModdingTeam</Authors>
         <Description>The Battle of Polytopia's mod loader.</Description>
@@ -23,7 +23,9 @@
         </PackageReference>
         <PackageReference Include="Scriban" Version="6.2.1" />
         <PackageReference Include="TheBattleOfPolytopia" Version="$(PolytopiaVersion)" />
-        <EmbeddedResource Include="resources\*.*" />
+        <EmbeddedResource Include="..\resources\*.*">
+            <LogicalName>$(RootNamespace).resources.%(Filename)%(Extension)</LogicalName>
+        </EmbeddedResource>
         <InternalsVisibleTo Include="Tests" />
     </ItemGroup>
 
