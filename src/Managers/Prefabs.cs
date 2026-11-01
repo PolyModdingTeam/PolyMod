@@ -20,17 +20,15 @@ public static class Prefabs
 
 	public static List<UnitPrefabInfo> unitInfos = new();
 
-	public static List<ImprovementPrefabInfo> improvementInfos = new();
-
 	public static List<ResourcePrefabInfo> resourceInfos = new();
 
-	public static List<WeaponPrefabInfo> weaponInfos = new();
-
+	public static List<ImprovementPrefabInfo> improvementInfos = new();
 	internal static Dictionary<ImprovementData.Type, bool> improvementPrefabInfosToCreate = new();
 	internal static List<ResourceData.Type> resourcePrefabsInfosToCreate = new();
 
-	internal static Dictionary<UnitData.WeaponEnum, bool> weaponProjectilesCache = new();
-	internal static Dictionary<UnitData.WeaponEnum, float> weaponAnimTimeCache = new()
+	private static List<WeaponPrefabInfo> weaponInfos = new();
+	private static Dictionary<UnitData.WeaponEnum, bool> weaponProjectilesCache = new();
+	private static Dictionary<UnitData.WeaponEnum, float> weaponAnimTimeCache = new()
 	{
 		{UnitData.WeaponEnum.Sting, 0.5f},
 		{UnitData.WeaponEnum.IceArrow, 1f},
@@ -147,73 +145,73 @@ public static class Prefabs
 		visualSetting.hasValidOutline = flag2;
     }
 
-    [HarmonyPrefix] // overrides again.......
-    [HarmonyPatch(typeof(Unit), nameof(Unit.IsProjectile))]
-	private static bool Unit_IsProjectile(ref bool __result, UnitData.WeaponEnum weapon)
-	{
-		if(!weaponProjectilesCache.ContainsKey(weapon))
-			return true;
+    // [HarmonyPrefix] // overrides again.......
+    // [HarmonyPatch(typeof(Unit), nameof(Unit.IsProjectile))]
+	// private static bool Unit_IsProjectile(ref bool __result, UnitData.WeaponEnum weapon)
+	// {
+	// 	if(!weaponProjectilesCache.ContainsKey(weapon))
+	// 		return true;
 
-		__result = weaponProjectilesCache[weapon];
-		return false;
-	}
+	// 	__result = weaponProjectilesCache[weapon];
+	// 	return false;
+	// }
 
-    [HarmonyPrefix] // overrides again.......
-    [HarmonyPatch(typeof(Unit), nameof(Unit.Attack))]
-	private static bool Unit_Attack(Unit __instance, WorldCoordinates target, bool moveToTarget, Action onComplete)
-	{
-		UnitData.WeaponEnum weaponEnum = __instance.unitData.weapon;
-		List<WeaponPrefabInfo> weaponPrefabInfos = weaponInfos.Where(weaponInfo => weaponInfo.weaponEnum == weaponEnum).ToList();
-		if(weaponPrefabInfos.Count == 0)
-			return true;
+    // [HarmonyPrefix] // overrides again.......
+    // [HarmonyPatch(typeof(Unit), nameof(Unit.Attack))]
+	// private static bool Unit_Attack(Unit __instance, WorldCoordinates target, bool moveToTarget, Action onComplete)
+	// {
+	// 	UnitData.WeaponEnum weaponEnum = __instance.unitData.weapon;
+	// 	List<WeaponPrefabInfo> weaponPrefabInfos = weaponInfos.Where(weaponInfo => weaponInfo.weaponEnum == weaponEnum).ToList();
+	// 	if(weaponPrefabInfos.Count == 0)
+	// 		return true;
 
-		WeaponPrefabInfo weaponPrefabInfo = weaponPrefabInfos.Last();
-		float chebyshevDistance = MapDataExtensions.ChebyshevDistance(__instance.Tile.Coordinates, target);
+	// 	WeaponPrefabInfo weaponPrefabInfo = weaponPrefabInfos.Last();
+	// 	float chebyshevDistance = MapDataExtensions.ChebyshevDistance(__instance.Tile.Coordinates, target);
 
-		float animationTime = 0.2f + chebyshevDistance * 0.05f;
-		Tile targetTile = MapRenderer.Current.GetTileInstance(target);
+	// 	float animationTime = 0.2f + chebyshevDistance * 0.05f;
+	// 	Tile targetTile = MapRenderer.Current.GetTileInstance(target);
 
-		WeaponGFX pooledObject = ObjectPool.GetPooledObject<WeaponGFX>(GetPrefab(weaponEnum).gameObject);
-		pooledObject.IsUsed = true;
-		Vector3 center = SkinVisualsRenderer.GetSpriteBounds(__instance.skinVisuals).center;
-		pooledObject.transform.position = __instance.transform.position + center;
-		pooledObject.SetSkin(__instance.Owner.GetVisualSkin());
+	// 	WeaponGFX pooledObject = ObjectPool.GetPooledObject<WeaponGFX>(GetPrefab(weaponEnum).gameObject);
+	// 	pooledObject.IsUsed = true;
+	// 	Vector3 center = SkinVisualsRenderer.GetSpriteBounds(__instance.skinVisuals).center;
+	// 	pooledObject.transform.position = __instance.transform.position + center;
+	// 	pooledObject.SetSkin(__instance.Owner.GetVisualSkin());
 
-		if ((bool)targetTile.Unit)
-		{
-			targetTile.Unit.Flipped = targetTile.Unit.UnitState.flipped;
-		}
-		__instance.Flipped = __instance.UnitState.flipped;
+	// 	if ((bool)targetTile.Unit)
+	// 	{
+	// 		targetTile.Unit.Flipped = targetTile.Unit.UnitState.flipped;
+	// 	}
+	// 	__instance.Flipped = __instance.UnitState.flipped;
 
-		if(weaponPrefabInfo.weaponPuffInfo != null)
-		{
-			animationTime *= weaponPrefabInfo.weaponPuffInfo.animationMultiplier;
-			if(weaponPrefabInfo.weaponPuffInfo.sway)
-				__instance.Sway();
-		}
-		if (Unit.IsProjectile(weaponEnum))
-		{
-			if(weaponPrefabInfo.weaponPuffInfo != null && weaponPrefabInfo.weaponPuffInfo!.animationDelegate != null)
-				pooledObject.AnimateRanged(animationTime, target, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(weaponPrefabInfo.weaponPuffInfo!.animationDelegate!));
-			else
-				pooledObject.AnimateRanged(animationTime, target);
-		}
-		else
-		{
-			pooledObject.AnimateCloseRangeAttack(0.2f);
-		}
+	// 	if(weaponPrefabInfo.weaponPuffInfo != null)
+	// 	{
+	// 		animationTime *= weaponPrefabInfo.weaponPuffInfo.animationMultiplier;
+	// 		if(weaponPrefabInfo.weaponPuffInfo.sway)
+	// 			__instance.Sway();
+	// 	}
+	// 	if (Unit.IsProjectile(weaponEnum))
+	// 	{
+	// 		if(weaponPrefabInfo.weaponPuffInfo != null && weaponPrefabInfo.weaponPuffInfo!.animationDelegate != null)
+	// 			pooledObject.AnimateRanged(animationTime, target, DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(weaponPrefabInfo.weaponPuffInfo!.animationDelegate!));
+	// 		else
+	// 			pooledObject.AnimateRanged(animationTime, target);
+	// 	}
+	// 	else
+	// 	{
+	// 		pooledObject.AnimateCloseRangeAttack(0.2f);
+	// 	}
 
-		if (__instance.unitData.GetRange() < 2)
-		{
-			__instance.AnimateMeleeAttackMovement(targetTile, moveToTarget, onComplete);
-		}
-		else
-		{
-			GameManager.DelayCall((int)(animationTime * 1000f), onComplete);
-		}
+	// 	if (__instance.unitData.GetRange() < 2)
+	// 	{
+	// 		__instance.AnimateMeleeAttackMovement(targetTile, moveToTarget, onComplete);
+	// 	}
+	// 	else
+	// 	{
+	// 		GameManager.DelayCall((int)(animationTime * 1000f), onComplete);
+	// 	}
 
-		return false;
-	}
+	// 	return false;
+	// }
 
     // [HarmonyPrefix] // testing.......
     // [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.AnimateCloseRangeAttack))]

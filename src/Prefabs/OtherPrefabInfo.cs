@@ -40,78 +40,78 @@ public class ResourcePrefabInfo : BasePrefabInfo
     public ResourceData.Type? resourceType = null;
 }
 
-public class WeaponPrefabInfo
+internal class WeaponPrefabInfo
 {
     [JsonInclude]
     [JsonConverter(typeof(EnumCacheJson<UnitData.WeaponEnum>))]
-    public UnitData.WeaponEnum? weaponEnum = null;
+    internal UnitData.WeaponEnum? weaponEnum = null;
 
     [JsonInclude]
-    public string spriteName = "";
+    internal string spriteName = "";
 
     [JsonInclude]
     [JsonConverter(typeof(EnumNameJson<PathType>))]
-	public PathType pathType = PathType.CatmullRom;
+	internal PathType pathType = PathType.CatmullRom;
 
     [JsonInclude]
     [JsonConverter(typeof(EnumNameJson<PathMode>))]
-	public PathMode pathMode = PathMode.Sidescroller2D;
+	internal PathMode pathMode = PathMode.Sidescroller2D;
 
     [JsonInclude]
-	public int pathResolution = 10;
+	internal int pathResolution = 10;
 
     [JsonInclude]
     [JsonConverter(typeof(EnumNameJson<Ease>))]
-	public Ease pathEase = Ease.Linear;
+	internal Ease pathEase = Ease.Linear;
 
     [JsonInclude]
-	public float lookAheadOffset = 0.01f;
+	internal float lookAheadOffset = 0.01f;
 
     [JsonInclude]
-	public float handleAngleOffset = 0.3f;
+	internal float handleAngleOffset = 0.3f;
 
     [JsonInclude]
     [JsonConverter(typeof(EnumCacheJson<SFXTypes>))]
-	public SFXTypes sfxType = SFXTypes.None;
+	internal SFXTypes sfxType = SFXTypes.None;
 
     [JsonInclude]
-    public WeaponPuffInfo? weaponPuffInfo = null;
+    internal WeaponPuffInfo? weaponPuffInfo = null;
 
     [JsonInclude]
-	public WeaponRangedInfo? weaponRangedInfo = null;
+	internal WeaponRangedInfo? weaponRangedInfo = null;
 }
 
-public class WeaponPuffInfo
+internal class WeaponPuffInfo
 {
     [JsonInclude]
-    public bool sway = false;
+    internal bool sway = false;
 
-    public float animationMultiplier = 1f;
+    internal float animationMultiplier = 1f;
 
-    public Action? initialDelegate = null;
+    internal Action? initialDelegate = null;
 
-    public Action? animationDelegate = null;
+    internal Action? animationDelegate = null;
 
     // [JsonInclude] Nuh uh, I wont do ts
     // public List<string> puffsToSpawn = new();
 }
 
-public class WeaponRangedInfo
+internal class WeaponRangedInfo
 {
     [JsonInclude]
-	public float centerOffset = 0.15f;
+	internal float centerOffset = 0.15f;
 }
 
-public class GFXPrefabInfo
+internal class GFXPrefabInfo
 {
     [JsonInclude]
     [JsonConverter(typeof(EnumCacheJson<GFXType>))]
-    public GFXType? gfxType = null;
+    internal GFXType? gfxType = null;
 }
 
-public class UnitEffectPrefabInfo
+internal class UnitEffectPrefabInfo
 {
     [JsonInclude]
     [JsonConverter(typeof(EnumCacheJson<UnitEffect>))]
-    public UnitEffect? unitEffect = null;
+    internal UnitEffect? unitEffect = null;
 }

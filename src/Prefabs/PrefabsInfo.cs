@@ -14,6 +14,6 @@ public class PrefabsInfo
     [JsonInclude]
     public List<ResourcePrefabInfo> resources = new();
 
-    [JsonInclude]
-    public List<WeaponPrefabInfo> weapons = new();
+    // [JsonInclude]
+    private List<WeaponPrefabInfo> weapons = new();
 }
