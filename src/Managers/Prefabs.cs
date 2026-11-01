@@ -215,21 +215,21 @@ public static class Prefabs
 		return false;
 	}
 
-    [HarmonyPrefix] // testing.......
-    [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.AnimateCloseRangeAttack))]
-	public static bool WeaponGFX_AnimateCloseRangeAttack(ref float animTime, Action onComplete)
-	{
-		animTime = 100000f;
-		return true;
-	}
+    // [HarmonyPrefix] // testing.......
+    // [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.AnimateCloseRangeAttack))]
+	// public static bool WeaponGFX_AnimateCloseRangeAttack(ref float animTime, Action onComplete)
+	// {
+	// 	animTime = 100000f;
+	// 	return true;
+	// }
 
-    [HarmonyPrefix] // testing.......
-    [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.AnimateRanged))]
-	public static bool WeaponGFX_AnimateRanged(ref float animTime, WorldCoordinates to, Action onComplete)
-	{
-		animTime = 100000f;
-		return true;
-	}
+    // [HarmonyPrefix] // testing.......
+    // [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.AnimateRanged))]
+	// public static bool WeaponGFX_AnimateRanged(ref float animTime, WorldCoordinates to, Action onComplete)
+	// {
+	// 	animTime = 100000f;
+	// 	return true;
+	// }
 
     private static Unit ResolveUnitPrefab(UnitData.Type unitType, TribeType tribeType, SkinType skinType)
     {
