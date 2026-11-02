@@ -10,7 +10,6 @@ using PolytopiaBackendBase.Game;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -99,7 +98,7 @@ public static class Loader
 											string tileEffectId = skinId.ToLowerInvariant() + "_flood";
 											EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
 											EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
-                                            Visual.customFloodingSkins.Add((TileData.EffectType)Registry.autoidx, skinValue);
+											Visual.customFloodingSkins.Add((TileData.EffectType)Registry.autoidx, skinValue);
 											Plugin.logger.LogInfo("Created mapping for tileEffect with id " + tileEffectId + " and index " + Registry.autoidx);
 											Registry.autoidx++;
 										}
@@ -231,7 +230,7 @@ public static class Loader
 	{
 		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
 		EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
-		if(shouldShowInMenu)
+		if (shouldShowInMenu)
 			gamemodes.Add(new GameModeButtonsInformation(Registry.gameModesAutoidx, action, null, sprite, spriteName));
 		Registry.gameModesAutoidx++;
 	}
@@ -256,14 +255,14 @@ public static class Loader
 	public static void AddTypeHandler(Type type, Action<JObject, bool> handler)
 	{
 		string typeString = type.ToString();
-		if(!typeMappings.ContainsValue(new TypeMapping(type, true)) && !typeMappings.ContainsValue(new TypeMapping(type, false)))
+		if (!typeMappings.ContainsValue(new TypeMapping(type, true)) && !typeMappings.ContainsValue(new TypeMapping(type, false)))
 		{
 			Plugin.logger.LogWarning($"Tried adding TypeHandler for type: {typeString} with missing TypeMapping. Please, add TypeMapping first.");
 			return;
 		}
-		if(!typeHandlers.ContainsKey(type))
+		if (!typeHandlers.ContainsKey(type))
 			typeHandlers[type] = new();
-		
+
 		typeHandlers[type].Add(handler);
 
 		Plugin.logger.LogInfo($"Added TypeHandler for type: {typeString}.");
@@ -379,13 +378,11 @@ public static class Loader
 		dependencyCycle = !SortMods(Registry.mods);
 		if (dependencyCycle) return;
 
-		StringBuilder checksumString = new();
 		foreach (var (id, mod) in Registry.mods)
 		{
 			if (mod.status != Mod.Status.Success) continue;
 			foreach (var file in mod.files)
 			{
-				checksumString.Append(JsonSerializer.Serialize(file));
 				if (Path.GetExtension(file.name) == ".dll")
 				{
 					LoadAssemblyFile(mod, file);
@@ -406,13 +403,8 @@ public static class Loader
 					);
 				}
 			}
-			if (!mod.client && id != "polytopia")
-			{
-				checksumString.Append(id);
-				checksumString.Append(mod.version.ToString());
-			}
 		}
-		Compatibility.HashSignatures(checksumString);
+		Compatibility.ComputeChecksums(Registry.mods);
 	}
 
 	internal static void CheckDependencies(Dictionary<string, Mod> mods)
@@ -530,11 +522,11 @@ public static class Loader
 		{
 			Assembly assembly = Assembly.Load(file.bytes);
 			if (assembly
-				    .GetTypes()
-				    .FirstOrDefault(t => t.IsSubclassOf(typeof(Api.PolyScriptBase)))
-			    is { } modType)
+					.GetTypes()
+					.FirstOrDefault(t => t.IsSubclassOf(typeof(Api.PolyScriptBase)))
+				is { } modType)
 			{
-				var modInstance = (Api.PolyScriptBase) Activator.CreateInstance(modType)!;
+				var modInstance = (Api.PolyScriptBase)Activator.CreateInstance(modType)!;
 				modInstance.Initialize(mod, BepInEx.Logging.Logger.CreateLogSource($"PolyMod] [{mod.id}"));
 				modInstance.Load();
 				return;
@@ -592,7 +584,7 @@ public static class Loader
 		try
 		{
 			var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(file.bytes);
-			if(dict != null)
+			if (dict != null)
 			{
 				Loc.languagesToAdd.Add(languageName, dict);
 				Plugin.logger.LogInfo($"Registered language from {mod.id} mod");
@@ -827,7 +819,7 @@ public static class Loader
 	{
 		foreach (var tribe in Registry.customTribes)
 		{
-			if(!GameLogicData.legacyTribeTypesOrder.Contains(tribe))
+			if (!GameLogicData.legacyTribeTypesOrder.Contains(tribe))
 			{
 				GameLogicData.legacyTribeTypesOrder.Add(tribe);
 			}
@@ -862,18 +854,18 @@ public static class Loader
 
 			string id = Util.GetJTokenName(token);
 
-			if((int)token["idx"] == -1)
+			if ((int)token["idx"] == -1)
 			{
 				token["idx"] = Registry.autoidx;
 				Registry.autoidx++;
 			}
-			else if(Plugin.config.allowUnsafeIndexes)
+			else if (Plugin.config.allowUnsafeIndexes)
 			{
 				Array values = Enum.GetValues(targetType);
 
 				var maxValue = values.Cast<int>().Max();
 
-				if(maxValue >= (int)token["idx"])
+				if (maxValue >= (int)token["idx"])
 				{
 					continue;
 				}
@@ -895,7 +887,7 @@ public static class Loader
 
 			if (typeHandlers.TryGetValue(targetType, out var handlers))
 			{
-				foreach(var handler in handlers)
+				foreach (var handler in handlers)
 				{
 					handler(token, true);
 				}
@@ -912,7 +904,7 @@ public static class Loader
 				{
 					if (typeHandlers.TryGetValue(typeMapping.type, out var handlers))
 					{
-						foreach(var handler in handlers)
+						foreach (var handler in handlers)
 						{
 							handler(token, false);
 						}

@@ -10,7 +10,7 @@ namespace PolyMod.Managers;
 
 public static class TribePreviews
 {
-    /// <summary>
+	/// <summary>
 	/// Represents a tile in a tribe preview.
 	/// </summary>
 	public class PreviewTile
@@ -43,7 +43,7 @@ public static class TribePreviews
 		public List<TileData.EffectType> tileEffects = new();
 	}
 
-    public record PreviewInfo(int arrayIdx, SaveStateData saveStateData, PreviewTile[] customPreview);
+	public record PreviewInfo(int arrayIdx, SaveStateData saveStateData, PreviewTile[] customPreview);
 
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(TribePreviewRegistry), nameof(TribePreviewRegistry.PreloadTribePreviews))]
@@ -52,7 +52,7 @@ public static class TribePreviews
 		Dictionary<string, PreviewInfo> previewSaveStateDatas = new();
 
 		SaveStateData fallbackSaveStateData = TribePreviewRegistry.saveStateDatas[TribePreviewRegistry.fallbackStateIndex];
-		foreach(string tribe in Registry.tribePreviews.Keys)
+		foreach (string tribe in Registry.tribePreviews.Keys)
 		{
 			string previewId = "worldpreview_" + tribe;
 			PreviewTile[] customPreview = Registry.tribePreviews[tribe];
@@ -62,7 +62,7 @@ public static class TribePreviews
 		for (int i = 0; i < TribePreviewRegistry.saveStateDatas.Length; i++)
 		{
 			SaveStateData saveStateData = TribePreviewRegistry.saveStateDatas[i];
-			if(previewSaveStateDatas.ContainsKey(saveStateData.name))
+			if (previewSaveStateDatas.ContainsKey(saveStateData.name))
 			{
 				previewSaveStateDatas[saveStateData.name] = new(i, saveStateData, previewSaveStateDatas[saveStateData.name].customPreview);
 			}
@@ -72,10 +72,10 @@ public static class TribePreviews
 		{
 			var data = previewSaveStateDatas[previewId];
 			SaveStateData? customSaveStateData = ApplyCustomPreview(previewId, data.saveStateData, data.customPreview);
-			if(customSaveStateData == null)
+			if (customSaveStateData == null)
 				continue;
 
-			if(data.arrayIdx == TribePreviewRegistry.fallbackStateIndex)
+			if (data.arrayIdx == TribePreviewRegistry.fallbackStateIndex)
 			{
 				List<SaveStateData> saveStateDatas = TribePreviewRegistry.saveStateDatas.ToList();
 				saveStateDatas.Add(customSaveStateData);
@@ -97,32 +97,32 @@ public static class TribePreviews
 			GameState currentGameState = clientSerializationWrapper.GetCurrentGameState();
 			foreach (var previewTile in preview)
 			{
-				if(previewTile.x == null || previewTile.y == null)
+				if (previewTile.x == null || previewTile.y == null)
 					continue;
 
 				WorldCoordinates coordinates = new((int)previewTile.x, (int)previewTile.y);
 				TileData? tileData = currentGameState.Map.GetTile(coordinates);
-				if(tileData == null)
+				if (tileData == null)
 					continue;
 
-				if(previewTile.terrainType != Polytopia.Data.TerrainData.Type.None)
+				if (previewTile.terrainType != Polytopia.Data.TerrainData.Type.None)
 					tileData.terrain = previewTile.terrainType;
 
-				if(previewTile.resourceType != null)
+				if (previewTile.resourceType != null)
 				{
 					ResourceState? resourceState = null;
 					ResourceData.Type resourceType = (ResourceData.Type)previewTile.resourceType;
-					if(resourceType != ResourceData.Type.None)
+					if (resourceType != ResourceData.Type.None)
 					{
 						resourceState = new ResourceState { type = resourceType };
 					}
 					tileData.resource = resourceState;
 				}
 
-				if(previewTile.unitType != null)
+				if (previewTile.unitType != null)
 				{
 					tileData.unit = null;
-					if(previewTile.unitType != Polytopia.Data.UnitData.Type.None &&
+					if (previewTile.unitType != Polytopia.Data.UnitData.Type.None &&
 						currentGameState.TryGetPlayer(currentGameState.CurrentPlayer, out PlayerState playerState) &&
 						currentGameState.GameLogicData.TryGetData((UnitData.Type)previewTile.unitType, out UnitData unitData))
 					{
@@ -133,11 +133,11 @@ public static class TribePreviews
 				}
 
 
-				if(previewTile.improvementType != null)
+				if (previewTile.improvementType != null)
 				{
 					tileData.improvement = null;
 					ImprovementData.Type improvementType = (ImprovementData.Type)previewTile.improvementType;
-					if(
+					if (
 						previewTile.improvementType != ImprovementData.Type.None &&
 						currentGameState.GameLogicData.TryGetData(
 							improvementType,
@@ -158,7 +158,7 @@ public static class TribePreviews
 					}
 				}
 
-				if(previewTile.tileEffects.Count > 0)
+				if (previewTile.tileEffects.Count > 0)
 					tileData.effects = new();
 
 				foreach (TileData.EffectType tileEffect in previewTile.tileEffects)
@@ -179,7 +179,7 @@ public static class TribePreviews
 	[HarmonyPatch(typeof(SelectTribePopup), nameof(SelectTribePopup.SetBackground))]
 	private static void SelectTribePopup_SetBackground(SelectTribePopup __instance)
 	{
-		if(!Plugin.config.showCoordinates)
+		if (!Plugin.config.showCoordinates)
 			return;
 
 		try
@@ -200,7 +200,7 @@ public static class TribePreviews
 				tribeType,
 				__instance.SkinType
 			);
-			
+
 			var instance = SpriteCamera.instance;
 			float baseOrthographicCameraSize = instance.spriteCamera.orthographicSize;
 

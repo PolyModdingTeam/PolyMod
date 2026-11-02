@@ -23,6 +23,7 @@ internal static class Hub
 	private const string COLOR_ENABLED = "#4CC76A";
 	private const string COLOR_DISABLED = "#E36A5B";
 	private const string COLOR_WARNING = "#E0A52E";
+	private const int CHECKSUM_LENGTH = 12;
 	private const float HUB_POPUP_WIDTH_SHARE = 0.78f;
 	private const float HUB_POPUP_MAX_WIDTH = 1400f;
 	private const float SETTINGS_POPUP_WIDTH_SHARE = 0.5f;
@@ -76,7 +77,7 @@ internal static class Hub
 				{
 					if (openPopup.IsShowing()) return true;
 				}
-				catch (Exception) {}
+				catch (Exception) { }
 				openPopup = null;
 			}
 			return false;
@@ -296,18 +297,33 @@ internal static class Hub
 			if (mod.status == Mod.Status.Success) loaded++;
 		}
 
-		List<string> blocks = new()
-		{
-			Muted(Localization.Get(
-				"polymod.hub.summary",
-				Args(loaded.ToString(), Registry.mods.Count.ToString())
-			)),
-		};
+		string summary = Localization.Get(
+			"polymod.hub.summary",
+			Args(loaded.ToString(), Registry.mods.Count.ToString())
+		);
+		summary += "   " + Localization.Get(
+			"polymod.hub.checksum",
+			Args(ShortChecksum(Compatibility.checksum))
+		);
+
+		List<string> blocks = new() { Muted(summary) };
 		foreach (Mod mod in Registry.mods.Values)
 		{
 			blocks.Add(BuildModEntry(mod));
 		}
 		return string.Join("\n\n", blocks);
+	}
+
+	/// <summary>
+	/// Shortens a checksum to the leading characters shown in the hub.
+	/// </summary>
+	/// <param name="checksum">The full checksum.</param>
+	/// <returns>The shortened checksum.</returns>
+	private static string ShortChecksum(string checksum)
+	{
+		if (string.IsNullOrEmpty(checksum)) return "-";
+
+		return checksum.Length <= CHECKSUM_LENGTH ? checksum : checksum.Substring(0, CHECKSUM_LENGTH);
 	}
 
 	private static string BuildModEntry(Mod mod)
@@ -324,6 +340,14 @@ internal static class Hub
 				Args(string.Join(", ", mod.authors))
 			);
 			meta += "   " + Muted($"<size=90%>{authors}</size>");
+		}
+		if (!string.IsNullOrEmpty(mod.checksum))
+		{
+			string modChecksum = Localization.Get(
+				"polymod.hub.mod.checksum",
+				Args(ShortChecksum(mod.checksum))
+			);
+			meta += "   " + Muted($"<size=90%>{modChecksum}</size>");
 		}
 
 		List<string> lines = new() { title, meta };

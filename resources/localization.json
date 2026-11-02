@@ -267,6 +267,14 @@
 		"English": "by {0}",
 		"Russian": "от {0}"
 	},
+	"polymod_hub_mod_checksum": {
+		"English": "checksum {0}",
+		"Russian": "контрольная сумма {0}"
+	},
+	"polymod_hub_checksum": {
+		"English": "Global checksum: {0}",
+		"Russian": "Общая контрольная сумма: {0}"
+	},
 	"polymod_hub_config_debug": {
 		"English": "DEBUG",
 		"Russian": "ОТЛАДКА"

@@ -1,5 +1,4 @@
 using HarmonyLib;
-using Il2CppInterop.Runtime;
 using Polytopia.Data;
 using PolytopiaBackendBase.Common;
 using UnityEngine;
@@ -10,9 +9,9 @@ namespace PolyMod.Managers;
 
 public static class Prefabs
 {
-    internal static Dictionary<SkinnedKey, Unit> unitsNew = new();
-    internal static Dictionary<OverrideCondition, Dictionary<UnitData.Type, Unit>> unitOverridesNew = new(); // maybe in the future will implement
-    internal static Dictionary<SkinnedKey, Unit> unitUIOverridesNew = new();
+	internal static Dictionary<SkinnedKey, Unit> unitsNew = new();
+	internal static Dictionary<OverrideCondition, Dictionary<UnitData.Type, Unit>> unitOverridesNew = new(); // maybe in the future will implement
+	internal static Dictionary<SkinnedKey, Unit> unitUIOverridesNew = new();
 
 	internal static Material? cachedUnitMaterial;
 	internal static Material? cachedSharedMaterial;
@@ -39,94 +38,94 @@ public static class Prefabs
 		{UnitData.WeaponEnum.Water, 1.5f}, // __instance.Sway(); __instance.Tile.SpawnPuff();
 	};
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.Awake))]
-    private static void PrefabManager_Awake_Postfix(PrefabManager __instance)
-    {
-        unitsNew.Clear();
-        unitOverridesNew.Clear();
-        unitUIOverridesNew.Clear();
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.Awake))]
+	private static void PrefabManager_Awake_Postfix(PrefabManager __instance)
+	{
+		unitsNew.Clear();
+		unitOverridesNew.Clear();
+		unitUIOverridesNew.Clear();
 
-        foreach (UnitPrefabData unitPrefabData in __instance.unitPrefabs)
-        {
-            if(cachedUnitMaterial == null)
-            {
-                SkinVisualsReference skinVisualsReference = unitPrefabData.prefab.GetComponent<SkinVisualsReference>();
-                if (skinVisualsReference != null && skinVisualsReference.visualParts != null)
-                {
-                    foreach (VisualPart currentPart in skinVisualsReference.visualParts)
-                    {
-                        if (currentPart.visualPart == null)
-                        {
-                            continue;
-                        }
+		foreach (UnitPrefabData unitPrefabData in __instance.unitPrefabs)
+		{
+			if (cachedUnitMaterial == null)
+			{
+				SkinVisualsReference skinVisualsReference = unitPrefabData.prefab.GetComponent<SkinVisualsReference>();
+				if (skinVisualsReference != null && skinVisualsReference.visualParts != null)
+				{
+					foreach (VisualPart currentPart in skinVisualsReference.visualParts)
+					{
+						if (currentPart.visualPart == null)
+						{
+							continue;
+						}
 
-                        SpriteRenderer headSpriteRenderer = currentPart.visualPart.GetComponent<SpriteRenderer>();
-                        if (headSpriteRenderer != null)
-                        {
-                            cachedUnitMaterial = headSpriteRenderer.sharedMaterial;
-                            break;
-                        }
-                    }
-                }
-            }
-            unitsNew[new SkinnedKey(unitPrefabData.type, unitPrefabData.tribe, unitPrefabData.skin)] = unitPrefabData.prefab;
-        }
+						SpriteRenderer headSpriteRenderer = currentPart.visualPart.GetComponent<SpriteRenderer>();
+						if (headSpriteRenderer != null)
+						{
+							cachedUnitMaterial = headSpriteRenderer.sharedMaterial;
+							break;
+						}
+					}
+				}
+			}
+			unitsNew[new SkinnedKey(unitPrefabData.type, unitPrefabData.tribe, unitPrefabData.skin)] = unitPrefabData.prefab;
+		}
 
-        foreach (UnitOverridePrefabData unitOverridePrefabData in __instance.unitOverridePrefabs)
-        {
-            if (!unitOverridesNew.TryGetValue(unitOverridePrefabData.overrideCondition, out Dictionary<UnitData.Type, Unit>? overridesForCondition))
-            {
-                overridesForCondition = new Dictionary<UnitData.Type, Unit>();
-                unitOverridesNew[unitOverridePrefabData.overrideCondition] = overridesForCondition;
-            }
-            overridesForCondition[unitOverridePrefabData.type] = unitOverridePrefabData.prefab;
-        }
+		foreach (UnitOverridePrefabData unitOverridePrefabData in __instance.unitOverridePrefabs)
+		{
+			if (!unitOverridesNew.TryGetValue(unitOverridePrefabData.overrideCondition, out Dictionary<UnitData.Type, Unit>? overridesForCondition))
+			{
+				overridesForCondition = new Dictionary<UnitData.Type, Unit>();
+				unitOverridesNew[unitOverridePrefabData.overrideCondition] = overridesForCondition;
+			}
+			overridesForCondition[unitOverridePrefabData.type] = unitOverridePrefabData.prefab;
+		}
 
-        foreach (UnitPrefabData unitUIOverridePrefabData in __instance.unitUIOverridePrefabs)
-        {
-            unitUIOverridesNew[new SkinnedKey(unitUIOverridePrefabData.type, unitUIOverridePrefabData.tribe, unitUIOverridePrefabData.skin)] = unitUIOverridePrefabData.prefab;
-        }
+		foreach (UnitPrefabData unitUIOverridePrefabData in __instance.unitUIOverridePrefabs)
+		{
+			unitUIOverridesNew[new SkinnedKey(unitUIOverridePrefabData.type, unitUIOverridePrefabData.tribe, unitUIOverridePrefabData.skin)] = unitUIOverridePrefabData.prefab;
+		}
 
-        Plugin.logger.LogInfo($"Built lookups: {unitsNew.Count} units, {unitUIOverridesNew.Count} UI overrides");
-    }
+		Plugin.logger.LogInfo($"Built lookups: {unitsNew.Count} units, {unitUIOverridesNew.Count} UI overrides");
+	}
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.HasUIUnitOverride))]
-    public static bool HasUIUnitOverride(ref bool __result, UnitData.Type unitType, TribeType tribe, SkinType skin)
-    {
-        __result = unitUIOverridesNew.ContainsKey(new SkinnedKey(unitType, tribe, skin));
-        return false;
-    }
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.HasUIUnitOverride))]
+	public static bool HasUIUnitOverride(ref bool __result, UnitData.Type unitType, TribeType tribe, SkinType skin)
+	{
+		__result = unitUIOverridesNew.ContainsKey(new SkinnedKey(unitType, tribe, skin));
+		return false;
+	}
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.GetUnitOrUiOverride))]
-    public static bool GetUnitOrUiOverride(ref Unit __result, UnitData.Type unitType, TribeType tribe, SkinType skin)
-    {
-        if (unitUIOverridesNew.TryGetValue(new SkinnedKey(unitType, tribe, skin), out Unit? uiOverridePrefab))
-        {
-            __result = uiOverridePrefab;
-        }
-        else
-        {
-            __result = ResolveUnitPrefab(unitType, tribe, skin);
-        }
-        return false;
-    }
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.GetUnitOrUiOverride))]
+	public static bool GetUnitOrUiOverride(ref Unit __result, UnitData.Type unitType, TribeType tribe, SkinType skin)
+	{
+		if (unitUIOverridesNew.TryGetValue(new SkinnedKey(unitType, tribe, skin), out Unit? uiOverridePrefab))
+		{
+			__result = uiOverridePrefab;
+		}
+		else
+		{
+			__result = ResolveUnitPrefab(unitType, tribe, skin);
+		}
+		return false;
+	}
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.GetPrefab), new Type[] { typeof(UnitData.Type), typeof(TribeType), typeof(SkinType) })]
-    public static bool PrefabManager_GetPrefab(ref Unit __result, UnitData.Type type, TribeType tribe, SkinType skin)
-    {
-        __result = ResolveUnitPrefab(type, tribe, skin);
-        return false;
-    }
+	[HarmonyPrefix]
+	[HarmonyPatch(typeof(PrefabManager), nameof(PrefabManager.GetPrefab), new Type[] { typeof(UnitData.Type), typeof(TribeType), typeof(SkinType) })]
+	public static bool PrefabManager_GetPrefab(ref Unit __result, UnitData.Type type, TribeType tribe, SkinType skin)
+	{
+		__result = ResolveUnitPrefab(type, tribe, skin);
+		return false;
+	}
 
-    [HarmonyPostfix] // prolly remove later
-    [HarmonyPatch(typeof(SkinVisualsReference), nameof(SkinVisualsReference.SetupVisualPart))]
-    public static void SetupVisualPart(ref VisualPart visualSetting, bool isImprovement)
-    {
-        bool flag = false;
+	[HarmonyPostfix] // prolly remove later
+	[HarmonyPatch(typeof(SkinVisualsReference), nameof(SkinVisualsReference.SetupVisualPart))]
+	public static void SetupVisualPart(ref VisualPart visualSetting, bool isImprovement)
+	{
+		bool flag = false;
 		flag = visualSetting.outline != null && visualSetting.outline.transform.parent == visualSetting.visualPart.transform;
 		if (!flag && visualSetting.visualPart.transform.childCount > 0)
 		{
@@ -143,10 +142,10 @@ public static class Prefabs
 			}
 		}
 		visualSetting.hasValidOutline = flag2;
-    }
+	}
 
-    // [HarmonyPrefix] // overrides again.......
-    // [HarmonyPatch(typeof(Unit), nameof(Unit.IsProjectile))]
+	// [HarmonyPrefix] // overrides again.......
+	// [HarmonyPatch(typeof(Unit), nameof(Unit.IsProjectile))]
 	// private static bool Unit_IsProjectile(ref bool __result, UnitData.WeaponEnum weapon)
 	// {
 	// 	if(!weaponProjectilesCache.ContainsKey(weapon))
@@ -156,8 +155,8 @@ public static class Prefabs
 	// 	return false;
 	// }
 
-    // [HarmonyPrefix] // overrides again.......
-    // [HarmonyPatch(typeof(Unit), nameof(Unit.Attack))]
+	// [HarmonyPrefix] // overrides again.......
+	// [HarmonyPatch(typeof(Unit), nameof(Unit.Attack))]
 	// private static bool Unit_Attack(Unit __instance, WorldCoordinates target, bool moveToTarget, Action onComplete)
 	// {
 	// 	UnitData.WeaponEnum weaponEnum = __instance.unitData.weapon;
@@ -213,57 +212,57 @@ public static class Prefabs
 	// 	return false;
 	// }
 
-    // [HarmonyPrefix] // testing.......
-    // [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.AnimateCloseRangeAttack))]
+	// [HarmonyPrefix] // testing.......
+	// [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.AnimateCloseRangeAttack))]
 	// public static bool WeaponGFX_AnimateCloseRangeAttack(ref float animTime, Action onComplete)
 	// {
 	// 	animTime = 100000f;
 	// 	return true;
 	// }
 
-    // [HarmonyPrefix] // testing.......
-    // [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.AnimateRanged))]
+	// [HarmonyPrefix] // testing.......
+	// [HarmonyPatch(typeof(WeaponGFX), nameof(WeaponGFX.AnimateRanged))]
 	// public static bool WeaponGFX_AnimateRanged(ref float animTime, WorldCoordinates to, Action onComplete)
 	// {
 	// 	animTime = 100000f;
 	// 	return true;
 	// }
 
-    private static Unit ResolveUnitPrefab(UnitData.Type unitType, TribeType tribeType, SkinType skinType)
-    {
-        if (SeasonManager.IsChristmas()
-            && unitOverridesNew.TryGetValue(OverrideCondition.Christmas, out Dictionary<UnitData.Type, Unit>? christmasOverrides)
-            && christmasOverrides.TryGetValue(unitType, out Unit? christmasPrefab)
-            && christmasPrefab != null)
-        {
-            return christmasPrefab;
-        }
+	private static Unit ResolveUnitPrefab(UnitData.Type unitType, TribeType tribeType, SkinType skinType)
+	{
+		if (SeasonManager.IsChristmas()
+			&& unitOverridesNew.TryGetValue(OverrideCondition.Christmas, out Dictionary<UnitData.Type, Unit>? christmasOverrides)
+			&& christmasOverrides.TryGetValue(unitType, out Unit? christmasPrefab)
+			&& christmasPrefab != null)
+		{
+			return christmasPrefab;
+		}
 
-        SkinnedKey exactKey = new SkinnedKey(unitType, tribeType, skinType);
-        if (unitsNew.TryGetValue(exactKey, out Unit? exactPrefab))
-        {
-            return exactPrefab;
-        }
+		SkinnedKey exactKey = new SkinnedKey(unitType, tribeType, skinType);
+		if (unitsNew.TryGetValue(exactKey, out Unit? exactPrefab))
+		{
+			return exactPrefab;
+		}
 
-        if (skinType != SkinType.Default || tribeType != TribeType.None)
-        {
-            SkinnedKey noTribeKey = new SkinnedKey(unitType, TribeType.None, skinType);
-            SkinnedKey defaultSkinKey = new SkinnedKey(unitType, tribeType, SkinType.Default);
-            SkinnedKey noTribeDefaultSkinKey = new SkinnedKey(unitType, TribeType.None, SkinType.Default);
+		if (skinType != SkinType.Default || tribeType != TribeType.None)
+		{
+			SkinnedKey noTribeKey = new SkinnedKey(unitType, TribeType.None, skinType);
+			SkinnedKey defaultSkinKey = new SkinnedKey(unitType, tribeType, SkinType.Default);
+			SkinnedKey noTribeDefaultSkinKey = new SkinnedKey(unitType, TribeType.None, SkinType.Default);
 
-            if (unitsNew.TryGetValue(noTribeKey, out Unit? fallbackPrefab)
-                || unitsNew.TryGetValue(defaultSkinKey, out fallbackPrefab)
-                || unitsNew.TryGetValue(noTribeDefaultSkinKey, out fallbackPrefab))
-            {
-                unitsNew[exactKey] = fallbackPrefab;
-                return fallbackPrefab;
-            }
-        }
+			if (unitsNew.TryGetValue(noTribeKey, out Unit? fallbackPrefab)
+				|| unitsNew.TryGetValue(defaultSkinKey, out fallbackPrefab)
+				|| unitsNew.TryGetValue(noTribeDefaultSkinKey, out fallbackPrefab))
+			{
+				unitsNew[exactKey] = fallbackPrefab;
+				return fallbackPrefab;
+			}
+		}
 
-        Plugin.logger.LogInfo($"Couldn't find prefab for type: {unitType}");
-        unitsNew.TryGetValue(new SkinnedKey(default, TribeType.None, SkinType.Default), out Unit? lastResortPrefab);
-        return lastResortPrefab!;
-    }
+		Plugin.logger.LogInfo($"Couldn't find prefab for type: {unitType}");
+		unitsNew.TryGetValue(new SkinnedKey(default, TribeType.None, SkinType.Default), out Unit? lastResortPrefab);
+		return lastResortPrefab!;
+	}
 
 	internal static void CreatePrefabs()
 	{
@@ -273,7 +272,7 @@ public static class Prefabs
 		{
 			// Plugin.logger.LogInfo($"Material: {loadedMaterial.name}, shader: {loadedMaterial.shader.name}");
 
-			if(loadedMaterial.name == CACHED_SHARED_MATERIAL_NAME)
+			if (loadedMaterial.name == CACHED_SHARED_MATERIAL_NAME)
 			{
 				cachedSharedMaterial = loadedMaterial;
 				GameObject.DontDestroyOnLoad(cachedSharedMaterial);
@@ -373,7 +372,7 @@ public static class Prefabs
 
 		GameObject.DontDestroyOnLoad(unitInstance.gameObject);
 
-		if(unitPrefabInfo.uiOverride)
+		if (unitPrefabInfo.uiOverride)
 		{
 			unitUIOverridesNew[unitPrefabInfo.skinnedKey] = unitInstance;
 			return;
@@ -398,7 +397,7 @@ public static class Prefabs
 		foreach (var info in newVisualInfo)
 		{
 			parts.Add(CreateUnitVisualPart(info, spriteContainer, info.sortingOrderOverride ?? nextPartSortingOrder, info.outlineSortingOrderOverride ?? nextOutlineSortingOrder));
-			if(nextOutlineSortingOrder < -1)
+			if (nextOutlineSortingOrder < -1)
 			{
 				nextOutlineSortingOrder++;
 			}
@@ -450,7 +449,7 @@ public static class Prefabs
 	#region Improvements
 	internal static void ProcessImprovementPrefabInfo(ImprovementPrefabInfo improvementPrefabInfo)
 	{
-		if(improvementPrefabInfo.improvementType == null)
+		if (improvementPrefabInfo.improvementType == null)
 			return;
 
 		var baseBuilding = PrefabManager.GetPrefab(ImprovementData.Type.LumberHut);
@@ -492,7 +491,7 @@ public static class Prefabs
 		foreach (var info in visualPartInfos)
 		{
 			parts.Add(CreateBuildingVisualPart(info, spriteContainer, nextPartSortingOrder, nextOutlineSortingOrder, improvementPrefabInfo.needsOutlines));
-			if(nextOutlineSortingOrder < -1)
+			if (nextOutlineSortingOrder < -1)
 			{
 				nextOutlineSortingOrder++;
 			}
@@ -527,7 +526,7 @@ public static class Prefabs
 		var renderer = AddPolytopiaSpriteRenderer(visualPartObj, visualPartSortingOrder);
 		visualPart.renderer = new SkinVisualsReference.RendererUnion { polytopiaSpriteRenderer = renderer };
 
-		if(needsOutline)
+		if (needsOutline)
 		{
 			var outlineRenderer = AddPolytopiaSpriteRenderer(outlineObj, outlineSortingOrder);
 			visualPart.outlineRenderer = new SkinVisualsReference.RendererUnion { polytopiaSpriteRenderer = outlineRenderer };
@@ -563,7 +562,7 @@ public static class Prefabs
 
 	internal static void ProcessResourcePrefabInfo(ResourcePrefabInfo resourcePrefabInfo)
 	{
-		if(resourcePrefabInfo.resourceType == null)
+		if (resourcePrefabInfo.resourceType == null)
 			return;
 
 		var baseResource = PrefabManager.GetPrefab(ResourceData.Type.Game);
@@ -605,7 +604,7 @@ public static class Prefabs
 		foreach (var info in visualPartInfos)
 		{
 			parts.Add(CreateResourceVisualPart(info, spriteContainer, nextPartSortingOrder, nextOutlineSortingOrder));
-			if(nextOutlineSortingOrder < -1)
+			if (nextOutlineSortingOrder < -1)
 			{
 				nextOutlineSortingOrder++;
 			}

@@ -33,7 +33,7 @@ public static class Main
 	/// Whether the mod has been fully initialized.
 	/// </summary>
 	internal static bool fullyInitialized;
-	
+
 	/// <summary>
 	/// A dictionary mapping unit IDs to the IDs of the units they embark into.
 	/// </summary>
@@ -390,7 +390,6 @@ public static class Main
 	/// <summary>
 	/// Loads all mod content.
 	/// </summary>
-	/// <param name="gameLogicdata">The game logic data to patch.</param>
 	/// <param name="json">The JSON object representing the game logic data.</param>
 	internal static void Load(GameLogicData gameLogicData, JObject json)
 	{

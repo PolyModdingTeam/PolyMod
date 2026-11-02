@@ -59,8 +59,8 @@ public static class Visual
 		Inner // Inner means sprite is to be fetched from game's files
 	}
 
-    /// <summary>Represents information about a custom skin.</summary>
-    public record SkinInfo(int idx, string id, SkinData? skinData);
+	/// <summary>Represents information about a custom skin.</summary>
+	public record SkinInfo(int idx, string id, SkinData? skinData);
 
 	/// <summary>A dictionary of custom widths for basic popups.</summary>
 	public static Dictionary<int, PopupWidth> basicPopupWidths = new();
@@ -83,61 +83,61 @@ public static class Visual
 	internal static Dictionary<TileData.EffectType, SkinType> customFloodingSkins = new();
 	private static bool seenWarningWCPopup = false;
 
-    private static Dictionary<string, string>? cachedSpriteDataReverse = null;
+	private static Dictionary<string, string>? cachedSpriteDataReverse = null;
 	private static Dictionary<string, string> cachedReversedNames = new();
 
-    #region General
+	#region General
 
-    /// <summary>A placeholder patch for the TechItem.SetupComplete method.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(TechItem), nameof(TechItem.SetupComplete))]
-    private static void TechItem_SetupComplete()
-    {
-    }
+	/// <summary>A placeholder patch for the TechItem.SetupComplete method.</summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(TechItem), nameof(TechItem.SetupComplete))]
+	private static void TechItem_SetupComplete()
+	{
+	}
 
 	/// <summary>Patches the sprite atlas manager to look up custom sprites.</summary>
 	internal static void CacheSpriteNames()
 	{
 		cachedSpriteDataReverse = new();
 		foreach (Polytopia.Data.TerrainData.Type terrainType in Enum.GetValues<Polytopia.Data.TerrainData.Type>())
-        {
-            string result = SpriteData.TerrainToString(terrainType);
-            if(terrainType == Polytopia.Data.TerrainData.Type.Wetland)
-            {
-                cachedSpriteDataReverse.TryAdd(result, EnumCache<Polytopia.Data.TerrainData.Type>.GetName(Polytopia.Data.TerrainData.Type.Field) + "_flooded");
-                continue;
-            }
+		{
+			string result = SpriteData.TerrainToString(terrainType);
+			if (terrainType == Polytopia.Data.TerrainData.Type.Wetland)
+			{
+				cachedSpriteDataReverse.TryAdd(result, EnumCache<Polytopia.Data.TerrainData.Type>.GetName(Polytopia.Data.TerrainData.Type.Field) + "_flooded");
+				continue;
+			}
 
-            if(result == SpriteData.TILE_UNKNOWN)
-                continue;
+			if (result == SpriteData.TILE_UNKNOWN)
+				continue;
 
-            cachedSpriteDataReverse.TryAdd(result, EnumCache<Polytopia.Data.TerrainData.Type>.GetName(terrainType));
-        }
+			cachedSpriteDataReverse.TryAdd(result, EnumCache<Polytopia.Data.TerrainData.Type>.GetName(terrainType));
+		}
 
-        foreach (ResourceData.Type resourceType in Enum.GetValues<ResourceData.Type>())
-        {
-            string result = SpriteData.ResourceToString(resourceType);
-            if(result == SpriteData.IMPROVEMENT_PLACEHOLDER)
-                continue;
+		foreach (ResourceData.Type resourceType in Enum.GetValues<ResourceData.Type>())
+		{
+			string result = SpriteData.ResourceToString(resourceType);
+			if (result == SpriteData.IMPROVEMENT_PLACEHOLDER)
+				continue;
 
-            cachedSpriteDataReverse.TryAdd(result, EnumCache<ResourceData.Type>.GetName(resourceType));
-        }
+			cachedSpriteDataReverse.TryAdd(result, EnumCache<ResourceData.Type>.GetName(resourceType));
+		}
 
-        foreach (ImprovementData.Type improvementType in Enum.GetValues<ImprovementData.Type>())
-        {
-            string result = SpriteData.ImprovementToString(improvementType);
-            if(result == SpriteData.IMPROVEMENT_PLACEHOLDER)
-                continue;
+		foreach (ImprovementData.Type improvementType in Enum.GetValues<ImprovementData.Type>())
+		{
+			string result = SpriteData.ImprovementToString(improvementType);
+			if (result == SpriteData.IMPROVEMENT_PLACEHOLDER)
+				continue;
 
-            cachedSpriteDataReverse.TryAdd(result, EnumCache<ImprovementData.Type>.GetName(improvementType));
-        }
+			cachedSpriteDataReverse.TryAdd(result, EnumCache<ImprovementData.Type>.GetName(improvementType));
+		}
 	}
-    internal static string FormatSpriteName(string baseName)
-    {
-		if(cachedSpriteDataReverse == null)
+	internal static string FormatSpriteName(string baseName)
+	{
+		if (cachedSpriteDataReverse == null)
 			CacheSpriteNames();
 
-		if(cachedReversedNames.ContainsKey(baseName))
+		if (cachedReversedNames.ContainsKey(baseName))
 			return cachedReversedNames[baseName];
 
 		string formattedName = baseName;
@@ -146,8 +146,8 @@ public static class Visual
 			formattedName = formattedName.Replace(valuePair.Key, valuePair.Value);
 		}
 		cachedReversedNames[baseName] = formattedName;
-        return formattedName;
-    }
+		return formattedName;
+	}
 
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.TrySolveSpriteNameForLevelSprites))]
@@ -156,7 +156,7 @@ public static class Visual
 		SpriteAtlasManager __instance,
 		Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppStringArray spriteNameVariants, int level, ref string result)
 	{
-		if(!__result) __result = true; // will crash original lookup if false....
+		if (!__result) __result = true; // will crash original lookup if false....
 	}
 
 	[HarmonyPostfix]
@@ -189,8 +189,8 @@ public static class Visual
 	}
 
 	[HarmonyPrefix] // its obsolete so may be removed soon by midjiwan
-	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), new Type[]{ typeof(string), typeof(string), typeof(SpriteCallback) })]
-    private static bool LoadSprite(string atlas, string sprite, SpriteCallback completion)
+	[HarmonyPatch(typeof(SpriteAtlasManager), nameof(SpriteAtlasManager.LoadSprite), new Type[] { typeof(string), typeof(string), typeof(SpriteCallback) })]
+	private static bool LoadSprite(string atlas, string sprite, SpriteCallback completion)
 	{
 		string formattedName = FormatSpriteName(sprite);
 
@@ -214,7 +214,7 @@ public static class Visual
 	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.TerrainToString))]
 	private static void SpriteData_TerrainToString(ref string __result, Polytopia.Data.TerrainData.Type terrain)
 	{
-		if((int)terrain >= Plugin.AUTOIDX_STARTS_FROM)
+		if ((int)terrain >= Plugin.AUTOIDX_STARTS_FROM)
 			__result = EnumCache<Polytopia.Data.TerrainData.Type>.GetName(terrain);
 	}
 
@@ -222,7 +222,7 @@ public static class Visual
 	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.ResourceToString))]
 	private static void SpriteData_ResourceToString(ref string __result, ResourceData.Type resource)
 	{
-		if((int)resource >= Plugin.AUTOIDX_STARTS_FROM)
+		if ((int)resource >= Plugin.AUTOIDX_STARTS_FROM)
 			__result = EnumCache<ResourceData.Type>.GetName(resource);
 	}
 
@@ -230,18 +230,18 @@ public static class Visual
 	[HarmonyPatch(typeof(SpriteData), nameof(SpriteData.ImprovementToString))]
 	private static void SpriteData_ImprovementToString(ref string __result, ImprovementData.Type improvement)
 	{
-		if((int)improvement >= Plugin.AUTOIDX_STARTS_FROM)
+		if ((int)improvement >= Plugin.AUTOIDX_STARTS_FROM)
 			__result = EnumCache<ImprovementData.Type>.GetName(improvement);
 	}
 
-    #endregion
-    #region Level
+	#endregion
+	#region Level
 
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(Tile), nameof(Tile.RenderDebug))]
 	public static void Tile_RenderDebug(Tile __instance)
 	{
-		if(!Plugin.config.showCoordinates)
+		if (!Plugin.config.showCoordinates)
 			return;
 
 		GameObject textObj = new GameObject("CoordinateText");
@@ -294,8 +294,8 @@ public static class Visual
 		{
 			Polytopia.Data.TerrainData.Type.Water => __instance.waterSprites.GetSpriteName(tile),
 			Polytopia.Data.TerrainData.Type.Ocean => __instance.oceanSprites.GetSpriteName(tile),
-			Polytopia.Data.TerrainData.Type.Ice   => __instance.iceSprites.GetSpriteName(tile),
-			_                                     => GetLandSpriteName(tile.Data),
+			Polytopia.Data.TerrainData.Type.Ice => __instance.iceSprites.GetSpriteName(tile),
+			_ => GetLandSpriteName(tile.Data),
 		};
 
 		SpriteAtlasManager.SpriteLookupResult spriteLookupResult = GameManager.GetSpriteAtlasManager().DoSpriteLookup(spriteName, climate, skin);
@@ -312,33 +312,33 @@ public static class Visual
 		return false;
 	}
 
-    /// <summary>Adds custom flood tile effect when tile is flooded for custom aqua skins.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(TileData), nameof(TileData.Flood))]
-    private static void TileData_Flood(TileData __instance, PlayerState playerState)
-    {
-        if (customFloodingSkins.ContainsValue(playerState.skinType))
-        {
-            TileData.EffectType effectType = customFloodingSkins.FirstOrDefault(x => x.Value == playerState.skinType).Key;
-            __instance.AddEffect(effectType);
-        }
-    }
+	/// <summary>Adds custom flood tile effect when tile is flooded for custom aqua skins.</summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(TileData), nameof(TileData.Flood))]
+	private static void TileData_Flood(TileData __instance, PlayerState playerState)
+	{
+		if (customFloodingSkins.ContainsValue(playerState.skinType))
+		{
+			TileData.EffectType effectType = customFloodingSkins.FirstOrDefault(x => x.Value == playerState.skinType).Key;
+			__instance.AddEffect(effectType);
+		}
+	}
 
-    /// <summary>Removes custom flood effect loc from tile tip header.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(TileTipGenerator), nameof(TileTipGenerator.GetTileTipHeader))]
-    public static void GetTileTipHeader(ref string __result, TileData tileData, SkinType skin,
-                                            PlayerState playerState, GameState gameState, GameLogicData gameLogicData)
-    {
-        foreach (var effect in tileData.effects)
-        {
-            if (customFloodingSkins.ContainsKey(effect))
-            {
-                string localizedEffect = Localization.GetSkinned(skin, playerState.tribe, $"tile.effect.{effect.GetName()}");
-                __result = __result.Replace($", {localizedEffect}", string.Empty);
-            }
-        }
-    }
+	/// <summary>Removes custom flood effect loc from tile tip header.</summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(TileTipGenerator), nameof(TileTipGenerator.GetTileTipHeader))]
+	public static void GetTileTipHeader(ref string __result, TileData tileData, SkinType skin,
+											PlayerState playerState, GameState gameState, GameLogicData gameLogicData)
+	{
+		foreach (var effect in tileData.effects)
+		{
+			if (customFloodingSkins.ContainsKey(effect))
+			{
+				string localizedEffect = Localization.GetSkinned(skin, playerState.tribe, $"tile.effect.{effect.GetName()}");
+				__result = __result.Replace($", {localizedEffect}", string.Empty);
+			}
+		}
+	}
 
 	/// <summary>Forces an update of the mesh for a PolytopiaSpriteRenderer with a custom sprite.</summary>
 	[HarmonyPostfix]
@@ -354,16 +354,16 @@ public static class Visual
 		__instance.meshRenderer.SetPropertyBlock(materialPropertyBlock);
 	}
 
-    #endregion
-    #region Popups
+	#endregion
+	#region Popups
 
-    /// <summary>Updates the width of a basic popup if a custom width is set.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeightWhenHeightIsKnownAndDontUseCoroutines))]
-    private static void PopupBase_RefreshHeightWhenHeightIsKnownAndDontUseCoroutines(PopupBase __instance)
-    {
-        UpdateWidth(__instance);
-    }
+	/// <summary>Updates the width of a basic popup if a custom width is set.</summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeightWhenHeightIsKnownAndDontUseCoroutines))]
+	private static void PopupBase_RefreshHeightWhenHeightIsKnownAndDontUseCoroutines(PopupBase __instance)
+	{
+		UpdateWidth(__instance);
+	}
 
 	private static void UpdateWidth(PopupBase popup)
 	{
@@ -501,51 +501,51 @@ public static class Visual
 		}
 	}
 
-    /// <summary>Removes a popup's custom width when it is hidden.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
-    private static void PopupBase_Hide(PopupBase __instance)
-    {
-        basicPopupWidths.Remove(__instance.GetInstanceID());
-    }
+	/// <summary>Removes a popup's custom width when it is hidden.</summary>
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
+	private static void PopupBase_Hide(PopupBase __instance)
+	{
+		basicPopupWidths.Remove(__instance.GetInstanceID());
+	}
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
-    private static void StartScreen_UI2_OnShow()
-    {
-        CreateInnerOriginSprites();
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
+	private static void StartScreen_UI2_OnShow()
+	{
+		CreateInnerOriginSprites();
 	}
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnWeeklyChallengeClicked))]
 	private static bool StartScreen_OnWeeklyChallengeClicked(StartScreen_UI2 __instance)
 	{
-		if(seenWarningWCPopup)
+		if (seenWarningWCPopup)
 			return true;
 
-        BasicPopup popup = PopupManager.GetBasicPopup();
-        popup.Header = Localization.Get("polymod.hub");
-        popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", new Il2CppSystem.Object[] { }) });
+		BasicPopup popup = PopupManager.GetBasicPopup();
+		popup.Header = Localization.Get("polymod.hub");
+		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", new Il2CppSystem.Object[] { }) });
 
-        void WCProceed()
-        {
-            seenWarningWCPopup = true;
-            __instance.OnWeeklyChallengeClicked();
-        }
-        List<PopupBase.PopupButtonData> popupButtons = new()
-        {
-            new("buttons.back"),
-            new(
-                "polymod.wc.proceed",
-                PopupBase.PopupButtonData.States.None,
-                callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(WCProceed),
-                customColorStates: ColorConstants.redButtonColorStates
-            )
-        };
-        popup.buttonData = popupButtons.ToArray();
-        popup.Show();
-        return false;
-    }
+		void WCProceed()
+		{
+			seenWarningWCPopup = true;
+			__instance.OnWeeklyChallengeClicked();
+		}
+		List<PopupBase.PopupButtonData> popupButtons = new()
+		{
+			new("buttons.back"),
+			new(
+				"polymod.wc.proceed",
+				PopupBase.PopupButtonData.States.None,
+				callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(WCProceed),
+				customColorStates: ColorConstants.redButtonColorStates
+			)
+		};
+		popup.buttonData = popupButtons.ToArray();
+		popup.Show();
+		return false;
+	}
 
 	/// <summary>Shows a basic popup with a custom width.</summary>
 	public static void ShowSetWidth(this BasicPopupLegacy self, int width)
@@ -561,21 +561,21 @@ public static class Visual
 		self.Show();
 	}
 
-    #endregion
+	#endregion
 
-    internal static BasicPopupLegacy GetBasicPopupLegacy()
-    {
-        WhatsNewPopup whatsNewPopup = PopupManager.GetWhatsNewPopup();
-        BasicPopupLegacy original = PopupManager.instance.popupPrefabs[BASIC_POPUP_LEGACY_ID].Cast<BasicPopupLegacy>();
-        BasicPopupLegacy basicPopupLegacy = UnityEngine.Object.Instantiate(original, PopupManager.instance.transform);
-        basicPopupLegacy.buttonContainer = GameObject.Instantiate(whatsNewPopup.buttonContainer, basicPopupLegacy.transform);
-        basicPopupLegacy.popupId = "basicPopupLegacy";
-        basicPopupLegacy.popupManager = PopupManager.instance;
-        basicPopupLegacy.Init();
-        basicPopupLegacy.identifier = null;
-        basicPopupLegacy.rectTransform.SetAsLastSibling();
-        return basicPopupLegacy;
-    }
+	internal static BasicPopupLegacy GetBasicPopupLegacy()
+	{
+		WhatsNewPopup whatsNewPopup = PopupManager.GetWhatsNewPopup();
+		BasicPopupLegacy original = PopupManager.instance.popupPrefabs[BASIC_POPUP_LEGACY_ID].Cast<BasicPopupLegacy>();
+		BasicPopupLegacy basicPopupLegacy = UnityEngine.Object.Instantiate(original, PopupManager.instance.transform);
+		basicPopupLegacy.buttonContainer = GameObject.Instantiate(whatsNewPopup.buttonContainer, basicPopupLegacy.transform);
+		basicPopupLegacy.popupId = "basicPopupLegacy";
+		basicPopupLegacy.popupManager = PopupManager.instance;
+		basicPopupLegacy.Init();
+		basicPopupLegacy.identifier = null;
+		basicPopupLegacy.rectTransform.SetAsLastSibling();
+		return basicPopupLegacy;
+	}
 
 	public static Texture2D BuildTexture(byte[] data)
 	{
@@ -603,65 +603,65 @@ public static class Visual
 	/// <returns>The created sprite.</returns>
 	public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f, bool transformToOutline = false, float? gaussianBlurRadius = null)
 	{
-		if(transformToOutline) texture = TransformToOutline(texture);
+		if (transformToOutline) texture = TransformToOutline(texture);
 
-		if(gaussianBlurRadius != null) texture = ApplyGaussianBlur(texture, gaussianBlurRadius.Value);
+		if (gaussianBlurRadius != null) texture = ApplyGaussianBlur(texture, gaussianBlurRadius.Value);
 
 		return Sprite.Create(
 			texture,
 			new(0, 0, texture.width, texture.height),
 			pivot ?? new(0.5f, 0.5f),
 			pixelsPerUnit ?? 2112f
-		);;
+		); ;
 	}
 
-    public static Texture2D TransformToOutline(Texture2D sourceTexture, int borderSizeInPixels = 8, Color? color = null)
-    {
+	public static Texture2D TransformToOutline(Texture2D sourceTexture, int borderSizeInPixels = 8, Color? color = null)
+	{
 		Plugin.logger.LogInfo("Transforming texture to outline...");
-		if(color == null)
+		if (color == null)
 			color = Color.white;
 
-        int sourceWidthInPixels = sourceTexture.width;
-        int sourceHeightInPixels = sourceTexture.height;
-        int outputWidthInPixels = sourceWidthInPixels + borderSizeInPixels * 2;
-        int outputHeightInPixels = sourceHeightInPixels + borderSizeInPixels * 2;
+		int sourceWidthInPixels = sourceTexture.width;
+		int sourceHeightInPixels = sourceTexture.height;
+		int outputWidthInPixels = sourceWidthInPixels + borderSizeInPixels * 2;
+		int outputHeightInPixels = sourceHeightInPixels + borderSizeInPixels * 2;
 
-        Color[] sourcePixels = sourceTexture.GetPixels();
-        bool[] filledMask = new bool[outputWidthInPixels * outputHeightInPixels];
-        int borderSquared = borderSizeInPixels * borderSizeInPixels;
+		Color[] sourcePixels = sourceTexture.GetPixels();
+		bool[] filledMask = new bool[outputWidthInPixels * outputHeightInPixels];
+		int borderSquared = borderSizeInPixels * borderSizeInPixels;
 
-        for (int pixelY = 0; pixelY < sourceHeightInPixels; pixelY++)
-        {
-            for (int pixelX = 0; pixelX < sourceWidthInPixels; pixelX++)
-            {
-                if (sourcePixels[pixelY * sourceWidthInPixels + pixelX].a <= 0.01f) continue;
+		for (int pixelY = 0; pixelY < sourceHeightInPixels; pixelY++)
+		{
+			for (int pixelX = 0; pixelX < sourceWidthInPixels; pixelX++)
+			{
+				if (sourcePixels[pixelY * sourceWidthInPixels + pixelX].a <= 0.01f) continue;
 
-                int centerX = pixelX + borderSizeInPixels;
-                int centerY = pixelY + borderSizeInPixels;
+				int centerX = pixelX + borderSizeInPixels;
+				int centerY = pixelY + borderSizeInPixels;
 
-                for (int offsetY = -borderSizeInPixels; offsetY <= borderSizeInPixels; offsetY++)
-                {
-                    for (int offsetX = -borderSizeInPixels; offsetX <= borderSizeInPixels; offsetX++)
-                    {
-                        if (offsetX * offsetX + offsetY * offsetY > borderSquared) continue;
+				for (int offsetY = -borderSizeInPixels; offsetY <= borderSizeInPixels; offsetY++)
+				{
+					for (int offsetX = -borderSizeInPixels; offsetX <= borderSizeInPixels; offsetX++)
+					{
+						if (offsetX * offsetX + offsetY * offsetY > borderSquared) continue;
 
-                        filledMask[(centerY + offsetY) * outputWidthInPixels + (centerX + offsetX)] = true;
-                    }
-                }
-            }
-        }
+						filledMask[(centerY + offsetY) * outputWidthInPixels + (centerX + offsetX)] = true;
+					}
+				}
+			}
+		}
 
-        Color[] outputPixels = new Color[filledMask.Length];
-        for (int pixelIndex = 0; pixelIndex < outputPixels.Length; pixelIndex++)
-        {
-            outputPixels[pixelIndex] = filledMask[pixelIndex] ? color.Value : Color.clear;
-        }
+		Color[] outputPixels = new Color[filledMask.Length];
+		for (int pixelIndex = 0; pixelIndex < outputPixels.Length; pixelIndex++)
+		{
+			outputPixels[pixelIndex] = filledMask[pixelIndex] ? color.Value : Color.clear;
+		}
 
-        Texture2D whiteSilhouetteTexture = new Texture2D(outputWidthInPixels, outputHeightInPixels, TextureFormat.RGBA32, false);
-        whiteSilhouetteTexture.SetPixels(outputPixels);
-        whiteSilhouetteTexture.Apply();
-        return whiteSilhouetteTexture;
-    }
+		Texture2D whiteSilhouetteTexture = new Texture2D(outputWidthInPixels, outputHeightInPixels, TextureFormat.RGBA32, false);
+		whiteSilhouetteTexture.SetPixels(outputPixels);
+		whiteSilhouetteTexture.Apply();
+		return whiteSilhouetteTexture;
+	}
 
 	private static float[] BuildGaussianKernelWeights(float sigma, int kernelRadiusInPixels)
 	{
@@ -877,58 +877,58 @@ public static class Visual
 		);
 	}
 
-    private static Texture2D BakeSpriteToTexture(Sprite sourceSprite)
-    {
-        Texture2D atlasTexture = sourceSprite.texture;
-        int spriteWidth = (int)sourceSprite.rect.width;
-        int spriteHeight = (int)sourceSprite.rect.height;
-        float sourcePixelsPerUnit = sourceSprite.pixelsPerUnit;
-        Vector2 sourcePivotInPixels = sourceSprite.pivot;
+	private static Texture2D BakeSpriteToTexture(Sprite sourceSprite)
+	{
+		Texture2D atlasTexture = sourceSprite.texture;
+		int spriteWidth = (int)sourceSprite.rect.width;
+		int spriteHeight = (int)sourceSprite.rect.height;
+		float sourcePixelsPerUnit = sourceSprite.pixelsPerUnit;
+		Vector2 sourcePivotInPixels = sourceSprite.pivot;
 
-        var meshVertices = sourceSprite.vertices;
-        var meshUvs = sourceSprite.uv;
-        var meshTriangles = sourceSprite.triangles;
+		var meshVertices = sourceSprite.vertices;
+		var meshUvs = sourceSprite.uv;
+		var meshTriangles = sourceSprite.triangles;
 
-        RenderTexture renderTexture = RenderTexture.GetTemporary(
-            spriteWidth, spriteHeight, 0,
-            RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
-        RenderTexture previousActiveRenderTexture = RenderTexture.active;
-        RenderTexture.active = renderTexture;
-        GL.Clear(true, true, Color.clear);
+		RenderTexture renderTexture = RenderTexture.GetTemporary(
+			spriteWidth, spriteHeight, 0,
+			RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+		RenderTexture previousActiveRenderTexture = RenderTexture.active;
+		RenderTexture.active = renderTexture;
+		GL.Clear(true, true, Color.clear);
 
-        Material spriteMaterial = new Material(Shader.Find("Sprites/Default"));
-        spriteMaterial.mainTexture = atlasTexture;
-        spriteMaterial.SetPass(0);
+		Material spriteMaterial = new Material(Shader.Find("Sprites/Default"));
+		spriteMaterial.mainTexture = atlasTexture;
+		spriteMaterial.SetPass(0);
 
-        GL.PushMatrix();
-        GL.LoadPixelMatrix(0, spriteWidth, 0, spriteHeight);
-        GL.Begin(GL.TRIANGLES);
-        for (int triangleCornerIndex = 0; triangleCornerIndex < meshTriangles.Length; triangleCornerIndex++)
-        {
-            int vertexIndex = meshTriangles[triangleCornerIndex];
-            Vector2 uv = meshUvs[vertexIndex];
-            Vector2 vertex = meshVertices[vertexIndex];
+		GL.PushMatrix();
+		GL.LoadPixelMatrix(0, spriteWidth, 0, spriteHeight);
+		GL.Begin(GL.TRIANGLES);
+		for (int triangleCornerIndex = 0; triangleCornerIndex < meshTriangles.Length; triangleCornerIndex++)
+		{
+			int vertexIndex = meshTriangles[triangleCornerIndex];
+			Vector2 uv = meshUvs[vertexIndex];
+			Vector2 vertex = meshVertices[vertexIndex];
 
-            GL.TexCoord(new Vector3(uv.x, uv.y, 0));
-            GL.Vertex3(
-                vertex.x * sourcePixelsPerUnit + sourcePivotInPixels.x,
-                vertex.y * sourcePixelsPerUnit + sourcePivotInPixels.y,
-                0);
-        }
-        GL.End();
-        GL.PopMatrix();
+			GL.TexCoord(new Vector3(uv.x, uv.y, 0));
+			GL.Vertex3(
+				vertex.x * sourcePixelsPerUnit + sourcePivotInPixels.x,
+				vertex.y * sourcePixelsPerUnit + sourcePivotInPixels.y,
+				0);
+		}
+		GL.End();
+		GL.PopMatrix();
 
-        Texture2D bakedTexture = new Texture2D(spriteWidth, spriteHeight, TextureFormat.RGBA32, false);
-        bakedTexture.ReadPixels(new Rect(0, 0, spriteWidth, spriteHeight), 0, 0);
-        bakedTexture.Apply();
-        bakedTexture.wrapMode = TextureWrapMode.Clamp;
+		Texture2D bakedTexture = new Texture2D(spriteWidth, spriteHeight, TextureFormat.RGBA32, false);
+		bakedTexture.ReadPixels(new Rect(0, 0, spriteWidth, spriteHeight), 0, 0);
+		bakedTexture.Apply();
+		bakedTexture.wrapMode = TextureWrapMode.Clamp;
 
-        RenderTexture.active = previousActiveRenderTexture;
-        RenderTexture.ReleaseTemporary(renderTexture);
-        UnityEngine.Object.Destroy(spriteMaterial);
+		RenderTexture.active = previousActiveRenderTexture;
+		RenderTexture.ReleaseTemporary(renderTexture);
+		UnityEngine.Object.Destroy(spriteMaterial);
 
-        return bakedTexture;
-    }
+		return bakedTexture;
+	}
 
 	public static void CreateInnerOriginSprites()
 	{
