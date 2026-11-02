@@ -389,6 +389,13 @@ public static class Main
 		stopwatch.Stop();
 	}
 
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(UnityEngine.Application), nameof(UnityEngine.Application.persistentDataPath), MethodType.Getter)]
+	private static void Application_persistentDataPath_get(ref string __result)
+	{
+		__result = Plugin.PERSISTENT_DATA_PATH;
+	}
+
 	/// <summary>
 	/// Loads all mod content.
 	/// </summary>

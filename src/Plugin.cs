@@ -96,6 +96,8 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
 	internal static readonly string CHECKSUM_PATH
 		= Path.Combine(BASE_PATH, "CHECKSUM");
 
+	internal static readonly string PERSISTENT_DATA_PATH = Path.Combine(BASE_PATH, "PersistentData");
+
 	/// <summary>
 	/// The link to the PolyMod Discord server.
 	/// </summary>
