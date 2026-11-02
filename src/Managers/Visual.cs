@@ -3,7 +3,6 @@ using Polytopia.Data;
 using UnityEngine;
 using Il2CppSystem.Linq;
 using PolytopiaBackendBase.Common;
-using Il2CppInterop.Runtime;
 using System.Text.Json.Serialization;
 using PolyMod.Json;
 using TMPro;
@@ -81,7 +80,8 @@ public static class Visual
 	/// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
 	/// </summary>
 	internal static Dictionary<TileData.EffectType, SkinType> customFloodingSkins = new();
-	private static bool seenWarningWCPopup = false;
+
+	private static readonly Color WEEKLY_CHALLENGE_DISABLED_COLOR = new(0.42f, 0.42f, 0.42f, 1f);
 
 	private static Dictionary<string, string>? cachedSpriteDataReverse = null;
 	private static Dictionary<string, string> cachedReversedNames = new();
@@ -518,33 +518,32 @@ public static class Visual
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnWeeklyChallengeClicked))]
-	private static bool StartScreen_OnWeeklyChallengeClicked(StartScreen_UI2 __instance)
+	private static bool StartScreen_OnWeeklyChallengeClicked()
 	{
-		if (seenWarningWCPopup)
-			return true;
-
 		BasicPopup popup = PopupManager.GetBasicPopup();
 		popup.Header = Localization.Get("polymod.hub");
-		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", Array.Empty<Il2CppSystem.Object>()) });
-
-		void WCProceed()
-		{
-			seenWarningWCPopup = true;
-			__instance.OnWeeklyChallengeClicked();
-		}
-		List<PopupBase.PopupButtonData> popupButtons = new()
-		{
-			new("buttons.back"),
-			new(
-				"polymod.wc.proceed",
-				PopupBase.PopupButtonData.States.None,
-				callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(WCProceed),
-				customColorStates: ColorConstants.redButtonColorStates
-			)
-		};
-		popup.buttonData = popupButtons.ToArray();
+		popup.Description = Localization.Get(
+			"polymod.wc.vanillaonly",
+			new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", Array.Empty<Il2CppSystem.Object>()) }
+		);
+		popup.buttonData = new PopupBase.PopupButtonData[] { new("buttons.ok") };
 		popup.Show();
 		return false;
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.RefreshWeeklyChallengeButton))]
+	private static void StartScreen_RefreshWeeklyChallengeButton(StartScreen_UI2 __instance)
+	{
+		WeeklyChallengesButton weeklyChallengeButton = __instance.weeklyChallengeButton;
+		if (weeklyChallengeButton == null)
+			return;
+
+		weeklyChallengeButton.SetColors(
+			WEEKLY_CHALLENGE_DISABLED_COLOR,
+			WEEKLY_CHALLENGE_DISABLED_COLOR,
+			WEEKLY_CHALLENGE_DISABLED_COLOR
+		);
 	}
 
 	/// <summary>Shows a basic popup with a custom width.</summary>
