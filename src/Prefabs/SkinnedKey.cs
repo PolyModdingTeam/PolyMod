@@ -34,13 +34,23 @@ public readonly struct SkinnedKey : IEquatable<SkinnedKey>
 			&& skinType == other.skinType;
 	}
 
-	public override bool Equals(object? other)
+	public override bool Equals(object? obj)
 	{
-		return other is SkinnedKey otherKey && Equals(otherKey);
+		return obj is SkinnedKey otherKey && Equals(otherKey);
 	}
 
 	public override int GetHashCode()
 	{
 		return HashCode.Combine((int)unitType, (int)tribeType, (int)skinType);
+	}
+
+	public static bool operator ==(SkinnedKey left, SkinnedKey right)
+	{
+		return left.Equals(right);
+	}
+
+	public static bool operator !=(SkinnedKey left, SkinnedKey right)
+	{
+		return !left.Equals(right);
 	}
 }

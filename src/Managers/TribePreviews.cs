@@ -62,9 +62,9 @@ public static class TribePreviews
 		for (int i = 0; i < TribePreviewRegistry.saveStateDatas.Length; i++)
 		{
 			SaveStateData saveStateData = TribePreviewRegistry.saveStateDatas[i];
-			if (previewSaveStateDatas.ContainsKey(saveStateData.name))
+			if (previewSaveStateDatas.TryGetValue(saveStateData.name, out PreviewInfo? existingPreview))
 			{
-				previewSaveStateDatas[saveStateData.name] = new(i, saveStateData, previewSaveStateDatas[saveStateData.name].customPreview);
+				previewSaveStateDatas[saveStateData.name] = new(i, saveStateData, existingPreview.customPreview);
 			}
 		}
 

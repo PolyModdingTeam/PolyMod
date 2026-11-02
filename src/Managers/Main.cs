@@ -17,6 +17,8 @@ namespace PolyMod.Managers;
 /// </summary>
 public static class Main
 {
+	private static readonly string[] polytopiaAuthors = { "Midjiwan AB" };
+
 	internal static bool dependencyCycle;
 
 	/// <summary>
@@ -184,7 +186,7 @@ public static class Main
 			var newData = button.gamemodeData.ToList();
 			foreach (var info in Loader.gamemodes)
 			{
-				string id = EnumCache<GameMode>.GetName((GameMode)info.gameModeIndex).ToLower();
+				string id = EnumCache<GameMode>.GetName((GameMode)info.gameModeIndex).ToLowerInvariant();
 				newData.Add(new GamemodeButton.GamemodeButtonData()
 				{
 					gameMode = (GameMode)info.gameModeIndex,
@@ -377,7 +379,7 @@ public static class Main
 			"The Battle of Polytopia",
 			null,
 			new(Application.version.ToString()),
-			new string[] { "Midjiwan AB" },
+			polytopiaAuthors,
 			Array.Empty<Mod.Dependency>()
 		);
 		Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));

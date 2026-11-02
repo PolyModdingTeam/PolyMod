@@ -1,3 +1,4 @@
+using System.Globalization;
 using BepInEx.Logging;
 using Cpp2IL.Core.Extensions;
 using Il2CppSystem.Linq;
@@ -22,6 +23,22 @@ namespace PolyMod;
 /// </summary>
 public static class Loader
 {
+	private static readonly JsonSerializerOptions manifestJsonOptions = new()
+	{
+		Converters = { new VersionJson() },
+	};
+
+	private static readonly JsonSerializerOptions spriteInfoJsonOptions = new()
+	{
+		Converters = { new Vector2Json() },
+	};
+
+	private static readonly JsonSerializerOptions prefabJsonOptions = new()
+	{
+		Converters = { new Vector2Json() },
+		PropertyNameCaseInsensitive = true,
+	};
+
 	internal record TypeMapping(Type type, bool shouldCreateCache = true);
 
 	/// <summary>
@@ -112,7 +129,7 @@ public static class Loader
 							if (modifiedSkins.Contains(skin.id))
 							{
 								modifiedSkins.Remove(skin.id);
-								modifiedSkins.Add(skin.idx.ToString());
+								modifiedSkins.Add(skin.idx.ToString(CultureInfo.InvariantCulture));
 							}
 						}
 						JArray newSkins = new JArray();
@@ -203,7 +220,7 @@ public static class Loader
 			new((token, duringEnumCacheCreation) =>
 			{
 				var prop = token.Parent.Cast<JProperty>();
-				prop.Replace(new JProperty(prop.Name.ToLower(), prop.Value));
+				prop.Replace(new JProperty(prop.Name.ToLowerInvariant(), prop.Value));
 			})
 		},
 	};
@@ -363,10 +380,7 @@ public static class Loader
 		{
 			manifest = JsonSerializer.Deserialize<Mod.Manifest>(
 				bytes,
-				new JsonSerializerOptions()
-				{
-					Converters = { new VersionJson() },
-				}
+				manifestJsonOptions
 			);
 			return;
 		}
@@ -414,13 +428,13 @@ public static class Loader
 			foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
 			{
 				string? message = null;
-				if (!mods.ContainsKey(dependency.id))
+				if (!mods.TryGetValue(dependency.id, out Mod? dependencyMod))
 				{
 					message = $"Dependency {dependency.id} not found";
 				}
 				else
 				{
-					Version version = mods[dependency.id].version;
+					Version version = dependencyMod.version;
 					if (
 						(dependency.min != null && version < dependency.min)
 						||
@@ -620,10 +634,7 @@ public static class Loader
 		{
 			var deserialized = JsonSerializer.Deserialize<Dictionary<string, Visual.SpriteInfo>>(
 				file.bytes,
-				new JsonSerializerOptions()
-				{
-					Converters = { new Vector2Json() },
-				}
+				spriteInfoJsonOptions
 			);
 
 			if (deserialized != null)
@@ -651,7 +662,7 @@ public static class Loader
 	/// <param name="file">The audio file to load.</param>
 	public static void LoadAudioFile(Mod mod, Mod.File file)
 	{
-		string name = Path.GetFileNameWithoutExtension(file.name).ToLower();
+		string name = Path.GetFileNameWithoutExtension(file.name).ToLowerInvariant();
 		try
 		{
 			AudioClip clip = Managers.Audio.BuildAudioClip(file.bytes, name);
@@ -675,11 +686,7 @@ public static class Loader
 	{
 		try
 		{
-			var prefab = JsonSerializer.Deserialize<PrefabsInfo>(file.bytes, new JsonSerializerOptions
-			{
-				Converters = { new Vector2Json() },
-				PropertyNameCaseInsensitive = true,
-			});
+			var prefab = JsonSerializer.Deserialize<PrefabsInfo>(file.bytes, prefabJsonOptions);
 			if (prefab == null)
 				return;
 
@@ -699,11 +706,7 @@ public static class Loader
 	{
 		try
 		{
-			var unitPrefab = JsonSerializer.Deserialize<UnitPrefabInfo>(file.bytes, new JsonSerializerOptions
-			{
-				Converters = { new Vector2Json() },
-				PropertyNameCaseInsensitive = true,
-			});
+			var unitPrefab = JsonSerializer.Deserialize<UnitPrefabInfo>(file.bytes, prefabJsonOptions);
 			if (unitPrefab == null)
 				return;
 
@@ -721,11 +724,7 @@ public static class Loader
 	{
 		try
 		{
-			var improvementPrefab = JsonSerializer.Deserialize<ImprovementPrefabInfo>(file.bytes, new JsonSerializerOptions
-			{
-				Converters = { new Vector2Json() },
-				PropertyNameCaseInsensitive = true,
-			});
+			var improvementPrefab = JsonSerializer.Deserialize<ImprovementPrefabInfo>(file.bytes, prefabJsonOptions);
 			if (improvementPrefab == null)
 				return;
 
@@ -743,11 +742,7 @@ public static class Loader
 	{
 		try
 		{
-			var resourcePrefab = JsonSerializer.Deserialize<ResourcePrefabInfo>(file.bytes, new JsonSerializerOptions
-			{
-				Converters = { new Vector2Json() },
-				PropertyNameCaseInsensitive = true,
-			});
+			var resourcePrefab = JsonSerializer.Deserialize<ResourcePrefabInfo>(file.bytes, prefabJsonOptions);
 			if (resourcePrefab == null)
 				return;
 

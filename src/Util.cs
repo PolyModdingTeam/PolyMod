@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Il2CppInterop.Runtime;
@@ -143,7 +144,7 @@ internal static class Util
 		bool leftNumeric = left.Length > 0 && left.All(char.IsDigit);
 		bool rightNumeric = right.Length > 0 && right.All(char.IsDigit);
 		if (leftNumeric && rightNumeric)
-			return long.Parse(left).CompareTo(long.Parse(right));
+			return long.Parse(left, CultureInfo.InvariantCulture).CompareTo(long.Parse(right, CultureInfo.InvariantCulture));
 		if (leftNumeric) return -1;
 		if (rightNumeric) return 1;
 		return string.Compare(left, right, StringComparison.Ordinal);

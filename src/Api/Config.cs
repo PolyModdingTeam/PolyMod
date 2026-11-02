@@ -8,6 +8,7 @@ namespace PolyMod.Api;
 /// </summary>
 public class Config<T> where T : class
 {
+	private static readonly JsonSerializerOptions indentedJsonOptions = new() { WriteIndented = true };
 	private T? currentConfig;
 	private readonly string modName;
 	private readonly ConfigTypes configType;
@@ -98,7 +99,7 @@ public class Config<T> where T : class
 		switch (configType)
 		{
 			case ConfigTypes.PerMod:
-				var perModJson = JsonSerializer.Serialize(currentConfig, new JsonSerializerOptions { WriteIndented = true });
+				var perModJson = JsonSerializer.Serialize(currentConfig, indentedJsonOptions);
 				File.WriteAllText(perModConfigPath, perModJson);
 				break;
 			case ConfigTypes.Exposed:

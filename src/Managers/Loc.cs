@@ -1,3 +1,4 @@
+using System.Globalization;
 using HarmonyLib;
 using I2.Loc;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
@@ -65,7 +66,7 @@ public static class Loc
 			// If the name was resolved, replace the index with the name in the key
 			if (name != null && idx != null)
 			{
-				int index = keys.IndexOf(idx.ToString()!);
+				int index = keys.IndexOf(idx.Value.ToString(CultureInfo.InvariantCulture));
 				keys[index] = name;
 				key = string.Join(".", keys);
 			}
@@ -130,9 +131,9 @@ public static class Loc
 			tribe = owner.tribe;
 
 		string key = EnumCache<ImprovementData.Type>.GetName(improvementData.type);
-		if (buildingsInfoOverrides.ContainsKey(key))
+		if (buildingsInfoOverrides.TryGetValue(key, out string? buildingInfoOverride))
 		{
-			__result = Localization.GetSkinned(skinOfCurrentLocalPlayer, tribe, buildingsInfoOverrides[key]);
+			__result = Localization.GetSkinned(skinOfCurrentLocalPlayer, tribe, buildingInfoOverride);
 			return false;
 		}
 

@@ -137,8 +137,8 @@ public static class Visual
 		if (cachedSpriteDataReverse == null)
 			CacheSpriteNames();
 
-		if (cachedReversedNames.ContainsKey(baseName))
-			return cachedReversedNames[baseName];
+		if (cachedReversedNames.TryGetValue(baseName, out string? cachedReversedName))
+			return cachedReversedName;
 
 		string formattedName = baseName;
 		foreach (var valuePair in cachedSpriteDataReverse!)
@@ -525,7 +525,7 @@ public static class Visual
 
 		BasicPopup popup = PopupManager.GetBasicPopup();
 		popup.Header = Localization.Get("polymod.hub");
-		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", new Il2CppSystem.Object[] { }) });
+		popup.Description = Localization.Get("polymod.wc.warning", new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", Array.Empty<Il2CppSystem.Object>()) });
 
 		void WCProceed()
 		{

@@ -1,3 +1,4 @@
+using System.Globalization;
 using LibCpp2IL;
 using PolyMod.Managers;
 using PolytopiaBackendBase.Game;
@@ -61,12 +62,12 @@ public static class Registry
 	/// <summary>
 	/// The next available index for climate styles.
 	/// </summary>
-	public static int climateAutoidx = (int)Enum.GetValues(typeof(TribeType)).Cast<TribeType>().Last();
+	public static int climateAutoidx = (int)Enum.GetValues<TribeType>().Last();
 
 	/// <summary>
 	/// The next available index for game modes.
 	/// </summary>
-	public static int gameModesAutoidx = Enum.GetValues(typeof(GameMode)).Length;
+	public static int gameModesAutoidx = Enum.GetValues<GameMode>().Length;
 
 	public static Dictionary<Mod, Mod.File> filesQueueToBeProcessedAfterGLDMerge = new(); // I dont know whether I should do sum abt it
 
@@ -74,7 +75,7 @@ public static class Registry
 	{
 		string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
 		string skinText = (skin == SkinType.Default) ? "" : EnumCache<SkinType>.GetName(skin);
-		string levelText = (level == -1) ? "" : level.ToString();
+		string levelText = (level == -1) ? "" : level.ToString(CultureInfo.InvariantCulture);
 		return GetSpriteByText(baseName, tribeText, skinText, levelText, outline);
 	}
 	/// <summary>
@@ -83,9 +84,9 @@ public static class Registry
 	public static Sprite? GetSpriteByText(string baseName, string tribeText = "", string skinText = "", string levelText = "", bool outline = false)
 	{
 		Sprite? sprite = null;
-		baseName = baseName.ToLower();
-		tribeText = tribeText.ToLower();
-		skinText = skinText.ToLower();
+		baseName = baseName.ToLowerInvariant();
+		tribeText = tribeText.ToLowerInvariant();
+		skinText = skinText.ToLowerInvariant();
 
 		List<string> spriteNameVariants = new();
 
@@ -123,9 +124,9 @@ public static class Registry
 	public static AudioClip? GetAudioClipByText(string baseName, string tribeText = "", string skinText = "")
 	{
 		AudioSource? audioSource = null;
-		baseName = baseName.ToLower();
-		tribeText = tribeText.ToLower();
-		skinText = skinText.ToLower();
+		baseName = baseName.ToLowerInvariant();
+		tribeText = tribeText.ToLowerInvariant();
+		skinText = skinText.ToLowerInvariant();
 
 		List<string> audioNameVariants = new()
 		{

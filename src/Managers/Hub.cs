@@ -1,3 +1,4 @@
+using System.Globalization;
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
 using Il2CppInterop.Runtime;
@@ -299,7 +300,7 @@ internal static class Hub
 
 		string summary = Localization.Get(
 			"polymod.hub.summary",
-			Args(loaded.ToString(), Registry.mods.Count.ToString())
+			Args(loaded.ToString(CultureInfo.InvariantCulture), Registry.mods.Count.ToString(CultureInfo.InvariantCulture))
 		);
 		summary += "   " + Localization.Get(
 			"polymod.hub.checksum",
