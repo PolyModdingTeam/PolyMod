@@ -19,7 +19,7 @@ jobs:
       run: dotnet test -warnaserror
     - name: Build nuget
       if: github.event_name == 'workflow_dispatch'
-      run: dotnet pack PolyMod.csproj -o nuget
+      run: dotnet pack src/PolyMod.csproj -o nuget
     - name: Deploy nuget
       if: github.event_name == 'workflow_dispatch'
       run: dotnet nuget push -s https://polymod.dev/nuget/v3/index.json -k ${{ secrets.KEY }} nuget/*.nupkg
@@ -28,14 +28,14 @@ jobs:
       id: version
       uses: kzrnm/get-net-sdk-project-versions-action@v2
       with:
-          proj-path: PolyMod.csproj
+          proj-path: src/PolyMod.csproj
     - name: Deploy release
       if: github.event_name == 'workflow_dispatch'
       run: |
         if [[ "${{ steps.version.outputs.version }}" == *"-"* ]]; then
-           gh release create v${{ steps.version.outputs.version }} bin/IL2CPP/net6.0/PolyMod.dll -p -t v${{ steps.version.outputs.version }}
+           gh release create v${{ steps.version.outputs.version }} src/bin/IL2CPP/net6.0/PolyMod.dll -p -t v${{ steps.version.outputs.version }}
         else
-           gh release create v${{ steps.version.outputs.version }} bin/IL2CPP/net6.0/PolyMod.dll -t v${{ steps.version.outputs.version }}
+           gh release create v${{ steps.version.outputs.version }} src/bin/IL2CPP/net6.0/PolyMod.dll -t v${{ steps.version.outputs.version }}
         fi
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
