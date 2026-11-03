@@ -546,6 +546,17 @@ public static class Visual
 		);
 	}
 
+    private const string MIGHTYLEADER = "mightyleader";
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PopupContentBuilder), nameof(PopupContentBuilder.GetMightyLeaderTopImage))]
+    public static void PopupContentBuilder_GetMightyLeaderTopImage(ref Sprite __result, PlayerState player)
+    {
+        Sprite? sprite = Registry.GetSprite(MIGHTYLEADER, player.tribe, player.GetVisualSkin());
+        if(sprite != null)
+            __result = sprite;
+    }
+
 	/// <summary>Shows a basic popup with a custom width.</summary>
 	public static void ShowSetWidth(this BasicPopupLegacy self, int width)
 	{
