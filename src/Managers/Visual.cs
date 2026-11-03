@@ -951,6 +951,17 @@ public static class Visual
         );
     }
 
+    private const string MIGHTYLEADER = "mightyleader";
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PopupContentBuilder), nameof(PopupContentBuilder.GetMightyLeaderTopImage))]
+    public static void PopupContentBuilder_GetMightyLeaderTopImage(ref Sprite __result, PlayerState player)
+    {
+        Sprite? sprite = Registry.GetSprite(MIGHTYLEADER, Util.GetStyle(player.tribe, player.GetVisualSkin()));
+        if(sprite != null)
+            __result = sprite;
+    }
+
     /// <summary>Initializes the Visual manager by patching the necessary methods.</summary>
     internal static void Init()
     {
