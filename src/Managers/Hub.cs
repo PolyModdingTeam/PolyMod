@@ -34,6 +34,7 @@ internal static class Hub
 	private const float VERSION_LABEL_GAP = 10f;
 	/// <summary>Margin the game keeps between the safe area and its own corner widgets.</summary>
 	private const float VERSION_LABEL_MARGIN = 15f;
+	private const float ROUND_BUTTON_TITLE_GAP = 10f;
 	private const string INTRO = "intro.mp4";
 
 	private const KeyCode HOTKEY_MODIFIER = KeyCode.LeftControl;
@@ -138,9 +139,12 @@ internal static class Hub
 		polyModButton.bg.color = Color.white;
 		// Setting the text re-runs the button's own layout, which also repositions the badge.
 		polyModButton.Text = Localization.Get("polymod.hub");
+		float titleDrop = polyModButton.titleTextField == null
+			? 0f
+			: (polyModButton.titleTextField.GetHeight() + ROUND_BUTTON_TITLE_GAP) / 2f;
 		polyModButton.SetPosition(
 			screenSize.safeRect.Right - START_SCREEN_MARGIN * 2.5f,
-			screenSize.safeRect.Top - START_SCREEN_MARGIN
+			screenSize.safeRect.Top - START_SCREEN_MARGIN - titleDrop
 		);
 		brokenModsBadge?.SetValue(CountBrokenMods());
 

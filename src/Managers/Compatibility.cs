@@ -23,17 +23,13 @@ internal static class Compatibility
 
 	public static void ComputeChecksums(Dictionary<string, Mod> mods)
 	{
-		foreach (var (_, mod) in mods)
-		{
-			mod.checksum = ComputeModChecksum(mod);
-		}
-
 		List<string> signatures = new();
 		foreach (var (id, mod) in mods)
 		{
 			if (mod.status != Mod.Status.Success) continue;
 			if (mod.client || id == "polytopia") continue;
-
+ 
+			mod.checksum = ComputeModChecksum(mod);
 			signatures.Add($"{id}:{mod.checksum}");
 		}
 		signatures.Sort(StringComparer.Ordinal);
