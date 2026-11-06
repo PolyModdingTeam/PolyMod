@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using PolytopiaBackendBase.Common;
+using Steamworks;
 
 namespace PolyMod.Managers;
 
@@ -363,8 +364,15 @@ public static class Main
 	{
 		if ((int)__instance.tribe >= Plugin.AUTOIDX_STARTS_FROM)
 		{
-			__instance.climate = __instance.tribe;
+			// __instance.climate = __instance.tribe;
 		}
+	}
+
+	[HarmonyPostfix]
+	[HarmonyPatch(typeof(Config), nameof(Config.GetExpirationDate))]
+	private static void Config_GetExpirationDate(ref Il2CppSystem.Nullable<Il2CppSystem.DateTime> __result)
+	{
+		__result = new();
 	}
 
 	/// <summary>
@@ -495,4 +503,28 @@ public static class Main
 		stopwatch.Stop();
 		Plugin.logger.LogInfo($"Loaded all mods in {stopwatch.ElapsedMilliseconds}ms");
 	}
+
+	[HarmonyPrefix]
+    [HarmonyPatch(typeof(NativeHelpers), nameof(NativeHelpers.IsValidInstall))]
+    public static bool NativeHelpers_IsValidInstall(ref bool __result)
+    {
+        __result = true;
+        return false;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SteamClient), nameof(SteamClient.IsValid), MethodType.Getter)]
+    public static bool SteamClient_IsValid(ref bool __result)
+    {
+        __result = true;
+        return false;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SteamClient), nameof(SteamClient.RestartAppIfNecessary))]
+    public static bool SteamClient_IsValid(ref bool __result, uint appid)
+    {
+        __result = false;
+        return false;
+    }
 }

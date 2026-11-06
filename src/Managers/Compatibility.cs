@@ -164,7 +164,7 @@ internal static class Compatibility
 		}
 		if (!doChecksumsMatch)
 		{
-			PopupManager.GetBasicPopupWithData(new(
+			PopupManager.GetBasicPopup(new(
 				Localization.Get("polymod.signature.mismatch"),
 				Localization.Get("polymod.signature.incompatible"),
 				new(new PopupBase.PopupButtonData[] {
@@ -180,104 +180,104 @@ internal static class Compatibility
 	/// <summary>
 	/// Performs compatibility checks when the start screen is shown.
 	/// </summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
-	private static void StartScreen_UI2_OnShow()
-	{
-		if (!Plugin.ValidLaunch && Application.platform != RuntimePlatform.Android)
-		{
-			PopupManager.GetBasicPopupWithData(
-				new(
-					Localization.Get("polymod.title.invalid"),
-					Localization.Get("polymod.description.invalid"),
-					new PopupBase.PopupButtonData[] {
-						new(
-							"buttons.exitgame",
-							PopupBase.PopupButtonData.States.None,
-							callback: (Il2CppSystem.Action)Application.Quit,
-							closesPopup: false
-						),
-						new(
-							"buttons.download.launcher",
-							PopupBase.PopupButtonData.States.None,
-							callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OpenSite),
-							closesPopup: false
-						)
-					}
-				)
-			).Show();
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
+	// private static void StartScreen_UI2_OnShow()
+	// {
+	// 	if (!Plugin.ValidLaunch && Application.platform != RuntimePlatform.Android)
+	// 	{
+	// 		PopupManager.GetBasicPopupWithData(
+	// 			new(
+	// 				Localization.Get("polymod.title.invalid"),
+	// 				Localization.Get("polymod.description.invalid"),
+	// 				new PopupBase.PopupButtonData[] {
+	// 					new(
+	// 						"buttons.exitgame",
+	// 						PopupBase.PopupButtonData.States.None,
+	// 						callback: (Il2CppSystem.Action)Application.Quit,
+	// 						closesPopup: false
+	// 					),
+	// 					new(
+	// 						"buttons.download.launcher",
+	// 						PopupBase.PopupButtonData.States.None,
+	// 						callback: DelegateSupport.ConvertDelegate<Il2CppSystem.Action>(OpenSite),
+	// 						closesPopup: false
+	// 					)
+	// 				}
+	// 			)
+	// 		).Show();
 
-			void OpenSite()
-			{
-				NativeHelpers.OpenURL(downloadLink, false);
-				Application.Quit();
-			}
-			return;
-		}
-		string lastChecksum = checksum;
-		try
-		{
-			lastChecksum = new(File.ReadAllText(Plugin.CHECKSUM_PATH));
-		}
-		catch (FileNotFoundException) { }
+	// 		void OpenSite()
+	// 		{
+	// 			NativeHelpers.OpenURL(downloadLink, false);
+	// 			Application.Quit();
+	// 		}
+	// 		return;
+	// 	}
+	// 	string lastChecksum = checksum;
+	// 	try
+	// 	{
+	// 		lastChecksum = new(File.ReadAllText(Plugin.CHECKSUM_PATH));
+	// 	}
+	// 	catch (FileNotFoundException) { }
 
-		File.WriteAllText(
-			Plugin.CHECKSUM_PATH,
-			checksum
-		);
-		if (lastChecksum != checksum)
-		{
-			shouldResetSettings = true;
-		}
+	// 	File.WriteAllText(
+	// 		Plugin.CHECKSUM_PATH,
+	// 		checksum
+	// 	);
+	// 	if (lastChecksum != checksum)
+	// 	{
+	// 		shouldResetSettings = true;
+	// 	}
 
-		Version incompatibilityWarningLastVersion = new(PlayerPrefs.GetString(
-			Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
-			Plugin.POLYTOPIA_VERSION.CutRevision().ToString()
-		));
-		if (VersionManager.SemanticVersion.Cast().CutRevision() > incompatibilityWarningLastVersion)
-		{
-			PlayerPrefs.SetString(
-				Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
-				VersionManager.SemanticVersion.Cast().CutRevision().ToString()
-			);
-			PlayerPrefs.Save();
-			PopupManager.GetBasicPopupWithData(
-				new(
-					Localization.Get("polymod.version.mismatch"),
-					Localization.Get("polymod.version.mismatch.description"),
-					new PopupBase.PopupButtonData[] {
-						new("buttons.stay", customColorStates: ColorConstants.redButtonColorStates),
-						new(
-							"buttons.exitgame",
-							PopupBase.PopupButtonData.States.None,
-							(Il2CppSystem.Action)Application.Quit,
-							closesPopup: false
-						)
-					}
-				)
-			).Show();
-		}
-	}
+	// 	Version incompatibilityWarningLastVersion = new(PlayerPrefs.GetString(
+	// 		Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
+	// 		Plugin.POLYTOPIA_VERSION.CutRevision().ToString()
+	// 	));
+	// 	if (VersionManager.SemanticVersion.Cast().CutRevision() > incompatibilityWarningLastVersion)
+	// 	{
+	// 		PlayerPrefs.SetString(
+	// 			Plugin.INCOMPATIBILITY_WARNING_LAST_VERSION_KEY,
+	// 			VersionManager.SemanticVersion.Cast().CutRevision().ToString()
+	// 		);
+	// 		PlayerPrefs.Save();
+	// 		PopupManager.GetBasicPopupWithData(
+	// 			new(
+	// 				Localization.Get("polymod.version.mismatch"),
+	// 				Localization.Get("polymod.version.mismatch.description"),
+	// 				new PopupBase.PopupButtonData[] {
+	// 					new("buttons.stay", customColorStates: ColorConstants.redButtonColorStates),
+	// 					new(
+	// 						"buttons.exitgame",
+	// 						PopupBase.PopupButtonData.States.None,
+	// 						(Il2CppSystem.Action)Application.Quit,
+	// 						closesPopup: false
+	// 					)
+	// 				}
+	// 			)
+	// 		).Show();
+	// 	}
+	// }
 
 	/// <summary>
 	/// Checks the signature of a pass-and-play game before loading it.
 	/// </summary>
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.OnMainButtonClicked))]
-	private static bool GameInfoPopup_OnMainButtonClicked(GameInfoPopup __instance)
-	{
-		return CheckSignatures(__instance.OnMainButtonClicked, __instance.gameId);
-	}
+	// [HarmonyPrefix]
+	// [HarmonyPatch(typeof(GameInfoPopup), nameof(GameInfoPopup.OnMainButtonClicked))]
+	// private static bool GameInfoPopup_OnMainButtonClicked(GameInfoPopup __instance)
+	// {
+	// 	return CheckSignatures(__instance.OnMainButtonClicked, __instance.gameId);
+	// }
 
-	/// <summary>
-	/// Checks the signature of a single-player game before resuming it.
-	/// </summary>
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnResumeButtonLongPress))]
-	private static bool StartScreen_OnResumeButtonClick(StartScreen_UI2 __instance)
-	{
-		return CheckSignatures(__instance.OnResumeButtonLongPress, LocalSaveFileUtils.GetSaveFiles(PolytopiaBackendBase.Game.GameType.SinglePlayer)[0]);
-	}
+	// /// <summary>
+	// /// Checks the signature of a single-player game before resuming it.
+	// /// </summary>
+	// [HarmonyPrefix]
+	// [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnResumeButtonLongPress))]
+	// private static bool StartScreen_OnResumeButtonClick(StartScreen_UI2 __instance)
+	// {
+	// 	return CheckSignatures(__instance.OnResumeButtonLongPress, LocalSaveFileUtils.GetSaveFiles(PolytopiaBackendBase.Game.GameType.SinglePlayer)[0]);
+	// }
 
 	/// <summary>
 	/// Deletes the stored checksum of a pass-and-play game when it is deleted.

@@ -139,11 +139,6 @@ public static class Loader
 						}
 						token["skins"] = newSkins;
 					}
-					if (token["preview"] != null)
-					{
-						TribePreviews.PreviewTile[] preview = JsonSerializer.Deserialize<TribePreviews.PreviewTile[]>(token["preview"].ToString())!;
-						Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
-					}
 				}
 			})
 		},
@@ -812,13 +807,13 @@ public static class Loader
 
 	internal static void ProcessCustomTribes()
 	{
-		foreach (var tribe in Registry.customTribes)
-		{
-			if (!GameLogicData.legacyTribeTypesOrder.Contains(tribe))
-			{
-				GameLogicData.legacyTribeTypesOrder.Add(tribe);
-			}
-		}
+		// foreach (var tribe in Registry.customTribes)
+		// {
+		// 	if (!GameLogicData.legacyTribeTypesOrder.Contains(tribe))
+		// 	{
+		// 		GameLogicData.legacyTribeTypesOrder.Add(tribe);
+		// 	}
+		// }
 	}
 
 	/// <summary>

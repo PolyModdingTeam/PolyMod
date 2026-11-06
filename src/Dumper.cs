@@ -38,7 +38,7 @@ internal static class Dumper
 		DumpLogic();
 		DumpLocalization();
 		DumpSprites();
-		DumpTribePreviews();
+		//DumpTribePreviews();
 		DumpPrefabs();
 	}
 
@@ -131,9 +131,9 @@ internal static class Dumper
 				for (int j = 1; j < row.Length; j++)
 				{
 					string spriteName = row[j];
+					if(!spriteName.Contains("future")) continue;
 					Sprite sprite = spriteAtlasManager.GetSprite(spriteName, atlasName);
 					if (sprite == null) continue;
-
 					(byte[] bytes, Visual.SpriteInfo spriteInfo) = Visual.SpriteToPng(sprite);
 					File.WriteAllBytes(Path.Combine(directory, $"{spriteName}.png"), bytes);
 					atlasSpriteInfo[spriteName] = spriteInfo;
@@ -150,48 +150,48 @@ internal static class Dumper
 		}
 	}
 
-	internal static void DumpTribePreviews()
-	{
-		try
-		{
-			foreach (TribeType type in Enum.GetValues<TribeType>())
-			{
-				SaveStateData saveStateData = TribePreviewRegistry.GetTribePreviewData(type, SkinType.Default); // TODO: skins
-				if (saveStateData == null) continue;
+	// internal static void DumpTribePreviews()
+	// {
+	// 	try
+	// 	{
+	// 		foreach (TribeType type in Enum.GetValues<TribeType>())
+	// 		{
+	// 			SaveStateData saveStateData = TribePreviewRegistry.GetTribePreviewData(type, SkinType.Default); // TODO: skins
+	// 			if (saveStateData == null) continue;
 
-				if (!DiskSerializationHelpers.FromLZ4CompressedByteArray<ClientSerializationWrapper>(
-					saveStateData.byteArray, out ClientSerializationWrapper wrapper, out int _))
-				{
-					Plugin.logger.LogWarning($"Dump skipped preview of {type}: save state could not be read");
-					continue;
-				}
+	// 			if (!DiskSerializationHelpers.FromLZ4CompressedByteArray<ClientSerializationWrapper>(
+	// 				saveStateData.byteArray, out ClientSerializationWrapper wrapper, out int _))
+	// 			{
+	// 				Plugin.logger.LogWarning($"Dump skipped preview of {type}: save state could not be read");
+	// 				continue;
+	// 			}
 
-				List<TribePreviews.PreviewTile> previewTiles = new();
-				foreach (var tileData in wrapper.GetCurrentGameState().Map.Tiles)
-				{
-					previewTiles.Add(new TribePreviews.PreviewTile
-					{
-						x = tileData.coordinates.x,
-						y = tileData.coordinates.y,
-						terrainType = tileData.terrain,
-						resourceType = tileData.resource != null ? tileData.resource.type : null,
-						unitType = tileData.unit != null ? tileData.unit.type : null,
-						improvementType = tileData.improvement != null ? tileData.improvement.type : null,
-						tileEffects = tileData.effects.ToArray().ToList(),
-					});
-				}
+	// 			List<TribePreviews.PreviewTile> previewTiles = new();
+	// 			foreach (var tileData in wrapper.GetCurrentGameState().Map.Tiles)
+	// 			{
+	// 				previewTiles.Add(new TribePreviews.PreviewTile
+	// 				{
+	// 					x = tileData.coordinates.x,
+	// 					y = tileData.coordinates.y,
+	// 					terrainType = tileData.terrain,
+	// 					resourceType = tileData.resource != null ? tileData.resource.type : null,
+	// 					unitType = tileData.unit != null ? tileData.unit.type : null,
+	// 					improvementType = tileData.improvement != null ? tileData.improvement.type : null,
+	// 					tileEffects = tileData.effects.ToArray().ToList(),
+	// 				});
+	// 			}
 
-				File.WriteAllText(
-					Path.Combine(Plugin.DUMPED_DATA_PATH, $"preview_{type}.json"),
-					JsonSerializer.Serialize(previewTiles, INDENTED)
-				);
-			}
-		}
-		catch (Exception exception)
-		{
-			Plugin.logger.LogError($"Dumping tribe previews failed: {exception}");
-		}
-	}
+	// 			File.WriteAllText(
+	// 				Path.Combine(Plugin.DUMPED_DATA_PATH, $"preview_{type}.json"),
+	// 				JsonSerializer.Serialize(previewTiles, INDENTED)
+	// 			);
+	// 		}
+	// 	}
+	// 	catch (Exception exception)
+	// 	{
+	// 		Plugin.logger.LogError($"Dumping tribe previews failed: {exception}");
+	// 	}
+	// }
 
 	internal static void DumpPrefabs()
 	{

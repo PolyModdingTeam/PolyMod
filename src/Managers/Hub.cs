@@ -37,9 +37,9 @@ internal static class Hub
 	private const float ROUND_BUTTON_TITLE_GAP = 10f;
 	private const string INTRO = "intro.mp4";
 
-	private const KeyCode HOTKEY_MODIFIER = KeyCode.LeftControl;
+	private const KeyCode HOTKEY_MODIFIER = KeyCode.A;
 	private const KeyCode HOTKEY_MODIFIER_ALTERNATIVE = KeyCode.RightControl;
-	private const KeyCode HOTKEY = KeyCode.Tab;
+	private const KeyCode HOTKEY = KeyCode.S;
 
 	private static readonly Setting[] SETTINGS = new Setting[]
 	{
@@ -63,9 +63,9 @@ internal static class Hub
 		),
 	};
 
-	private static UIRoundButton_UI2? polyModButton = null;
+	// private static UIRoundButton_UI2? polyModButton = null;
 	private static NotificationBadge? brokenModsBadge = null;
-	private static TextField_UI2? polyModVersion = null;
+	// private static TextField_UI2? polyModVersion = null;
 
 	private static PopupBase? openPopup = null;
 
@@ -98,73 +98,73 @@ internal static class Hub
 		return false;
 	}
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.Init))]
-	private static void StartScreen_UI2_Init(RectTransform transform)
-	{
-		polyModButton = UILibrary.NewRoundButton(transform).SetStyle(UIButtonBase_UI2.ButtonStyle.Suggested);
-		polyModButton.bg.sprite = Visual.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
-		polyModButton.OnClickedSignal.Add(Callback(ShowPolyModHub));
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.Init))]
+	// private static void StartScreen_UI2_Init(RectTransform transform)
+	// {
+	// 	polyModButton = UILibrary.NewRoundButton(transform).SetStyle(UIButtonBase_UI2.ButtonStyle.Suggested);
+	// 	polyModButton.bg.sprite = Visual.BuildSprite(Plugin.GetResource("polymod_icon.png").ReadBytes());
+	// 	polyModButton.OnClickedSignal.Add(Callback(ShowPolyModHub));
 
-		brokenModsBadge = UILibrary.NewNotificationBadge(polyModButton.rectTransform).SetValue(CountBrokenMods());
-		polyModButton.SetOverlay(brokenModsBadge, UIButtonBase_UI2.OverlayPosition.TopRight);
+	// 	brokenModsBadge = UILibrary.NewNotificationBadge(polyModButton.rectTransform).SetValue(CountBrokenMods());
+	// 	polyModButton.SetOverlay(brokenModsBadge, UIButtonBase_UI2.OverlayPosition.TopRight);
 
-		// NewHeaderTinyText is the prefab a round button builds its own title from, so the label
-		// keeps the game's header font rather than the lighter body font NewText would give it.
-		polyModVersion = UILibrary.NewHeaderTinyText(transform);
-		polyModVersion.gameObject.name = "PolyModVersion";
-		polyModVersion.textField.fontSize = VERSION_LABEL_FONT_SIZE;
-		polyModVersion.textField.color = Color.white;
-		polyModVersion.Text = $"PolyMod {Plugin.VERSION}";
+	// 	// NewHeaderTinyText is the prefab a round button builds its own title from, so the label
+	// 	// keeps the game's header font rather than the lighter body font NewText would give it.
+	// 	polyModVersion = UILibrary.NewHeaderTinyText(transform);
+	// 	polyModVersion.gameObject.name = "PolyModVersion";
+	// 	polyModVersion.textField.fontSize = VERSION_LABEL_FONT_SIZE;
+	// 	polyModVersion.textField.color = Color.white;
+	// 	polyModVersion.Text = $"PolyMod {Plugin.VERSION}";
 
-		if (Main.dependencyCycle)
-			ShowDependencyCyclePopup();
-	}
+	// 	if (Main.dependencyCycle)
+	// 		ShowDependencyCyclePopup();
+	// }
 
 	/// <summary>
 	/// Patches the start screen layout to place the PolyMod hub button and the version label.
 	/// </summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.RunLayout))]
-	private static void StartScreen_UI2_RunLayout(StartScreen_UI2 __instance, ScreenBase_UI2.ScreenSize screenSize)
-	{
-		if (polyModButton == null || polyModVersion == null)
-		{
-			Plugin.logger.LogWarning("PolyMod start screen widgets are missing, skipping their layout.");
-			return;
-		}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.RunLayout))]
+	// private static void StartScreen_UI2_RunLayout(StartScreen_UI2 __instance, ScreenBase_UI2.ScreenSize screenSize)
+	// {
+	// 	if (polyModButton == null || polyModVersion == null)
+	// 	{
+	// 		Plugin.logger.LogWarning("PolyMod start screen widgets are missing, skipping their layout.");
+	// 		return;
+	// 	}
 
-		polyModButton.iconContainer.gameObject.SetActive(false);
-		polyModButton.outline.gameObject.SetActive(false);
-		polyModButton.bg.color = Color.white;
-		// Setting the text re-runs the button's own layout, which also repositions the badge.
-		polyModButton.Text = Localization.Get("polymod.hub");
-		float titleDrop = polyModButton.titleTextField == null
-			? 0f
-			: (polyModButton.titleTextField.GetHeight() + ROUND_BUTTON_TITLE_GAP) / 2f;
-		polyModButton.SetPosition(
-			screenSize.safeRect.Right - START_SCREEN_MARGIN * 2.5f,
-			screenSize.safeRect.Top - START_SCREEN_MARGIN - titleDrop
-		);
-		brokenModsBadge?.SetValue(CountBrokenMods());
+	// 	polyModButton.iconContainer.gameObject.SetActive(false);
+	// 	polyModButton.outline.gameObject.SetActive(false);
+	// 	polyModButton.bg.color = Color.white;
+	// 	// Setting the text re-runs the button's own layout, which also repositions the badge.
+	// 	polyModButton.Text = Localization.Get("polymod.hub");
+	// 	float titleDrop = polyModButton.titleTextField == null
+	// 		? 0f
+	// 		: (polyModButton.titleTextField.GetHeight() + ROUND_BUTTON_TITLE_GAP) / 2f;
+	// 	polyModButton.SetPosition(
+	// 		screenSize.safeRect.Right - START_SCREEN_MARGIN * 2.5f,
+	// 		screenSize.safeRect.Top - START_SCREEN_MARGIN - titleDrop
+	// 	);
+	// 	brokenModsBadge?.SetValue(CountBrokenMods());
 
-		// Anchored by its edges, not its centre, so a longer version string cannot run off screen.
-		float versionX = screenSize.safeRect.Left + VERSION_LABEL_MARGIN + polyModVersion.GetHalfWidth();
-		float versionY = screenSize.safeRect.Bottom + VERSION_LABEL_MARGIN + polyModVersion.GetHalfHeight();
-		polyModVersion.SetPosition(versionX, versionY);
+	// 	// Anchored by its edges, not its centre, so a longer version string cannot run off screen.
+	// 	float versionX = screenSize.safeRect.Left + VERSION_LABEL_MARGIN + polyModVersion.GetHalfWidth();
+	// 	float versionY = screenSize.safeRect.Bottom + VERSION_LABEL_MARGIN + polyModVersion.GetHalfHeight();
+	// 	polyModVersion.SetPosition(versionX, versionY);
 
-		// The bottom row of buttons is centred and of fixed width, so a narrow window walks it into
-		// the version label. The row is already laid out by now, so lift the label clear of it.
-		UIRoundButton_UI2 bottomRowStart = __instance.settingsButton;
-		if (bottomRowStart != null
-			&& polyModVersion.GetRight() + VERSION_LABEL_GAP > bottomRowStart.GetLeft())
-		{
-			polyModVersion.SetPosition(
-				versionX,
-				bottomRowStart.GetTop() + polyModVersion.GetHalfHeight() + VERSION_LABEL_GAP
-			);
-		}
-	}
+	// 	// The bottom row of buttons is centred and of fixed width, so a narrow window walks it into
+	// 	// the version label. The row is already laid out by now, so lift the label clear of it.
+	// 	UIRoundButton_UI2 bottomRowStart = __instance.settingsButton;
+	// 	if (bottomRowStart != null
+	// 		&& polyModVersion.GetRight() + VERSION_LABEL_GAP > bottomRowStart.GetLeft())
+	// 	{
+	// 		polyModVersion.SetPosition(
+	// 			versionX,
+	// 			bottomRowStart.GetTop() + polyModVersion.GetHalfHeight() + VERSION_LABEL_GAP
+	// 		);
+	// 	}
+	// }
 
 	[HarmonyPostfix]
 	[HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
@@ -177,43 +177,44 @@ internal static class Hub
 
 	internal static void ShowPolyModHub()
 	{
-		BasicPopupLegacy popup = Visual.GetBasicPopupLegacy();
-		popup.Header = Localization.Get("polymod.hub");
-		popup.Description = string.Join(
-			"\n\n",
-			Localization.Get("polymod.hub.header", Args(HEADER_PREFIX, HEADER_POSTFIX)),
-			BuildModList(),
-			Localization.Get("polymod.hub.footer", Args(HEADER_PREFIX, HEADER_POSTFIX))
-		);
+		DumpData();
+		// BasicPopupLegacy popup = Visual.GetBasicPopupLegacy();
+		// popup.Header = Localization.Get("polymod.hub");
+		// popup.Description = string.Join(
+		// 	"\n\n",
+		// 	Localization.Get("polymod.hub.header", Args(HEADER_PREFIX, HEADER_POSTFIX)),
+		// 	BuildModList(),
+		// 	Localization.Get("polymod.hub.footer", Args(HEADER_PREFIX, HEADER_POSTFIX))
+		// );
 
 		void OpenDiscord() => NativeHelpers.OpenURL(Plugin.DISCORD_LINK, false);
 
 		List<PopupButtonData> buttons = new()
 		{
 			new("buttons.back"),
-			new("polymod.hub.discord", callback: Callback(OpenDiscord)),
-			new("polymod.hub.config", callback: Callback(ShowConfigPopup)),
+			// new("polymod.hub.discord", callback: Callback(OpenDiscord)),
+			// new("polymod.hub.config", callback: Callback(ShowConfigPopup)),
 		};
 		if (Plugin.config.debug)
 		{
-			buttons.Add(new("polymod.hub.dump", callback: Callback(DumpData), closesPopup: false));
-			buttons.Add(new("polymod.hub.hotreload", callback: Callback(HotReload), closesPopup: false));
+			// buttons.Add(new("polymod.hub.dump", callback: Callback(DumpData), closesPopup: false));
+			// buttons.Add(new("polymod.hub.hotreload", callback: Callback(HotReload), closesPopup: false));
 		}
 
-		popup.buttonData = buttons.ToArray();
-		openPopup = popup;
-		popup.ShowSetWidth(HUB_POPUP_WIDTH_SHARE, HUB_POPUP_MAX_WIDTH);
+		// popup.buttonData = buttons.ToArray();
+		// openPopup = popup;
+		// popup.ShowSetWidth(HUB_POPUP_WIDTH_SHARE, HUB_POPUP_MAX_WIDTH);
 	}
 
 	internal static void ShowConfigPopup()
 	{
-		BasicPopupLegacy popup = Visual.GetBasicPopupLegacy();
-		popup.Header = Localization.Get("polymod.hub.config");
-		popup.Description = BuildSettingsList();
+		// BasicPopupLegacy popup = Visual.GetBasicPopupLegacy();
+		// popup.Header = Localization.Get("polymod.hub.config");
+		// popup.Description = BuildSettingsList();
 
 		List<PopupButtonData> buttons = new()
 		{
-			new("buttons.back", callback: Callback(ShowPolyModHub)),
+			// new("buttons.back", callback: Callback(ShowPolyModHub)),
 		};
 		foreach (Setting setting in SETTINGS)
 		{
@@ -221,19 +222,19 @@ internal static class Hub
 			{
 				setting.toggle();
 				Plugin.WriteConfig();
-				popup.Description = BuildSettingsList();
+				// popup.Description = BuildSettingsList();
 			}
-			buttons.Add(new(setting.buttonKey, callback: Callback(OnSettingClicked), closesPopup: false));
+			//buttons.Add(new(setting.buttonKey, callback: Callback(OnSettingClicked), closesPopup: false));
 		}
 
-		popup.buttonData = buttons.ToArray();
-		openPopup = popup;
-		popup.ShowSetWidth(SETTINGS_POPUP_WIDTH_SHARE, SETTINGS_POPUP_MAX_WIDTH);
+		// popup.buttonData = buttons.ToArray();
+		// openPopup = popup;
+		// popup.ShowSetWidth(SETTINGS_POPUP_WIDTH_SHARE, SETTINGS_POPUP_MAX_WIDTH);
 	}
 
 	private static void ShowDependencyCyclePopup()
 	{
-		BasicPopup popup = PopupManager.GetBasicPopupWithData(
+		BasicPopup popup = PopupManager.GetBasicPopup(
 			new(
 				Localization.Get("polymod.cycle"),
 				Localization.Get("polymod.cycle.description"),
@@ -276,7 +277,7 @@ internal static class Hub
 
 		popup.buttonData = new PopupButtonData[]
 		{
-			new("polymod.hub.openfolder", callback: Callback(OpenDumpFolder)),
+			// new("polymod.hub.openfolder", callback: Callback(OpenDumpFolder)),
 			new("buttons.ok"),
 		};
 		popup.Show();
@@ -287,7 +288,7 @@ internal static class Hub
 		BasicPopup popup = PopupManager.GetBasicPopup();
 		popup.Header = Localization.Get("polymod.hub.hotreload");
 		popup.Description = Localization.Get("polymod.hotreload.unavailable");
-		popup.SetDefaultOkbutton();
+		// popup.SetDefaultOkbutton();
 		popup.Show();
 	}
 

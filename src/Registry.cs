@@ -37,7 +37,7 @@ public static class Registry
 	/// <summary>
 	/// A dictionary of tribe previews, keyed by tribe name.
 	/// </summary>
-	public static Dictionary<string, TribePreviews.PreviewTile[]> tribePreviews = new();
+	// public static Dictionary<string, TribePreviews.PreviewTile[]> tribePreviews = new();
 
 	/// <summary>
 	/// A dictionary of sprite information, keyed by sprite name.

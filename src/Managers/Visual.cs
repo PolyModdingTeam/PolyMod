@@ -62,9 +62,9 @@ public static class Visual
 	public record SkinInfo(int idx, string id, SkinData? skinData);
 
 	/// <summary>A dictionary of custom widths for basic popups.</summary>
-	public static Dictionary<int, PopupWidth> basicPopupWidths = new();
+	// public static Dictionary<int, PopupWidth> basicPopupWidths = new();
 
-	public record PopupWidth(BasicPopupLegacy popup, float share, float maximum);
+	// public record PopupWidth(BasicPopupLegacy popup, float share, float maximum);
 
 	private const int BASIC_POPUP_LEGACY_ID = 29;
 
@@ -358,52 +358,52 @@ public static class Visual
 	#region Popups
 
 	/// <summary>Updates the width of a basic popup if a custom width is set.</summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeightWhenHeightIsKnownAndDontUseCoroutines))]
-	private static void PopupBase_RefreshHeightWhenHeightIsKnownAndDontUseCoroutines(PopupBase __instance)
-	{
-		UpdateWidth(__instance);
-	}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(PopupBase), nameof(PopupBase.RefreshHeightWhenHeightIsKnownAndDontUseCoroutines))]
+	// private static void PopupBase_RefreshHeightWhenHeightIsKnownAndDontUseCoroutines(PopupBase __instance)
+	// {
+	// 	UpdateWidth(__instance);
+	// }
 
-	private static void UpdateWidth(PopupBase popup)
-	{
-		if (!basicPopupWidths.TryGetValue(popup.GetInstanceID(), out PopupWidth? width)) return;
+	// private static void UpdateWidth(PopupBase popup)
+	// {
+	// 	if (!basicPopupWidths.TryGetValue(popup.GetInstanceID(), out PopupWidth? width)) return;
 
-		popup.rectTransform.SetWidth(GetResponsivePopupWidth(width.share, width.maximum));
-		BasicPopupLegacy? legacy = popup.TryCast<BasicPopupLegacy>();
-		if (legacy != null && legacy.buttonContainer != null)
-			LayoutPopupButtons(legacy.buttonContainer);
-	}
+	// 	popup.rectTransform.SetWidth(GetResponsivePopupWidth(width.share, width.maximum));
+	// 	BasicPopupLegacy? legacy = popup.TryCast<BasicPopupLegacy>();
+	// 	if (legacy != null && legacy.buttonContainer != null)
+	// 		LayoutPopupButtons(legacy.buttonContainer);
+	// }
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(SystemEvents), nameof(SystemEvents.ScreenSizeChanged))]
-	private static void SystemEvents_ScreenSizeChanged()
-	{
-		RelayoutSizedPopups();
-	}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(SystemEvents), nameof(SystemEvents.ScreenSizeChanged))]
+	// private static void SystemEvents_ScreenSizeChanged()
+	// {
+	// 	RelayoutSizedPopups();
+	// }
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(SystemEvents), nameof(SystemEvents.SafeAreaChanged))]
-	private static void SystemEvents_SafeAreaChanged()
-	{
-		RelayoutSizedPopups();
-	}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(SystemEvents), nameof(SystemEvents.SafeAreaChanged))]
+	// private static void SystemEvents_SafeAreaChanged()
+	// {
+	// 	RelayoutSizedPopups();
+	// }
 
-	private static void RelayoutSizedPopups()
-	{
-		foreach (PopupWidth width in new List<PopupWidth>(basicPopupWidths.Values))
-		{
-			try
-			{
-				if (width.popup == null || !width.popup.IsShowing()) continue;
-				width.popup.RefreshHeightWhenHeightIsKnownAndDontUseCoroutines(ScreenManager.SafeHeight);
-			}
-			catch (Exception exception)
-			{
-				Plugin.logger.LogError($"Could not lay a popup out after a screen size change: {exception}");
-			}
-		}
-	}
+	// private static void RelayoutSizedPopups()
+	// {
+	// 	foreach (PopupWidth width in new List<PopupWidth>(basicPopupWidths.Values))
+	// 	{
+	// 		try
+	// 		{
+	// 			if (width.popup == null || !width.popup.IsShowing()) continue;
+	// 			width.popup.RefreshHeightWhenHeightIsKnownAndDontUseCoroutines(ScreenManager.SafeHeight);
+	// 		}
+	// 		catch (Exception exception)
+	// 		{
+	// 			Plugin.logger.LogError($"Could not lay a popup out after a screen size change: {exception}");
+	// 		}
+	// 	}
+	// }
 
 	/// <summary>
 	/// Turns a share of the usable screen width into a popup width in canvas units.
@@ -502,90 +502,90 @@ public static class Visual
 	}
 
 	/// <summary>Removes a popup's custom width when it is hidden.</summary>
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
-	private static void PopupBase_Hide(PopupBase __instance)
-	{
-		basicPopupWidths.Remove(__instance.GetInstanceID());
-	}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(PopupBase), nameof(PopupBase.Hide))]
+	// private static void PopupBase_Hide(PopupBase __instance)
+	// {
+	// 	basicPopupWidths.Remove(__instance.GetInstanceID());
+	// }
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
-	private static void StartScreen_UI2_OnShow()
-	{
-		CreateInnerOriginSprites();
-	}
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnShow))]
+	// private static void StartScreen_UI2_OnShow()
+	// {
+	// 	CreateInnerOriginSprites();
+	// }
 
-	[HarmonyPrefix]
-	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnWeeklyChallengeClicked))]
-	private static bool StartScreen_OnWeeklyChallengeClicked()
-	{
-		BasicPopup popup = PopupManager.GetBasicPopup();
-		popup.Header = Localization.Get("polymod.hub");
-		popup.Description = Localization.Get(
-			"polymod.wc.vanillaonly",
-			new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", Array.Empty<Il2CppSystem.Object>()) }
-		);
-		popup.buttonData = new PopupBase.PopupButtonData[] { new("buttons.ok") };
-		popup.Show();
-		return false;
-	}
+	// [HarmonyPrefix]
+	// [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.OnWeeklyChallengeClicked))]
+	// private static bool StartScreen_OnWeeklyChallengeClicked()
+	// {
+	// 	BasicPopup popup = PopupManager.GetBasicPopup();
+	// 	popup.Header = Localization.Get("polymod.hub");
+	// 	popup.Description = Localization.Get(
+	// 		"polymod.wc.vanillaonly",
+	// 		new Il2CppSystem.Object[] { Localization.Get("weeklychallenge", Array.Empty<Il2CppSystem.Object>()) }
+	// 	);
+	// 	popup.buttonData = new PopupBase.PopupButtonData[] { new("buttons.ok") };
+	// 	popup.Show();
+	// 	return false;
+	// }
 
-	[HarmonyPostfix]
-	[HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.RefreshWeeklyChallengeButton))]
-	private static void StartScreen_RefreshWeeklyChallengeButton(StartScreen_UI2 __instance)
-	{
-		WeeklyChallengesButton weeklyChallengeButton = __instance.weeklyChallengeButton;
-		if (weeklyChallengeButton == null)
-			return;
+	// [HarmonyPostfix]
+	// [HarmonyPatch(typeof(StartScreen_UI2), nameof(StartScreen_UI2.RefreshWeeklyChallengeButton))]
+	// private static void StartScreen_RefreshWeeklyChallengeButton(StartScreen_UI2 __instance)
+	// {
+	// 	WeeklyChallengesButton weeklyChallengeButton = __instance.weeklyChallengeButton;
+	// 	if (weeklyChallengeButton == null)
+	// 		return;
 
-		weeklyChallengeButton.SetColors(
-			WEEKLY_CHALLENGE_DISABLED_COLOR,
-			WEEKLY_CHALLENGE_DISABLED_COLOR,
-			WEEKLY_CHALLENGE_DISABLED_COLOR
-		);
-	}
+	// 	weeklyChallengeButton.SetColors(
+	// 		WEEKLY_CHALLENGE_DISABLED_COLOR,
+	// 		WEEKLY_CHALLENGE_DISABLED_COLOR,
+	// 		WEEKLY_CHALLENGE_DISABLED_COLOR
+	// 	);
+	// }
 
     private const string MIGHTYLEADER = "mightyleader";
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(PopupContentBuilder), nameof(PopupContentBuilder.GetMightyLeaderTopImage))]
-    public static void PopupContentBuilder_GetMightyLeaderTopImage(ref Sprite __result, PlayerState player)
-    {
-        Sprite? sprite = Registry.GetSprite(MIGHTYLEADER, player.tribe, player.GetVisualSkin());
-        if(sprite != null)
-            __result = sprite;
-    }
+    // [HarmonyPostfix]
+    // [HarmonyPatch(typeof(PopupContentBuilder), nameof(PopupContentBuilder.GetMightyLeaderTopImage))]
+    // public static void PopupContentBuilder_GetMightyLeaderTopImage(ref Sprite __result, PlayerState player)
+    // {
+    //     Sprite? sprite = Registry.GetSprite(MIGHTYLEADER, player.tribe, player.GetVisualSkin());
+    //     if(sprite != null)
+    //         __result = sprite;
+    // }
 
-	/// <summary>Shows a basic popup with a custom width.</summary>
-	public static void ShowSetWidth(this BasicPopupLegacy self, int width)
-	{
-		basicPopupWidths[self.GetInstanceID()] = new(self, 0f, width);
-		self.Show();
-	}
+	// /// <summary>Shows a basic popup with a custom width.</summary>
+	// public static void ShowSetWidth(this BasicPopupLegacy self, int width)
+	// {
+	// 	basicPopupWidths[self.GetInstanceID()] = new(self, 0f, width);
+	// 	self.Show();
+	// }
 
-	/// <summary>Shows a basic popup sized to a share of the usable screen width.</summary>
-	public static void ShowSetWidth(this BasicPopupLegacy self, float share, float maximum)
-	{
-		basicPopupWidths[self.GetInstanceID()] = new(self, share, maximum);
-		self.Show();
-	}
+	// /// <summary>Shows a basic popup sized to a share of the usable screen width.</summary>
+	// public static void ShowSetWidth(this BasicPopupLegacy self, float share, float maximum)
+	// {
+	// 	basicPopupWidths[self.GetInstanceID()] = new(self, share, maximum);
+	// 	self.Show();
+	// }
 
 	#endregion
 
-	internal static BasicPopupLegacy GetBasicPopupLegacy()
-	{
-		WhatsNewPopup whatsNewPopup = PopupManager.GetWhatsNewPopup();
-		BasicPopupLegacy original = PopupManager.instance.popupPrefabs[BASIC_POPUP_LEGACY_ID].Cast<BasicPopupLegacy>();
-		BasicPopupLegacy basicPopupLegacy = UnityEngine.Object.Instantiate(original, PopupManager.instance.transform);
-		basicPopupLegacy.buttonContainer = GameObject.Instantiate(whatsNewPopup.buttonContainer, basicPopupLegacy.transform);
-		basicPopupLegacy.popupId = "basicPopupLegacy";
-		basicPopupLegacy.popupManager = PopupManager.instance;
-		basicPopupLegacy.Init();
-		basicPopupLegacy.identifier = null;
-		basicPopupLegacy.rectTransform.SetAsLastSibling();
-		return basicPopupLegacy;
-	}
+	// internal static BasicPopupLegacy GetBasicPopupLegacy()
+	// {
+	// 	WhatsNewPopup whatsNewPopup = PopupManager.GetWhatsNewPopup();
+	// 	BasicPopupLegacy original = PopupManager.instance.popupPrefabs[BASIC_POPUP_LEGACY_ID].Cast<BasicPopupLegacy>();
+	// 	BasicPopupLegacy basicPopupLegacy = UnityEngine.Object.Instantiate(original, PopupManager.instance.transform);
+	// 	basicPopupLegacy.buttonContainer = GameObject.Instantiate(whatsNewPopup.buttonContainer, basicPopupLegacy.transform);
+	// 	basicPopupLegacy.popupId = "basicPopupLegacy";
+	// 	basicPopupLegacy.popupManager = PopupManager.instance;
+	// 	basicPopupLegacy.Init();
+	// 	basicPopupLegacy.identifier = null;
+	// 	basicPopupLegacy.rectTransform.SetAsLastSibling();
+	// 	return basicPopupLegacy;
+	// }
 
 	public static Texture2D BuildTexture(byte[] data)
 	{
