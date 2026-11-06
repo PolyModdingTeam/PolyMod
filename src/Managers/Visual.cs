@@ -76,6 +76,12 @@ public static class Visual
 
 	/// <summary>Vertical gap between two rows of popup buttons.</summary>
 	private const float POPUP_BUTTON_ROW_GAP = 10f;
+
+	private const byte INVISIBLE_ALPHA = 2;
+	private const int ALPHA_BLEED_RINGS = 16;
+	private const int PREMULTIPLIED_MIN_EDGE_PIXELS = 64;
+	private const float PREMULTIPLIED_MAX_OUTLIER_SHARE = 0.005f;
+
 	/// <summary>
 	/// A dictionary of skin types of tribes, which can flood tiles, keyed by custom flood tile effect.
 	/// </summary>
@@ -591,9 +597,91 @@ public static class Visual
 	{
 		Texture2D texture = new(1, 1, TextureFormat.RGBA32, true);
 		texture.LoadImage(data);
+		Color32[] pixels = texture.GetPixels32();
+		if (LooksPremultiplied(pixels))
+			Unpremultiply(pixels);
+		BleedAlphaEdges(pixels, texture.width, texture.height);
+		texture.SetPixels32(pixels);
 		texture.filterMode = FilterMode.Trilinear;
+		texture.wrapMode = TextureWrapMode.Clamp;
 		texture.Apply();
 		return texture;
+	}
+
+	internal static bool LooksPremultiplied(Color32[] pixels)
+	{
+		int edge = 0;
+		int brighterThanAlpha = 0;
+		foreach (Color32 pixel in pixels)
+		{
+			if (pixel.a == 0 || pixel.a == 255) continue;
+			edge++;
+			if (Math.Max(pixel.r, Math.Max(pixel.g, pixel.b)) > pixel.a)
+				brighterThanAlpha++;
+		}
+		return edge >= PREMULTIPLIED_MIN_EDGE_PIXELS
+			&& brighterThanAlpha <= edge * PREMULTIPLIED_MAX_OUTLIER_SHARE;
+	}
+
+	internal static void Unpremultiply(Color32[] pixels)
+	{
+		for (int i = 0; i < pixels.Length; i++)
+		{
+			byte alpha = pixels[i].a;
+			if (alpha == 0 || alpha == byte.MaxValue) continue;
+			pixels[i] = new Color32(
+				(byte)Math.Min(byte.MaxValue, pixels[i].r * byte.MaxValue / alpha),
+				(byte)Math.Min(byte.MaxValue, pixels[i].g * byte.MaxValue / alpha),
+				(byte)Math.Min(byte.MaxValue, pixels[i].b * byte.MaxValue / alpha),
+				alpha
+			);
+		}
+	}
+
+	internal static void BleedAlphaEdges(Color32[] pixels, int width, int height)
+	{
+		bool[] hasColour = new bool[pixels.Length];
+		List<int> frontier = new();
+		for (int i = 0; i < pixels.Length; i++)
+		{
+			if (pixels[i].a <= INVISIBLE_ALPHA) continue;
+			hasColour[i] = true;
+			frontier.Add(i);
+		}
+		if (frontier.Count == 0 || frontier.Count == pixels.Length) return;
+
+		for (int ring = 0; ring < ALPHA_BLEED_RINGS && frontier.Count > 0; ring++)
+		{
+			List<int> nextFrontier = new();
+			foreach (int index in frontier)
+			{
+				int x = index % width;
+				int y = index / width;
+				Color32 source = pixels[index];
+
+				for (int offsetY = -1; offsetY <= 1; offsetY++)
+				{
+					int neighbourY = y + offsetY;
+					if (neighbourY < 0 || neighbourY >= height) continue;
+
+					for (int offsetX = -1; offsetX <= 1; offsetX++)
+					{
+						int neighbourX = x + offsetX;
+						if (neighbourX < 0 || neighbourX >= width) continue;
+
+						int neighbour = neighbourY * width + neighbourX;
+						if (hasColour[neighbour]) continue;
+
+						hasColour[neighbour] = true;
+						pixels[neighbour] = new Color32(
+							source.r, source.g, source.b, pixels[neighbour].a
+						);
+						nextFrontier.Add(neighbour);
+					}
+				}
+			}
+			frontier = nextFrontier;
+		}
 	}
 
 	/// <summary>Builds a sprite from raw byte data.</summary>
@@ -930,6 +1018,12 @@ public static class Visual
 
 		Texture2D bakedTexture = new Texture2D(spriteWidth, spriteHeight, TextureFormat.RGBA32, false);
 		bakedTexture.ReadPixels(new Rect(0, 0, spriteWidth, spriteHeight), 0, 0);
+
+		Color32[] bakedPixels = bakedTexture.GetPixels32();
+		Unpremultiply(bakedPixels);
+		BleedAlphaEdges(bakedPixels, spriteWidth, spriteHeight);
+		bakedTexture.SetPixels32(bakedPixels);
+
 		bakedTexture.Apply();
 		bakedTexture.wrapMode = TextureWrapMode.Clamp;
 

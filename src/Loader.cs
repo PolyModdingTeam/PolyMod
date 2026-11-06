@@ -617,7 +617,7 @@ public static class Loader
 	/// <param name="file">The sprite file to load.</param>
 	public static void LoadTextureFile(Mod mod, Mod.File file)
 	{
-		string name = Path.GetFileNameWithoutExtension(file.name);
+		string name = Path.GetFileNameWithoutExtension(file.name).ToLowerInvariant();
 		Texture2D texture2D = Visual.BuildTexture(file.bytes);
 		Registry.textures[name] = new KeyValuePair<Texture2D, bool>(texture2D, false);
 	}
@@ -641,7 +641,9 @@ public static class Loader
 			{
 				foreach (var kvp in deserialized)
 				{
-					Registry.spriteInfos[kvp.Key] = kvp.Value;
+					if (kvp.Value.spriteOrigin?.name != null)
+						kvp.Value.spriteOrigin.name = kvp.Value.spriteOrigin.name.ToLowerInvariant();
+					Registry.spriteInfos[kvp.Key.ToLowerInvariant()] = kvp.Value;
 				}
 			}
 
