@@ -9,21 +9,21 @@ namespace PolyMod.Json;
 /// </summary>
 public class EnumNameJson<TEnum> : JsonConverter<TEnum> where TEnum : struct, Enum
 {
-	public override TEnum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-	{
-		string? enumName = reader.GetString();
+    public override TEnum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        string? enumName = reader.GetString();
 
-		if (enumName != null && Enum.TryParse(enumName, true, out TEnum parsedValue))
-		{
-			return parsedValue;
-		}
+        if (enumName != null && Enum.TryParse(enumName, true, out TEnum parsedValue))
+        {
+            return parsedValue;
+        }
 
-		string validNames = string.Join(", ", Enum.GetNames<TEnum>());
-		throw new JsonException($"Unknown {typeof(TEnum).Name} value '{enumName}'. Valid values: {validNames}");
-	}
+        string validNames = string.Join(", ", Enum.GetNames<TEnum>());
+        throw new JsonException($"Unknown {typeof(TEnum).Name} value '{enumName}'. Valid values: {validNames}");
+    }
 
-	public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options)
-	{
-		writer.WriteStringValue(value.ToString());
-	}
+    public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value.ToString());
+    }
 }

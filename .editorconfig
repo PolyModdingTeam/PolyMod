@@ -7,10 +7,10 @@ trim_trailing_whitespace = true
 
 [*.{json,yml,yaml}]
 indent_style = space
-indent_size = 2
+indent_size = 4
 
 [*.cs]
-indent_style = tab
+indent_style = space
 tab_width = 4
 indent_size = 4
 csharp_new_line_before_open_brace = all

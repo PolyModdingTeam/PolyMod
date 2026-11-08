@@ -5,15 +5,15 @@ namespace PolyMod;
 
 public class PrefabsInfo
 {
-	[JsonInclude]
-	public List<UnitPrefabInfo> units = new();
+    [JsonInclude]
+    public List<UnitPrefabInfo> units = new();
 
-	[JsonInclude]
-	public List<ImprovementPrefabInfo> improvements = new();
+    [JsonInclude]
+    public List<ImprovementPrefabInfo> improvements = new();
 
-	[JsonInclude]
-	public List<ResourcePrefabInfo> resources = new();
+    [JsonInclude]
+    public List<ResourcePrefabInfo> resources = new();
 
-	// [JsonInclude]
-	private List<WeaponPrefabInfo> weapons = new();
+    // [JsonInclude]
+    private List<WeaponPrefabInfo> weapons = new();
 }

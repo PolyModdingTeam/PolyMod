@@ -1,7 +1,6 @@
 using System.Globalization;
 using LibCpp2IL;
 using PolyMod.Managers;
-using PolytopiaBackendBase.Game;
 using UnityEngine;
 using PolytopiaBackendBase.Common;
 
@@ -12,136 +11,131 @@ namespace PolyMod;
 /// </summary>
 public static class Registry
 {
-	/// <summary>
-	/// The next available index for automatically assigned IDs.
-	/// </summary>
-	public static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
+    /// <summary>
+    /// The next available index for automatically assigned IDs.
+    /// </summary>
+    internal static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
 
-	/// <summary>
-	/// A dictionary of all loaded sprites, keyed by their name.
-	/// </summary>
-	public static Dictionary<string, Sprite> sprites = new();
+    /// <summary>
+    /// A dictionary of all loaded sprites, keyed by their name.
+    /// </summary>
+    internal static Dictionary<string, Sprite> sprites = new();
 
-	public static Dictionary<string, KeyValuePair<Texture2D, bool>> textures = new(); // string = texture name, bool, whether texture was processed or not. reviwers, pls tell me how to improve
+    internal static Dictionary<string, KeyValuePair<Texture2D, bool>> textures = new(); // string = texture name, bool, whether texture was processed or not. reviwers, pls tell me how to improve
 
-	/// <summary>
-	/// A dictionary of all loaded audio clips, keyed by their name.
-	/// </summary>
-	public static Dictionary<string, AudioSource> audioClips = new();
+    /// <summary>
+    /// A dictionary of all loaded audio clips, keyed by their name.
+    /// </summary>
+    internal static Dictionary<string, AudioSource> audioClips = new();
 
-	/// <summary>
-	/// A dictionary of all loaded mods, keyed by their ID.
-	/// </summary>
-	public static Dictionary<string, Mod> mods = new();
+    /// <summary>
+    /// A dictionary of all loaded mods, keyed by their ID.
+    /// </summary>
+    internal static Dictionary<string, Mod> mods = new();
 
-	/// <summary>
-	/// A dictionary of tribe previews, keyed by tribe name.
-	/// </summary>
-	public static Dictionary<string, TribePreviews.PreviewTile[]> tribePreviews = new();
+    /// <summary>
+    /// A dictionary of tribe previews, keyed by tribe name.
+    /// </summary>
+    internal static Dictionary<string, TribePreviews.PreviewTile[]> tribePreviews = new();
 
-	/// <summary>
-	/// A dictionary of sprite information, keyed by sprite name.
-	/// </summary>
-	public static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
+    /// <summary>
+    /// A dictionary of sprite information, keyed by sprite name.
+    /// </summary>
+    internal static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
 
-	/// <summary>
-	/// A dictionary of loaded asset bundles, keyed by their name.
-	/// </summary>
-	public static Dictionary<string, AssetBundle> assetBundles = new();
+    /// <summary>
+    /// A dictionary of loaded asset bundles, keyed by their name.
+    /// </summary>
+    internal static Dictionary<string, AssetBundle> assetBundles = new();
 
-	/// <summary>
-	/// A list of custom tribes.
-	/// </summary>
-	public static List<TribeType> customTribes = new();
+    /// <summary>
+    /// A list of custom tribes.
+    /// </summary>
+    internal static List<TribeType> customTribes = new();
 
-	/// <summary>
-	/// A list of custom skin information.
-	/// </summary>
-	public static List<Visual.SkinInfo> skinInfo = new();
+    /// <summary>
+    /// A list of custom skin information.
+    /// </summary>
+    internal static List<Visual.SkinInfo> skinInfo = new();
 
-	/// <summary>
-	/// The next available index for climate styles.
-	/// </summary>
-	public static int climateAutoidx = (int)Enum.GetValues<TribeType>().Last();
+    /// <summary>
+    /// The next available index for climate styles.
+    /// </summary>
+    internal static int climateAutoidx = (int)Enum.GetValues<TribeType>().Last();
 
-	/// <summary>
-	/// The next available index for game modes.
-	/// </summary>
-	public static int gameModesAutoidx = Enum.GetValues<GameMode>().Length;
+    public static Dictionary<Mod, Mod.File> filesQueueToBeProcessedAfterGLDMerge = new(); // I dont know whether I should do sum abt it
 
-	public static Dictionary<Mod, Mod.File> filesQueueToBeProcessedAfterGLDMerge = new(); // I dont know whether I should do sum abt it
+    public static Sprite? GetSprite(string baseName, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default, int level = -1, bool outline = false)
+    {
+        string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
+        string skinText = (skin == SkinType.Default) ? "" : EnumCache<SkinType>.GetName(skin);
+        string levelText = (level == -1) ? "" : level.ToString(CultureInfo.InvariantCulture);
+        return GetSpriteByText(baseName, tribeText, skinText, levelText, outline);
+    }
+    /// <summary>
+    /// Gets a sprite from the registry, trying to find the best match.
+    /// </summary>
+    public static Sprite? GetSpriteByText(string baseName, string tribeText = "", string skinText = "", string levelText = "", bool outline = false)
+    {
+        Sprite? sprite = null;
+        baseName = baseName.ToLowerInvariant();
+        tribeText = tribeText.ToLowerInvariant();
+        skinText = skinText.ToLowerInvariant();
 
-	public static Sprite? GetSprite(string baseName, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default, int level = -1, bool outline = false)
-	{
-		string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
-		string skinText = (skin == SkinType.Default) ? "" : EnumCache<SkinType>.GetName(skin);
-		string levelText = (level == -1) ? "" : level.ToString(CultureInfo.InvariantCulture);
-		return GetSpriteByText(baseName, tribeText, skinText, levelText, outline);
-	}
-	/// <summary>
-	/// Gets a sprite from the registry, trying to find the best match.
-	/// </summary>
-	public static Sprite? GetSpriteByText(string baseName, string tribeText = "", string skinText = "", string levelText = "", bool outline = false)
-	{
-		Sprite? sprite = null;
-		baseName = baseName.ToLowerInvariant();
-		tribeText = tribeText.ToLowerInvariant();
-		skinText = skinText.ToLowerInvariant();
+        List<string> spriteNameVariants = new();
 
-		List<string> spriteNameVariants = new();
+        if (levelText != string.Empty)
+            baseName += $"_{levelText}";
 
-		if (levelText != string.Empty)
-			baseName += $"_{levelText}";
+        spriteNameVariants.Add(baseName);
+        spriteNameVariants.Add(baseName + "_" + tribeText);
+        spriteNameVariants.Add(baseName + "_" + skinText);
+        spriteNameVariants.Add(baseName + "_" + tribeText + "_" + skinText);
 
-		spriteNameVariants.Add(baseName);
-		spriteNameVariants.Add(baseName + "_" + tribeText);
-		spriteNameVariants.Add(baseName + "_" + skinText);
-		spriteNameVariants.Add(baseName + "_" + tribeText + "_" + skinText);
+        foreach (string spriteName in spriteNameVariants)
+        {
+            sprite = sprites.GetOrDefault(outline ? spriteName + "_outline" : spriteName, sprite);
+        }
 
-		foreach (string spriteName in spriteNameVariants)
-		{
-			sprite = sprites.GetOrDefault(outline ? spriteName + "_outline" : spriteName, sprite);
-		}
+        return sprite;
+    }
 
-		return sprite;
-	}
+    /// <summary>
+    /// Gets an audio clip from the registry.
+    /// </summary>
+    /// <param name="name">The name of the audio clip.</param>
+    /// <returns>The requested audio clip, or null if not found.</returns>
+    public static AudioClip? GetAudioClip(string name, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default)
+    {
+        string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
+        string skinText = (skin == SkinType.Default) ? "" : EnumCache<SkinType>.GetName(skin);
+        return GetAudioClipByText(name, tribeText, skinText);
+    }
 
-	/// <summary>
-	/// Gets an audio clip from the registry.
-	/// </summary>
-	/// <param name="name">The name of the audio clip.</param>
-	/// <returns>The requested audio clip, or null if not found.</returns>
-	public static AudioClip? GetAudioClip(string name, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default)
-	{
-		string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
-		string skinText = (skin == SkinType.Default) ? "" : EnumCache<SkinType>.GetName(skin);
-		return GetAudioClipByText(name, tribeText, skinText);
-	}
+    /// <summary>
+    /// Gets an audio clip from the registry, trying to find the best match.
+    /// </summary>
+    public static AudioClip? GetAudioClipByText(string baseName, string tribeText = "", string skinText = "")
+    {
+        AudioSource? audioSource = null;
+        baseName = baseName.ToLowerInvariant();
+        tribeText = tribeText.ToLowerInvariant();
+        skinText = skinText.ToLowerInvariant();
 
-	/// <summary>
-	/// Gets an audio clip from the registry, trying to find the best match.
-	/// </summary>
-	public static AudioClip? GetAudioClipByText(string baseName, string tribeText = "", string skinText = "")
-	{
-		AudioSource? audioSource = null;
-		baseName = baseName.ToLowerInvariant();
-		tribeText = tribeText.ToLowerInvariant();
-		skinText = skinText.ToLowerInvariant();
+        List<string> audioNameVariants = new()
+        {
+            baseName,
+            baseName + "_" + tribeText,
+            baseName + "_" + skinText,
+            baseName + "_" + tribeText + "_" + skinText,
+        };
 
-		List<string> audioNameVariants = new()
-		{
-			baseName,
-			baseName + "_" + tribeText,
-			baseName + "_" + skinText,
-			baseName + "_" + tribeText + "_" + skinText,
-		};
+        foreach (string audioName in audioNameVariants)
+        {
+            audioSource = audioClips.GetOrDefault(audioName, audioSource);
+        }
 
-		foreach (string audioName in audioNameVariants)
-		{
-			audioSource = audioClips.GetOrDefault(audioName, audioSource);
-		}
-
-		if (audioSource == null) return null;
-		return audioSource.clip;
-	}
+        if (audioSource == null) return null;
+        return audioSource.clip;
+    }
 }
