@@ -1,69 +1,72 @@
 namespace PolyMod;
 
 /// <summary>
-/// Represents a mod in the PolyMod framework.
+/// A mod that PolyMod found in the mods directory, or the base game entry with the id <c>polytopia</c>.
 /// </summary>
 public class Mod
 {
     /// <summary>
-    /// Represents a dependency of a mod.
+    /// A dependency of a mod on a different mod, as the manifest gives it.
     /// </summary>
-    /// <param name="id">The unique identifier of the dependency.</param>
-    /// <param name="min">The minimum compatible version of the dependency, or null for no minimum.</param>
-    /// <param name="max">The maximum compatible version of the dependency, or null for no maximum.</param>
-    /// <param name="required">Whether the dependency is required for the mod to function.</param>
+    /// <param name="id">The id of the mod that this mod needs.</param>
+    /// <param name="min">The lowest version of the dependency that is permitted, or null for no lower limit.</param>
+    /// <param name="max">The highest version of the dependency that is permitted, or null for no upper limit.</param>
+    /// <param name="required">
+    /// If true, the mod gets the status <see cref="Status.DependenciesUnsatisfied"/> when the dependency is missing or has a bad version.
+    /// If false, PolyMod only writes a warning to the log.
+    /// </param>
     public record Dependency(string id, Version? min, Version? max, bool required = true);
 
     /// <summary>
-    /// Represents the manifest of a mod, containing metadata.
+    /// The data from the <c>manifest.json</c> file of a mod.
     /// </summary>
-    /// <param name="id">The unique identifier of the mod.</param>
-    /// <param name="name">The name of the mod.</param>
-    /// <param name="description">A description of the mod.</param>
+    /// <param name="id">The id of the mod. It must contain only lowercase letters and underscores, and it must not be <c>polytopia</c>.</param>
+    /// <param name="name">The name of the mod to show, or null to use the id.</param>
+    /// <param name="description">The description of the mod, or null.</param>
     /// <param name="version">The version of the mod.</param>
-    /// <param name="authors">The authors of the mod.</param>
-    /// <param name="dependencies">The dependencies of the mod.</param>
-    /// <param name="client">Whether the mod is client-side only.</param>
+    /// <param name="authors">The names of the authors of the mod. The array must not be empty.</param>
+    /// <param name="dependencies">The dependencies of the mod, or null for no dependencies.</param>
+    /// <param name="client">If true, the mod is client-side only and PolyMod does not include it in the mod checksum.</param>
     public record Manifest(string id, string? name, string? description, Version version, string[] authors, Dependency[]? dependencies, bool client = false);
 
     /// <summary>
-    /// Represents a file included in a mod.
+    /// A file in a mod, other than <c>manifest.json</c>.
     /// </summary>
-    /// <param name="name">The name of the file.</param>
-    /// <param name="bytes">The content of the file as a byte array.</param>
+    /// <param name="name">The path of the file, relative to the root of the mod directory or archive.</param>
+    /// <param name="bytes">The contents of the file.</param>
     public record File(string name, byte[] bytes);
 
     /// <summary>
-    /// Represents the loading status of a mod.
+    /// The load status of a mod.
     /// </summary>
     public enum Status
     {
         /// <summary>
-        /// The mod was loaded successfully.
+        /// The mod has no errors. PolyMod loads its files.
         /// </summary>
         Success,
         /// <summary>
-        /// An error occurred while loading the mod.
+        /// An error occurred when PolyMod loaded the mod.
         /// </summary>
         Error,
         /// <summary>
-        /// The mod's dependencies were not satisfied.
+        /// A required dependency of the mod is missing or has a version that is not permitted.
         /// </summary>
         DependenciesUnsatisfied,
     }
 
     /// <summary>
-    /// The unique identifier of the mod.
+    /// The id of the mod.
     /// </summary>
     public string id;
 
     /// <summary>
-    /// The name of the mod.
+    /// The name of the mod to show. If the manifest has no name, this is the id.
     /// </summary>
     public string? name;
 
     /// <summary>
-    /// A description of the mod.
+    /// The description of the mod, or null.
     /// </summary>
     public string? description;
 
@@ -73,41 +76,43 @@ public class Mod
     public Version version;
 
     /// <summary>
-    /// The authors of the mod.
+    /// The names of the authors of the mod.
     /// </summary>
     public string[] authors;
 
     /// <summary>
-    /// The dependencies of the mod.
+    /// The dependencies of the mod, or null.
     /// </summary>
     public Dependency[]? dependencies;
 
     /// <summary>
-    /// Whether the mod is client-side only.
+    /// If true, the mod is client-side only and PolyMod does not include it in the mod checksum.
     /// </summary>
     public bool client;
 
     /// <summary>
-    /// The loading status of the mod.
+    /// The load status of the mod.
     /// </summary>
     public Status status;
 
     /// <summary>
-    /// The files included in the mod.
+    /// The files of the mod. This list does not contain <c>manifest.json</c>.
     /// </summary>
     public List<File> files;
 
     /// <summary>
-    /// The checksum of the mod, derived from its id, version and file contents.
+    /// The SHA-256 checksum of the mod, as a hexadecimal string.
+    /// PolyMod makes it from the id, the version, and the name and contents of each file.
+    /// It stays empty for client-side mods, for the base game entry, and for mods that do not have the status <see cref="Status.Success"/>.
     /// </summary>
     public string checksum = string.Empty;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Mod"/> class.
+    /// Makes a mod from a manifest.
     /// </summary>
-    /// <param name="manifest">The manifest of the mod.</param>
-    /// <param name="status">The loading status of the mod.</param>
-    /// <param name="files">The files included in the mod.</param>
+    /// <param name="manifest">The manifest that gives the id, name, description, version, authors, dependencies and client value.</param>
+    /// <param name="status">The initial load status of the mod.</param>
+    /// <param name="files">The files of the mod.</param>
     public Mod(Manifest manifest, Status status, List<File> files)
     {
         id = manifest.id;

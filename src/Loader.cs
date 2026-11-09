@@ -18,7 +18,7 @@ using PolytopiaBackendBase.Common;
 namespace PolyMod;
 
 /// <summary>
-/// Handles loading of mods and their assets.
+/// The methods that register mods, sort them, load their files and apply their GLD data.
 /// </summary>
 internal static class Loader
 {
@@ -38,10 +38,15 @@ internal static class Loader
         PropertyNameCaseInsensitive = true,
     };
 
+    /// <summary>
+    /// The C# type that PolyMod uses for one GLD data category.
+    /// </summary>
+    /// <param name="type">The C# type of the data category. To make <c>EnumCache</c> mappings, this type must be an enum.</param>
+    /// <param name="shouldCreateCache">If true, <see cref="CreateMappings"/> makes <c>EnumCache</c> mappings for new entries of the category. If false, it only calls the type handlers.</param>
     internal record TypeMapping(Type type, bool shouldCreateCache = true);
 
     /// <summary>
-    /// Mappings from JSON data types to their corresponding C# types.
+    /// The type mappings of the GLD data categories, keyed by the category name in the GLD, for example <c>unitData</c>.
     /// </summary>
     internal static Dictionary<string, TypeMapping> typeMappings = new()
     {
@@ -61,8 +66,20 @@ internal static class Loader
     };
 
     /// <summary>
-    /// Handlers for processing specific data types during mod loading.
+    /// The type handlers that <see cref="CreateMappings"/> calls for each GLD entry, keyed by the C# type of the data category.
     /// </summary>
+    /// <remarks>
+    /// Each handler gets the JSON object of the entry and a flag.
+    /// The flag is true when <see cref="CreateMappings"/> calls the handler just after it made a new <c>EnumCache</c> mapping for the entry.
+    /// The flag is false in the second pass, in which <see cref="CreateMappings"/> calls the handler for all entries of the category.
+    /// <list type="bullet">
+    /// <item><description><see cref="TribeType"/>: in the first pass, adds the tribe to <see cref="Registry.customTribes"/> and gives it a new style and climate. In the second pass, makes <c>EnumCache</c> mappings for new skins, makes a flood tile effect for each new skin of a tribe with the <c>Flooded</c> ability, changes the skin ids to indexes, and keeps the tribe preview.</description></item>
+    /// <item><description><c>UnitData.Type</c>: in the second pass, adds the <c>embarksTo</c> value to <c>Main.embarkNames</c> and changes the <c>weapon</c> name to its index.</description></item>
+    /// <item><description><c>ImprovementData.Type</c>: in the second pass, adds the improvement to the prefabs to make if <c>prefab</c> is true. It also adds the <c>attractsResource</c>, <c>attractsToTerrain</c> and <c>infoOverride</c> values to the related dictionaries.</description></item>
+    /// <item><description><c>ResourceData.Type</c>: in the second pass, adds the resource to the prefabs to make if <c>prefab</c> is true.</description></item>
+    /// <item><description><c>SkinData</c>: changes the name of the entry to lowercase.</description></item>
+    /// </list>
+    /// </remarks>
     internal static readonly Dictionary<Type, List<Action<JObject, bool>>> typeHandlers = new()
     {
         [typeof(TribeType)] = new List<Action<JObject, bool>>() {
@@ -220,22 +237,37 @@ internal static class Loader
     };
 
     /// <summary>
-    /// Adds a new data type for patching.
+    /// Adds a type mapping for a GLD data category. <see cref="CreateMappings"/> makes <c>EnumCache</c> mappings for new entries of this category.
+    /// If <see cref="typeMappings"/> already contains the category name, the method does nothing.
     /// </summary>
-    /// <param name="typeId">The identifier for the data type in JSON.</param>
-    /// <param name="type">"The C# type corresponding to the identifier.</param>
+    /// <param name="typeId">The name of the data category in the GLD, for example <c>unitData</c>.</param>
+    /// <param name="type">The C# enum type of the data category.</param>
     public static void AddPatchDataType(string typeId, Type type)
     {
         if (!typeMappings.ContainsKey(typeId))
             typeMappings.Add(typeId, new TypeMapping(type));
     }
 
+    /// <summary>
+    /// Adds a type mapping for a GLD data category.
+    /// If <see cref="typeMappings"/> already contains the category name, the method does nothing.
+    /// </summary>
+    /// <param name="typeId">The name of the data category in the GLD, for example <c>unitData</c>.</param>
+    /// <param name="type">The C# type of the data category.</param>
+    /// <param name="shouldCreateCache">If true, <see cref="CreateMappings"/> makes <c>EnumCache</c> mappings for new entries of the category. If false, it only calls the type handlers.</param>
     public static void AddPatchDataType(string typeId, Type type, bool shouldCreateCache)
     {
         if (!typeMappings.ContainsKey(typeId))
             typeMappings.Add(typeId, new TypeMapping(type, shouldCreateCache));
     }
 
+    /// <summary>
+    /// Adds a type handler for a C# type to <see cref="typeHandlers"/>.
+    /// A type mapping for the type must exist in <see cref="typeMappings"/>.
+    /// If no type mapping exists, the method writes a warning to the log and does not add the handler.
+    /// </summary>
+    /// <param name="type">The C# type of the data category.</param>
+    /// <param name="handler">The handler to add. It gets the JSON object of a GLD entry and a flag. The flag is true when <see cref="CreateMappings"/> just made a new <c>EnumCache</c> mapping for the entry.</param>
     public static void AddTypeHandler(Type type, Action<JObject, bool> handler)
     {
         string typeString = type.ToString();
@@ -253,9 +285,20 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Loads all mods from the mods directory.
+    /// Finds the mods in <see cref="Plugin.MODS_PATH"/> and adds them to a dictionary.
     /// </summary>
-    /// <param name="mods">A dictionary to populate with the loaded mods.</param>
+    /// <remarks>
+    /// The method makes the mods directory if it does not exist.
+    /// A mod can be a directory, a <c>.polymod</c> file or a <c>.zip</c> file.
+    /// The method reads all files of the mod and gets the manifest from <c>manifest.json</c> at the root.
+    /// It does not add a mod if the manifest is missing, not valid, or has an id that the dictionary already contains.
+    /// A manifest is not valid if it has no id, no version or no authors.
+    /// A manifest is also not valid if the id is <c>polytopia</c> or contains characters other than lowercase letters and underscores.
+    /// The method also does not add a mod that the configuration disables.
+    /// For each mod that it does not add, the method writes an error to the log.
+    /// The method gives each added mod the status <see cref="Mod.Status.Success"/> and then calls <see cref="CheckDependencies"/>.
+    /// </remarks>
+    /// <param name="mods">The dictionary to which the method adds the mods, keyed by the mod id.</param>
     internal static void RegisterMods(Dictionary<string, Mod> mods)
     {
         Directory.CreateDirectory(Plugin.MODS_PATH);
@@ -341,6 +384,14 @@ internal static class Loader
         CheckDependencies(mods);
     }
 
+    /// <summary>
+    /// Adds one file of a mod to the file list, or reads it as the manifest.
+    /// If the file is <c>manifest.json</c> at the root of the mod, the method parses it into <paramref name="manifest"/> and does not add it to the list.
+    /// </summary>
+    /// <param name="fullName">The path of the file, relative to the root of the mod.</param>
+    /// <param name="bytes">The contents of the file.</param>
+    /// <param name="files">The file list of the mod.</param>
+    /// <param name="manifest">The manifest of the mod. The method sets it when the file is <c>manifest.json</c>.</param>
     private static void ProcessModFile(string fullName, byte[] bytes, List<Mod.File> files, ref Mod.Manifest? manifest)
     {
         if (fullName == "manifest.json")
@@ -354,6 +405,19 @@ internal static class Loader
         files.Add(new(fullName, bytes));
     }
 
+    /// <summary>
+    /// Sorts the registered mods and loads their assemblies, sprite info files and language files.
+    /// </summary>
+    /// <remarks>
+    /// The method uses <see cref="Registry.mods"/>, not <paramref name="mods"/>.
+    /// First, it sorts the mods with <see cref="SortMods"/>. If there is a dependency cycle, the method stops.
+    /// For each mod with the status <see cref="Mod.Status.Success"/>, it loads the <c>.dll</c> files, the sprite info files and the language files.
+    /// A sprite info file has the name <c>sprites.json</c> or <c>sprites_*.json</c>.
+    /// A language file has the name <c>language.json</c> or <c>language_*.json</c>.
+    /// At the end, it calls <c>Compatibility.ComputeChecksums</c>.
+    /// </remarks>
+    /// <param name="mods">A dictionary of mods. The method does not use this parameter.</param>
+    /// <param name="dependencyCycle">Set to true if the mods have a dependency cycle, false otherwise.</param>
     internal static void LoadMods(Dictionary<string, Mod> mods, out bool dependencyCycle)
     {
         dependencyCycle = !SortMods(Registry.mods);
@@ -388,6 +452,16 @@ internal static class Loader
         Compatibility.ComputeChecksums(Registry.mods);
     }
 
+    /// <summary>
+    /// Checks the dependencies of each mod in a dictionary.
+    /// </summary>
+    /// <remarks>
+    /// A dependency fails if the dictionary does not contain it, or if its version is out of the permitted range.
+    /// For a required dependency that fails, the method writes an error to the log.
+    /// It also sets the status of the mod to <see cref="Mod.Status.DependenciesUnsatisfied"/>.
+    /// For an optional dependency that fails, the method only writes a warning to the log.
+    /// </remarks>
+    /// <param name="mods">The mods to check, keyed by the mod id.</param>
     internal static void CheckDependencies(Dictionary<string, Mod> mods)
     {
         foreach (var (id, mod) in mods)
@@ -428,10 +502,17 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Sorts mods based on their dependencies using a topological sort.
+    /// Sorts the mods in a dictionary so that each mod comes after its dependencies.
     /// </summary>
-    /// <param name="mods">The dictionary of mods to sort.</param>
-    /// <returns>True if the mods could be sorted (no circular dependencies), false otherwise.</returns>
+    /// <remarks>
+    /// The method uses a topological sort on the mods with the status <see cref="Mod.Status.Success"/>.
+    /// It ignores dependencies that are not in the dictionary or that do not have the status <see cref="Mod.Status.Success"/>.
+    /// If the sort succeeds, the method replaces the contents of the dictionary.
+    /// The sorted mods come first, then the mods with a different status.
+    /// If there is a dependency cycle, the method does not change the dictionary.
+    /// </remarks>
+    /// <param name="mods">The mods to sort, keyed by the mod id.</param>
+    /// <returns>True if the sort succeeds, false if the mods have a dependency cycle.</returns>
     internal static bool SortMods(Dictionary<string, Mod> mods)
     {
         Stopwatch s = new();
@@ -493,10 +574,19 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Loads an assembly file from a mod.
+    /// Loads a <c>.dll</c> file of a mod as an assembly and starts its code.
     /// </summary>
-    /// <param name="mod">The mod the assembly belongs to.</param>
-    /// <param name="file">The assembly file to load.</param>
+    /// <remarks>
+    /// If the assembly has a subclass of <see cref="Api.PolyScriptBase"/>, the method makes an instance of the first one.
+    /// It calls <c>Initialize</c> and then <c>Load</c> on that instance, and does nothing more.
+    /// If the assembly has no such subclass, the method calls each static <c>Load(ManualLogSource)</c> method and each static <c>Load()</c> method in the assembly.
+    /// If a static <c>Load</c> method or the constructor of the subclass throws an exception, the method writes an error to the log.
+    /// It also sets the status of the mod to <see cref="Mod.Status.Error"/>.
+    /// The method catches only exceptions of the type <see cref="TargetInvocationException"/>.
+    /// For this reason, it does not catch an exception from <c>Initialize</c> or from <c>Load</c> on a <see cref="Api.PolyScriptBase"/> instance.
+    /// </remarks>
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The <c>.dll</c> file to load.</param>
     public static void LoadAssemblyFile(Mod mod, Mod.File file)
     {
         try
@@ -542,9 +632,14 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Loads a localization file from a mod.
+    /// Loads a localization file of a mod and adds its terms to the game localization.
     /// </summary>
-    /// <param name="mod">The mod the localization file belongs to.</param>
+    /// <remarks>
+    /// The file is a JSON object. Each key is a term name, and each value is an object that maps language names to texts.
+    /// The method gives the data to <c>Loc.BuildAndLoadLocalization</c>.
+    /// If an error occurs, the method writes the error to the log.
+    /// </remarks>
+    /// <param name="mod">The mod that contains the file.</param>
     /// <param name="file">The localization file to load.</param>
     public static void LoadLocalizationFile(Mod mod, Mod.File file)
     {
@@ -560,6 +655,17 @@ internal static class Loader
         }
     }
 
+    /// <summary>
+    /// Loads a language file of a mod and adds it to <c>Loc.languagesToAdd</c>.
+    /// </summary>
+    /// <remarks>
+    /// The file is a JSON object that maps term names to texts.
+    /// If an error occurs, the method writes the error to the log.
+    /// An error occurs, for example, when a different file already added the same language code.
+    /// </remarks>
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The language file to load.</param>
+    /// <param name="languageName">The language code from the file name. It is the text after <c>language_</c>, or an empty string for <c>language.json</c>.</param>
     public static void LoadLanguageFile(Mod mod, Mod.File file, string languageName)
     {
         try
@@ -578,10 +684,12 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Loads a sprite file from a mod.
+    /// Loads a PNG file of a mod as a texture and adds it to <see cref="Registry.textures"/>.
+    /// The key is the lowercase file name without the extension.
+    /// The method does not make a sprite. <c>Visual.CreateSprites</c> makes the sprites later.
     /// </summary>
-    /// <param name="mod">The mod the sprite file belongs to.</param>
-    /// <param name="file">The sprite file to load.</param>
+    /// <param name="mod">The mod that contains the file. The method does not use this parameter.</param>
+    /// <param name="file">The PNG file to load.</param>
     public static void LoadTextureFile(Mod mod, Mod.File file)
     {
         string name = Path.GetFileNameWithoutExtension(file.name).ToLowerInvariant();
@@ -590,11 +698,16 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Loads a sprite info file from a mod.
+    /// Loads a sprite info file of a mod and adds its sprite infos to <see cref="Registry.spriteInfos"/>.
     /// </summary>
-    /// <param name="mod">The mod the sprite info file belongs to.</param>
+    /// <remarks>
+    /// The method changes each sprite name and each sprite origin name to lowercase.
+    /// A sprite info replaces an existing sprite info with the same name.
+    /// If an error occurs, the method writes the error to the log.
+    /// </remarks>
+    /// <param name="mod">The mod that contains the file.</param>
     /// <param name="file">The sprite info file to load.</param>
-    /// <returns>A dictionary of sprite information, or null if an error occurred.</returns>
+    /// <returns>The sprite infos from the file, keyed by the sprite name as the file gives it, or null if an error occurs.</returns>
     public static Dictionary<string, Visual.SpriteInfo>? LoadSpriteInfoFile(Mod mod, Mod.File file)
     {
         try
@@ -625,9 +738,15 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Loads an audio file from a mod.
+    /// Loads an audio file of a mod and adds it to <see cref="Registry.audioClips"/>.
     /// </summary>
-    /// <param name="mod">The mod the audio file belongs to.</param>
+    /// <remarks>
+    /// The method uses <c>Audio.BuildAudioClip</c> to make the audio clip.
+    /// It puts the clip on a new audio source that stays loaded when the scene changes.
+    /// The key is the lowercase file name without the extension.
+    /// If an error occurs, the method writes the error to the log.
+    /// </remarks>
+    /// <param name="mod">The mod that contains the file.</param>
     /// <param name="file">The audio file to load.</param>
     public static void LoadAudioFile(Mod mod, Mod.File file)
     {
@@ -651,6 +770,14 @@ internal static class Loader
         }
     }
 
+    /// <summary>
+    /// Loads a prefabs file of a mod.
+    /// The method adds its unit, improvement and resource prefab infos to the lists in <c>Prefabs</c>.
+    /// If the file contains JSON null, the method does nothing.
+    /// If an error occurs, the method writes the error to the log.
+    /// </summary>
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The prefabs file to load.</param>
     public static void LoadPrefabsFile(Mod mod, Mod.File file)
     {
         try
@@ -671,6 +798,13 @@ internal static class Loader
         }
     }
 
+    /// <summary>
+    /// Loads a unit prefab file of a mod and adds its unit prefab info to <c>Prefabs.unitInfos</c>.
+    /// If the file contains JSON null, the method does nothing.
+    /// If an error occurs, the method writes the error to the log.
+    /// </summary>
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The unit prefab file to load.</param>
     public static void LoadUnitPrefabFile(Mod mod, Mod.File file)
     {
         try
@@ -689,6 +823,13 @@ internal static class Loader
         }
     }
 
+    /// <summary>
+    /// Loads an improvement prefab file of a mod and adds its improvement prefab info to <c>Prefabs.improvementInfos</c>.
+    /// If the file contains JSON null, the method does nothing.
+    /// If an error occurs, the method writes the error to the log.
+    /// </summary>
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The improvement prefab file to load.</param>
     public static void LoadImprovementPrefabFile(Mod mod, Mod.File file)
     {
         try
@@ -707,6 +848,13 @@ internal static class Loader
         }
     }
 
+    /// <summary>
+    /// Loads a resource prefab file of a mod and adds its resource prefab info to <c>Prefabs.resourceInfos</c>.
+    /// If the file contains JSON null, the method does nothing.
+    /// If an error occurs, the method writes the error to the log.
+    /// </summary>
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The resource prefab file to load.</param>
     public static void LoadResourcePrefabFile(Mod mod, Mod.File file)
     {
         try
@@ -726,11 +874,13 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Loads and applies a game logic data patch from a mod.
+    /// Merges a GLD patch of a mod into the GLD.
+    /// The method uses <see cref="JsonMerger.Merge"/>, which changes <paramref name="gld"/> in place.
+    /// If an error occurs, the method writes the error to the log and sets the status of the mod to <see cref="Mod.Status.Error"/>.
     /// </summary>
-    /// <param name="mod">The mod the patch belongs to.</param>
-    /// <param name="gld">The original game logic data.</param>
-    /// <param name="patch">The patch to apply.</param>
+    /// <param name="mod">The mod that contains the patch.</param>
+    /// <param name="gld">The GLD as a JSON object. The method changes this object.</param>
+    /// <param name="patch">The patch to merge.</param>
     public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
     {
         try
@@ -747,9 +897,10 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Loads an asset bundle from a mod.
+    /// Loads a <c>.bundle</c> file of a mod as an asset bundle and adds it to <see cref="Registry.assetBundles"/>.
+    /// The key is the file name without the extension.
     /// </summary>
-    /// <param name="mod">The mod the asset bundle belongs to.</param>
+    /// <param name="mod">The mod that contains the file. The method does not use this parameter.</param>
     /// <param name="file">The asset bundle file to load.</param>
     public static void LoadAssetBundle(Mod mod, Mod.File file)
     {
@@ -760,10 +911,12 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Processes the merged game logic data after all mods have been loaded and patched.
+    /// Uses the merged GLD to make enum mappings and to fill the PolyMod overrides.
+    /// The method calls <see cref="CreateMappings"/>, <see cref="ProcessCustomTribes"/>, <see cref="ProcessEmbarkOverrides"/> and <see cref="ProcessAttractOverrides"/> in sequence.
+    /// If an error occurs, the method writes the error to the log.
     /// </summary>
-    /// <param name="gameLogicData">The game logic data object to populate.</param>
-    /// <param name="rootObject">The root JObject of the merged game logic data.</param>
+    /// <param name="gameLogicData">The game logic data. The method does not use this parameter.</param>
+    /// <param name="rootObject">The root JSON object of the merged GLD.</param>
     internal static void ProcessGameLogicData(GameLogicData gameLogicData, JObject rootObject)
     {
         try
@@ -779,6 +932,9 @@ internal static class Loader
         }
     }
 
+    /// <summary>
+    /// Adds each tribe in <see cref="Registry.customTribes"/> to <c>GameLogicData.legacyTribeTypesOrder</c>, if the list does not contain it.
+    /// </summary>
     internal static void ProcessCustomTribes()
     {
         foreach (var tribe in Registry.customTribes)
@@ -791,9 +947,20 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Creates EnumCache mappings for custom enum values and invokes type handlers.
+    /// Makes <c>EnumCache</c> mappings for new GLD entries and calls the type handlers.
     /// </summary>
-    /// <param name="rootObject"></param>
+    /// <remarks>
+    /// The method does two passes over all entries of all data categories in the GLD.
+    /// In the first pass, it uses only entries that have an <c>idx</c>, in categories with <c>shouldCreateCache</c> set to true.
+    /// If the type of the category is not an enum, the method writes a warning to the log and ignores the entry.
+    /// If <c>idx</c> is -1, the method sets <c>idx</c> to the next value of <see cref="Registry.autoidx"/>.
+    /// If <c>allowUnsafeIndexes</c> is true, the method also uses an entry with an <c>idx</c> larger than all existing enum values.
+    /// The method ignores all other entries in the first pass.
+    /// For each entry that it uses, it calls <c>EnumCache.AddMapping</c> two times. The first call adds the name, and the second call adds the type.
+    /// Then it calls the type handlers of the category with the flag set to true.
+    /// In the second pass, the method calls the type handlers for all entries of categories in <see cref="typeMappings"/>, with the flag set to false.
+    /// </remarks>
+    /// <param name="rootObject">The root JSON object of the merged GLD.</param>
     internal static void CreateMappings(JObject rootObject)
     {
         foreach (JToken jtoken in rootObject.SelectTokens("$.*.*").ToArray())
@@ -879,8 +1046,16 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Processes the prefab registry and populates the PrefabManager with custom prefabs.
+    /// Loads the prefab files in <see cref="Registry.filesQueueToBeProcessedAfterGLDMerge"/>.
     /// </summary>
+    /// <remarks>
+    /// The method uses the file name to select the load method.
+    /// It calls <see cref="LoadPrefabsFile"/> for <c>prefabs.json</c>, <see cref="LoadUnitPrefabFile"/> for <c>unitPrefab.json</c>,
+    /// <see cref="LoadImprovementPrefabFile"/> for <c>improvementPrefab.json</c> and <see cref="LoadResourcePrefabFile"/> for <c>resourcePrefab.json</c>.
+    /// Each of these names can also have a suffix that starts with an underscore, for example <c>unitPrefab_knight.json</c>.
+    /// The method ignores other files.
+    /// If an error occurs, the method writes the error to the log and stops.
+    /// </remarks>
     internal static void ProcessFilesQueue()
     {
         try
@@ -926,7 +1101,9 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Processes embark overrides by mapping original embark unit types to configured overrides.
+    /// Changes the unit ids in <c>Main.embarkNames</c> to unit types and adds them to <c>Main.embarkOverrides</c>.
+    /// Each entry maps a unit to the unit that it becomes when it embarks.
+    /// If a unit id is not valid, the method writes an error to the log and continues with the next entry.
     /// </summary>
     internal static void ProcessEmbarkOverrides()
     {
@@ -947,7 +1124,10 @@ internal static class Loader
     }
 
     /// <summary>
-    /// Processes attract overrides by mapping improvements to resources and terrain types based on configured overrides.
+    /// Changes the ids in <c>Main.attractsResourceNames</c> and <c>Main.attractsTerrainNames</c> to enum values.
+    /// The method adds the results to <c>Main.attractsResourceOverrides</c> and <c>Main.attractsTerrainOverrides</c>.
+    /// Each entry maps an improvement to the resource that it attracts, or to the terrain on which it attracts resources.
+    /// If an id is not valid, the method writes an error to the log and continues with the next entry.
     /// </summary>
     internal static void ProcessAttractOverrides()
     {

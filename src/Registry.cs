@@ -7,64 +7,88 @@ using PolytopiaBackendBase.Common;
 namespace PolyMod;
 
 /// <summary>
-/// A central registry for storing and accessing modded content.
+/// The central store of the mods and the mod content that PolyMod loads.
 /// </summary>
 public static class Registry
 {
     /// <summary>
-    /// The next available index for automatically assigned IDs.
+    /// The next free index for an automatically indexed enum value.
+    /// PolyMod uses this one counter for all enum types, which include tribes, units, skins and tile effects.
+    /// The counter starts at <see cref="Plugin.AUTOIDX_STARTS_FROM"/>.
     /// </summary>
     internal static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
 
     /// <summary>
-    /// A dictionary of all loaded sprites, keyed by their name.
+    /// The sprites that PolyMod made from mod textures, keyed by the lowercase sprite name.
     /// </summary>
     internal static Dictionary<string, Sprite> sprites = new();
 
+    /// <summary>
+    /// The textures from the PNG files of mods, keyed by the lowercase file name without the extension.
+    /// The value contains the texture and a flag.
+    /// The flag is true when PolyMod already made a sprite from the texture with a sprite info.
+    /// </summary>
     internal static Dictionary<string, KeyValuePair<Texture2D, bool>> textures = new(); // string = texture name, bool, whether texture was processed or not. reviwers, pls tell me how to improve
 
     /// <summary>
-    /// A dictionary of all loaded audio clips, keyed by their name.
+    /// The audio sources of mod audio files, keyed by the lowercase file name without the extension.
+    /// Each audio source holds one audio clip.
     /// </summary>
     internal static Dictionary<string, AudioSource> audioClips = new();
 
     /// <summary>
-    /// A dictionary of all loaded mods, keyed by their ID.
+    /// All registered mods, keyed by the mod id.
+    /// This dictionary also contains the base game entry with the id <c>polytopia</c>.
     /// </summary>
     internal static Dictionary<string, Mod> mods = new();
 
     /// <summary>
-    /// A dictionary of tribe previews, keyed by tribe name.
+    /// The custom preview tiles of tribes, keyed by the tribe id from the GLD.
     /// </summary>
     internal static Dictionary<string, TribePreviews.PreviewTile[]> tribePreviews = new();
 
     /// <summary>
-    /// A dictionary of sprite information, keyed by sprite name.
+    /// The sprite infos from the <c>sprites.json</c> and <c>sprites_*.json</c> files of mods, keyed by the lowercase sprite name.
     /// </summary>
     internal static Dictionary<string, Visual.SpriteInfo> spriteInfos = new();
 
     /// <summary>
-    /// A dictionary of loaded asset bundles, keyed by their name.
+    /// The asset bundles from the <c>.bundle</c> files of mods, keyed by the file name without the extension.
     /// </summary>
     internal static Dictionary<string, AssetBundle> assetBundles = new();
 
     /// <summary>
-    /// A list of custom tribes.
+    /// The tribe types of the custom tribes that mods add.
     /// </summary>
     internal static List<TribeType> customTribes = new();
 
     /// <summary>
-    /// A list of custom skin information.
+    /// The skin infos of the custom skins that mods add.
     /// </summary>
     internal static List<Visual.SkinInfo> skinInfo = new();
 
     /// <summary>
-    /// The next available index for climate styles.
+    /// The next free value for the style and the climate of a custom tribe.
+    /// The counter starts at the value of the last <see cref="TribeType"/> member.
     /// </summary>
     internal static int climateAutoidx = (int)Enum.GetValues<TribeType>().Last();
 
+    /// <summary>
+    /// The prefab files that PolyMod loads after it merges the GLD patches.
+    /// The key is the mod and the value is the file.
+    /// </summary>
     public static Dictionary<Mod, Mod.File> filesQueueToBeProcessedAfterGLDMerge = new(); // I dont know whether I should do sum abt it
 
+    /// <summary>
+    /// Gets the mod sprite that is the best match for a base name, a tribe, a skin and a level.
+    /// The method changes the tribe and the skin to their <c>EnumCache</c> names and calls <see cref="GetSpriteByText"/>.
+    /// </summary>
+    /// <param name="baseName">The base name of the sprite.</param>
+    /// <param name="tribe">The tribe of the sprite, or <see cref="TribeType.None"/> for no tribe.</param>
+    /// <param name="skin">The skin of the sprite, or <see cref="SkinType.Default"/> for no skin.</param>
+    /// <param name="level">The level of the sprite, or -1 for no level.</param>
+    /// <param name="outline">If true, the method finds the outline variant of the sprite.</param>
+    /// <returns>The sprite that is the best match, or null if no sprite matches.</returns>
     public static Sprite? GetSprite(string baseName, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default, int level = -1, bool outline = false)
     {
         string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
@@ -73,8 +97,22 @@ public static class Registry
         return GetSpriteByText(baseName, tribeText, skinText, levelText, outline);
     }
     /// <summary>
-    /// Gets a sprite from the registry, trying to find the best match.
+    /// Gets the mod sprite that is the best match for a base name, a tribe text, a skin text and a level text.
     /// </summary>
+    /// <remarks>
+    /// The method changes the base name, the tribe text and the skin text to lowercase.
+    /// If the level text is not empty, the method adds <c>_level</c> to the base name.
+    /// Then it tries these names in sequence: <c>base</c>, <c>base_tribe</c>, <c>base_skin</c> and <c>base_tribe_skin</c>.
+    /// If <paramref name="outline"/> is true, the method adds <c>_outline</c> to each name.
+    /// A sprite that the method finds later replaces a sprite that it found before.
+    /// The result is the sprite with the most specific name that exists in <see cref="sprites"/>.
+    /// </remarks>
+    /// <param name="baseName">The base name of the sprite.</param>
+    /// <param name="tribeText">The tribe part of the sprite name, or an empty string.</param>
+    /// <param name="skinText">The skin part of the sprite name, or an empty string.</param>
+    /// <param name="levelText">The level part of the sprite name, or an empty string for no level.</param>
+    /// <param name="outline">If true, the method finds the outline variant of the sprite.</param>
+    /// <returns>The sprite that is the best match, or null if no sprite matches.</returns>
     public static Sprite? GetSpriteByText(string baseName, string tribeText = "", string skinText = "", string levelText = "", bool outline = false)
     {
         Sprite? sprite = null;
@@ -101,10 +139,13 @@ public static class Registry
     }
 
     /// <summary>
-    /// Gets an audio clip from the registry.
+    /// Gets the mod audio clip that is the best match for a name, a tribe and a skin.
+    /// The method changes the tribe and the skin to their <c>EnumCache</c> names and calls <see cref="GetAudioClipByText"/>.
     /// </summary>
-    /// <param name="name">The name of the audio clip.</param>
-    /// <returns>The requested audio clip, or null if not found.</returns>
+    /// <param name="name">The base name of the audio clip.</param>
+    /// <param name="tribe">The tribe of the audio clip, or <see cref="TribeType.None"/> for no tribe.</param>
+    /// <param name="skin">The skin of the audio clip, or <see cref="SkinType.Default"/> for no skin.</param>
+    /// <returns>The audio clip that is the best match, or null if no audio clip matches.</returns>
     public static AudioClip? GetAudioClip(string name, TribeType tribe = TribeType.None, SkinType skin = SkinType.Default)
     {
         string tribeText = (tribe == TribeType.None) ? "" : EnumCache<TribeType>.GetName(tribe);
@@ -113,8 +154,18 @@ public static class Registry
     }
 
     /// <summary>
-    /// Gets an audio clip from the registry, trying to find the best match.
+    /// Gets the mod audio clip that is the best match for a base name, a tribe text and a skin text.
     /// </summary>
+    /// <remarks>
+    /// The method changes all three texts to lowercase.
+    /// Then it tries these names in sequence: <c>base</c>, <c>base_tribe</c>, <c>base_skin</c> and <c>base_tribe_skin</c>.
+    /// An audio source that the method finds later replaces an audio source that it found before.
+    /// The result is the clip of the audio source with the most specific name that exists in <see cref="audioClips"/>.
+    /// </remarks>
+    /// <param name="baseName">The base name of the audio clip.</param>
+    /// <param name="tribeText">The tribe part of the audio name, or an empty string.</param>
+    /// <param name="skinText">The skin part of the audio name, or an empty string.</param>
+    /// <returns>The clip of the audio source that is the best match, or null if no audio source matches.</returns>
     public static AudioClip? GetAudioClipByText(string baseName, string tribeText = "", string skinText = "")
     {
         AudioSource? audioSource = null;

@@ -10,16 +10,32 @@ using PolytopiaBackendBase.Common;
 namespace PolyMod.Managers;
 
 /// <summary>
-/// Manages localization for PolyMod.
+/// The manager for localization. It adds mod terms and mod languages to the localization of the game.
 /// </summary>
 public static class Loc
 {
+    /// <summary>
+    /// The languages that mods add, keyed by language code.
+    /// Each value maps term keys to the text in that language.
+    /// The <c>language</c> key gives the name of the language.
+    /// </summary>
     internal static Dictionary<string, Dictionary<string, string>> languagesToAdd = new();
+    /// <summary>
+    /// The localization keys that replace the info text of improvements, keyed by the enum name of the improvement.
+    /// </summary>
     internal static Dictionary<string, string> buildingsInfoOverrides = new();
 
     /// <summary>
-    /// Patches the localization getter to handle custom enum values.
+    /// A Harmony prefix on <c>Localization.Get(string, Il2CppReferenceArray)</c>.
+    /// It finds a custom enum value in the parts of the key, which are separated by dots.
+    /// A custom enum value is a number that is not less than <see cref="Plugin.AUTOIDX_STARTS_FROM"/>.
+    /// The patch gets the enum name of this value from the enum caches of the type mappings in <see cref="Loader.typeMappings"/>.
+    /// Then it replaces the number in the key with the enum name.
+    /// If the key has more than one custom value, the patch uses only the last value.
     /// </summary>
+    /// <param name="key">The localization key. The patch can change it.</param>
+    /// <param name="args">The format arguments of the localized text. The patch does not use them.</param>
+    /// <returns>Always true, which runs the original method.</returns>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Localization), nameof(Localization.Get), typeof(string), typeof(Il2CppReferenceArray<Il2CppSystem.Object>))]
     private static bool Localization_Get(ref string key, Il2CppReferenceArray<Il2CppSystem.Object> args)
@@ -74,6 +90,14 @@ public static class Loc
         return true;
     }
 
+    /// <summary>
+    /// A Harmony prefix on <c>Localization.Init</c>.
+    /// If the localization is already initialized, the patch does nothing.
+    /// If not, it sets the missing language code of Elyrion in the first language source.
+    /// Then it adds each language in <see cref="languagesToAdd"/> to the source, if the source does not have that language code.
+    /// It adds the missing terms and sets the text of each term for that language.
+    /// </summary>
+    /// <returns>Always true, which runs the original method.</returns>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Localization), nameof(Localization.Init))]
     private static bool Localization_Init()
@@ -121,6 +145,18 @@ public static class Loc
         return true;
     }
 
+    /// <summary>
+    /// A Harmony prefix on <c>BuildingUtils.GetInfo</c>.
+    /// If <see cref="buildingsInfoOverrides"/> has a key for the improvement, the patch gives the localized text of that key.
+    /// The localization uses the skin of the local player and the tribe of the owner.
+    /// </summary>
+    /// <param name="__result">The info text of the improvement. The patch sets it if an override exists.</param>
+    /// <param name="skinOfCurrentLocalPlayer">The skin of the local player.</param>
+    /// <param name="improvementData">The data of the improvement.</param>
+    /// <param name="improvementState">The state of the improvement. The patch does not use it.</param>
+    /// <param name="owner">The player that owns the improvement, or null. If null, the patch uses no tribe.</param>
+    /// <param name="tileData">The tile of the improvement. The patch does not use it.</param>
+    /// <returns>False if an override exists, which skips the original method. True if not.</returns>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(BuildingUtils), nameof(BuildingUtils.GetInfo))]
     private static bool BuildingUtils_GetInfo(ref string __result, SkinType skinOfCurrentLocalPlayer,
@@ -141,9 +177,13 @@ public static class Loc
     }
 
     /// <summary>
-    /// Builds and loads localization data from a dictionary.
+    /// Adds the terms of a mod localization file to the first language source of the game.
+    /// The method changes each key with <see cref="ReplaceDashesWithDots"/>.
+    /// It adds the <c>TribeSkins/</c> prefix to a key that starts with <c>tribeskins</c>.
+    /// For each game language, the term gets the text in that language.
+    /// If that text does not exist, the term gets the English text, or else the term name.
     /// </summary>
-    /// <param name="localization">A dictionary containing the localization data.</param>
+    /// <param name="localization">The terms, keyed by term key. Each value maps language names to text.</param>
     internal static void BuildAndLoadLocalization(Dictionary<string, Dictionary<string, string>> localization)
     {
         foreach (var (key, data) in localization)
@@ -160,6 +200,14 @@ public static class Loc
         }
     }
 
+    /// <summary>
+    /// Changes a key from a mod into a localization key.
+    /// The method replaces each underscore with a dot. Then it replaces each pair of dots with one underscore.
+    /// Thus, one underscore becomes a dot, and two underscores become one underscore.
+    /// The method does not change dashes.
+    /// </summary>
+    /// <param name="key">The key from the mod.</param>
+    /// <returns>The localization key.</returns>
     internal static string ReplaceDashesWithDots(string key)
     {
         string name = key.Replace("_", ".");
@@ -167,7 +215,7 @@ public static class Loc
     }
 
     /// <summary>
-    /// Initializes the Loc manager by patching the necessary methods.
+    /// Applies all Harmony patches in the <see cref="Loc"/> class.
     /// </summary>
     internal static void Init()
     {

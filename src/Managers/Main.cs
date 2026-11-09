@@ -7,72 +7,89 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using PolytopiaBackendBase.Common;
-using Steamworks;
 
 namespace PolyMod.Managers;
 
 /// <summary>
-/// The main manager for PolyMod, responsible for initializing the mod and patching game logic.
+/// The main manager of PolyMod. It registers and loads the mods, and it patches game logic.
 /// </summary>
 public static class Main
 {
     private static readonly string[] polytopiaAuthors = { "Midjiwan AB" };
 
+    /// <summary>
+    /// The flag that shows that the mod dependencies contain a cycle.
+    /// When it is true, <see cref="Load"/> loads only the PolyMod localization.
+    /// </summary>
     internal static bool dependencyCycle;
 
     /// <summary>
-    /// The maximum tier for technology, used to extend the tech tree.
+    /// The highest tech tier that gets an ID in <c>TechItem.techTierFirebaseId</c>.
+    /// <see cref="Load"/> adds the IDs for the tiers from 0 to this value.
     /// </summary>
     internal const int MAX_TECH_TIER = 100;
 
     /// <summary>
-    /// A stopwatch to measure the time taken to load mods.
+    /// The stopwatch that measures the time to register and load the mods.
+    /// It measures the sum of the time in <see cref="Init"/> and in <see cref="Load"/>.
     /// </summary>
     internal static readonly Stopwatch stopwatch = new();
 
     /// <summary>
-    /// Whether the mod has been fully initialized.
+    /// The flag that shows that <see cref="Load"/> ran.
+    /// <see cref="GameLogicData_AddGameLogicPlaceholders"/> uses it to call <see cref="Load"/> only one time.
     /// </summary>
     internal static bool fullyInitialized;
 
     /// <summary>
-    /// A dictionary mapping unit IDs to the IDs of the units they embark into.
+    /// The embark overrides from the GLD, by ID.
+    /// The key is the ID of a unit, and the value is the ID of the unit that it embarks into.
     /// </summary>
     internal static Dictionary<string, string> embarkNames = new();
 
     /// <summary>
-    /// A dictionary mapping unit types to the types of the units they embark into.
+    /// The embark overrides, by unit type.
+    /// The key is the type of a unit, and the value is the type of the unit that it embarks into.
     /// </summary>
     internal static Dictionary<UnitData.Type, UnitData.Type> embarkOverrides = new();
 
     /// <summary>
-    /// Whether an embark action is currently being executed.
+    /// The flag that shows that an <c>EmbarkAction</c> runs now.
+    /// <see cref="EmbarkAction_Execute_Prefix"/> sets it to true, and <see cref="ActionUtils_TrainUnit"/> sets it to false.
     /// </summary>
     internal static bool currentlyEmbarking = false;
 
     /// <summary>
-    /// A dictionary mapping improvement IDs to the IDs of the resources they attract.
+    /// The resources that improvements attract, by ID, from the GLD.
+    /// The key is the ID of an improvement, and the value is the ID of the resource.
     /// </summary>
     internal static Dictionary<string, string> attractsResourceNames = new();
 
     /// <summary>
-    /// A dictionary mapping improvement IDs to the IDs of the terrain types they attract resources on.
+    /// The terrains on which improvements make attracted resources, by ID, from the GLD.
+    /// The key is the ID of an improvement, and the value is the ID of the terrain.
     /// </summary>
     internal static Dictionary<string, string> attractsTerrainNames = new();
 
     /// <summary>
-    /// A dictionary mapping improvement types to the types of the resources they attract.
+    /// The resources that improvements attract, by type.
+    /// If an improvement is not in this lookup, <see cref="StartTurnAction_Execute"/> uses the Game resource.
     /// </summary>
     internal static Dictionary<ImprovementData.Type, ResourceData.Type> attractsResourceOverrides = new();
 
     /// <summary>
-    /// A dictionary mapping improvement types to the types of the terrain they attract resources on.
+    /// The terrains on which improvements make attracted resources, by type.
+    /// If an improvement is not in this lookup, <see cref="StartTurnAction_Execute"/> uses the Forest terrain.
     /// </summary>
     internal static Dictionary<ImprovementData.Type, Polytopia.Data.TerrainData.Type> attractsTerrainOverrides = new();
 
     /// <summary>
-    /// Patches the game logic data parsing to load PolyMod content.
+    /// Patches <c>GameLogicData.AddGameLogicPlaceholders</c> as a prefix.
+    /// Calls <see cref="Load"/> the first time that the game parses the GLD.
+    /// The original method always runs after this prefix.
     /// </summary>
+    /// <param name="__instance">The game logic data that the game parses.</param>
+    /// <param name="rootObject">The root JSON object of the GLD. <see cref="Load"/> merges the mod patches into it.</param>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GameLogicData), nameof(GameLogicData.AddGameLogicPlaceholders))]
     private static void GameLogicData_AddGameLogicPlaceholders(GameLogicData __instance, ref JObject rootObject)
@@ -85,8 +102,15 @@ public static class Main
     }
 
     /// <summary>
-    /// Patches the purchase manager to unlock custom skins.
+    /// Patches <c>PurchaseManager.IsSkinUnlocked</c> as a prefix.
+    /// Unlocks all custom skins.
     /// </summary>
+    /// <param name="__result">Set to true when the skin is a custom skin, otherwise false.</param>
+    /// <param name="skinType">The skin to check.</param>
+    /// <returns>
+    /// False when the skin ID is <see cref="Plugin.AUTOIDX_STARTS_FROM"/> or more and the skin is not <c>SkinType.Test</c>.
+    /// Then the original method does not run. True for all other skins, so the original method runs.
+    /// </returns>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsSkinUnlocked))]
     private static bool PurchaseManager_IsSkinUnlockedInternal(ref bool __result, SkinType skinType)
@@ -96,8 +120,11 @@ public static class Main
     }
 
     /// <summary>
-    /// Patches the purchase manager to unlock custom tribes.
+    /// Patches <c>PurchaseManager.IsTribeUnlocked</c> as a postfix.
+    /// Unlocks all custom tribes.
     /// </summary>
+    /// <param name="__result">Set to true when the tribe ID is <see cref="Plugin.AUTOIDX_STARTS_FROM"/> or more. Other tribes keep the original result.</param>
+    /// <param name="type">The tribe to check.</param>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.IsTribeUnlocked))]
     private static void PurchaseManager_IsTribeUnlocked(ref bool __result, TribeType type)
@@ -106,8 +133,12 @@ public static class Main
     }
 
     /// <summary>
-    /// Patches the steam purchase manager to unlock custom content.
+    /// Patches <c>SteamPlatformPurchaseManager.IsProductUnlocked</c> as a prefix.
+    /// Gives true for a null product. Other products use the original method.
     /// </summary>
+    /// <param name="__result">Set to true when <paramref name="iapProduct"/> is null, otherwise false.</param>
+    /// <param name="iapProduct">The product to check.</param>
+    /// <returns>False when <paramref name="iapProduct"/> is null, so the original method does not run. Otherwise true.</returns>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SteamPlatformPurchaseManager), nameof(SteamPlatformPurchaseManager.IsProductUnlocked))]
     private static bool SteamPlatformPurchaseManager_IsProductUnlocked(ref bool __result, IAPProduct iapProduct)
@@ -117,8 +148,11 @@ public static class Main
     }
 
     /// <summary>
-    /// Patches the purchase manager to add custom tribes to the list of unlocked tribes.
+    /// Patches <c>PurchaseManager.GetUnlockedTribes</c> as a postfix.
+    /// Adds each tribe in <see cref="Registry.customTribes"/> to the list of unlocked tribes.
     /// </summary>
+    /// <param name="__result">The list of unlocked tribes. The method adds the custom tribes to it.</param>
+    /// <param name="forceUpdate">The value from the original call. The method does not use it.</param>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PurchaseManager), nameof(PurchaseManager.GetUnlockedTribes))]
     private static void PurchaseManager_GetUnlockedTribes(
@@ -130,8 +164,13 @@ public static class Main
     }
 
     /// <summary>
-    /// Patches the Unity log callback to filter out spammy messages.
+    /// Patches <c>IL2CPPUnityLogSource.UnityLogCallback</c> as a prefix.
+    /// Stops Unity log messages that contain a text from <see cref="Plugin.LOG_MESSAGES_IGNORE"/>.
     /// </summary>
+    /// <param name="logLine">The text of the log message.</param>
+    /// <param name="exception">The exception text of the log message. The method does not use it.</param>
+    /// <param name="type">The type of the log message. The method does not use it.</param>
+    /// <returns>False when the message contains a text to ignore, so the message is not logged. Otherwise true.</returns>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(IL2CPPUnityLogSource), nameof(IL2CPPUnityLogSource.UnityLogCallback))]
     private static bool IL2CPPUnityLogSource_UnityLogCallback(string logLine, string exception, LogType type)
@@ -145,8 +184,22 @@ public static class Main
     }
 
     /// <summary>
-    /// Patches the tech view to correctly display the tech tree with custom technologies.
+    /// Patches <c>TechView.CreateNode</c> as a prefix.
+    /// Replaces the original method with a version that calculates the angle between branches of the tech tree.
     /// </summary>
+    /// <remarks>
+    /// The original method uses a fixed angle of 72 degrees between branches.
+    /// This method divides 360 by the number of techs that the Basic tech unlocks for the tribe of the local player.
+    /// The division uses integers, so the angle has no decimal part.
+    /// For each tech that <paramref name="data"/> unlocks, the method makes a tech item with the tribe override of the tech.
+    /// It calls <c>CreateNode</c> again for each tech that unlocks more techs.
+    /// At the end, it calls <c>OnItemsRefreshed</c> if it is set.
+    /// </remarks>
+    /// <param name="__instance">The tech view that makes the tree.</param>
+    /// <param name="data">The tech whose unlocked techs become the new nodes.</param>
+    /// <param name="parentItem">The tech item of <paramref name="data"/>, or null for the root of the tree.</param>
+    /// <param name="angle">The angle of the parent item, in degrees.</param>
+    /// <returns>Always false, so the original method does not run.</returns>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(TechView), nameof(TechView.CreateNode))]
     public static bool TechView_CreateNode(TechView __instance, TechData data, TechItem parentItem, float angle)
@@ -181,8 +234,12 @@ public static class Main
     }
 
     /// <summary>
-    /// Patches the embark action to set a flag indicating that an embark is in progress.
+    /// Patches <c>EmbarkAction.Execute</c> as a prefix.
+    /// Sets <see cref="currentlyEmbarking"/> to true.
     /// </summary>
+    /// <param name="__instance">The embark action. The method does not use it.</param>
+    /// <param name="gameState">The game state. The method does not use it.</param>
+    /// <returns>Always true, so the original method runs.</returns>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(EmbarkAction), nameof(EmbarkAction.Execute))]
     private static bool EmbarkAction_Execute_Prefix(EmbarkAction __instance, GameState gameState)
@@ -192,8 +249,21 @@ public static class Main
     }
 
     /// <summary>
-    /// Patches the unit training method to handle custom embark units.
+    /// Patches <c>ActionUtils.TrainUnit</c> as a prefix.
+    /// Changes the trained unit to the embark override during an embark action.
     /// </summary>
+    /// <remarks>
+    /// The method does nothing if the tile or the unit on the tile is null.
+    /// If <see cref="currentlyEmbarking"/> is true, it finds the type of the unit on the tile in <see cref="embarkOverrides"/>.
+    /// If the type is there, it replaces <paramref name="unitData"/> with the data of the override type.
+    /// Then it sets <see cref="currentlyEmbarking"/> to false.
+    /// </remarks>
+    /// <param name="__result">The unit state that the original method gives. The method does not change it.</param>
+    /// <param name="gameState">The game state.</param>
+    /// <param name="playerState">The player that trains the unit. The method does not use it.</param>
+    /// <param name="tile">The tile of the unit that embarks.</param>
+    /// <param name="unitData">The data of the unit to train. The method can replace it.</param>
+    /// <returns>Always true, so the original method runs.</returns>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(ActionUtils), nameof(ActionUtils.TrainUnit))]
     private static bool ActionUtils_TrainUnit(ref UnitState __result, GameState gameState, PlayerState playerState, TileData tile, ref UnitData unitData)
@@ -215,8 +285,23 @@ public static class Main
     }
 
     /// <summary>
-    /// Patches the start turn action to handle the 'Attract' ability for custom improvements.
+    /// Patches <c>StartTurnAction.Execute</c> as a postfix.
+    /// Replaces the resource actions of the <c>Attract</c> improvement ability with actions that use the PolyMod attract overrides.
     /// </summary>
+    /// <remarks>
+    /// First, the method removes all <c>CreateResource</c> actions from the action stack.
+    /// Then it finds each tile of the player that has an improvement with the <c>Attract</c> ability.
+    /// The improvement must have an age that is a multiple of its growth rate, and the turn must be more than 0.
+    /// For each such tile, the method finds the first tile in the area with radius 1 that has no improvement and no resource.
+    /// That tile must also belong to the player and have the target terrain.
+    /// On that tile, the method adds a <c>CreateResourceAction</c> with the reason <c>Attract</c>.
+    /// <para>
+    /// The resource comes from <see cref="attractsResourceOverrides"/>, and the default is Game.
+    /// The target terrain comes from <see cref="attractsTerrainOverrides"/>, and the default is Forest.
+    /// </para>
+    /// </remarks>
+    /// <param name="__instance">The start turn action. It gives the ID of the player.</param>
+    /// <param name="state">The game state.</param>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(StartTurnAction), nameof(StartTurnAction.Execute))]
     private static void StartTurnAction_Execute(StartTurnAction __instance, GameState state)
@@ -270,10 +355,16 @@ public static class Main
     }
 
     /// <summary>
-    /// Serialization fixes for custom (modded) content.
-    /// GamePlayerSummary stores the tribe as a single byte, which custom tribe ids (>= 1000) overflow into garbage.
-    /// Instead the tribe is clamped to None before the untouched native serializer runs and menu summaries show a generic icon for custom tribes, nothing more.
+    /// Patches <c>GamePlayerSummary.Serialize</c> as a prefix.
+    /// Sets the tribe to <c>TribeType.None</c> when the tribe ID is 255 or more.
     /// </summary>
+    /// <remarks>
+    /// The summary writes the tribe as one byte, and a custom tribe ID does not fit in one byte.
+    /// The original method then writes <c>TribeType.None</c>.
+    /// Because of this, game summaries in the menu do not show the icon of a custom tribe.
+    /// </remarks>
+    /// <param name="__instance">The player summary to write.</param>
+    /// <returns>Always true, so the original method runs.</returns>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GamePlayerSummary), nameof(GamePlayerSummary.Serialize))]
     private static bool GamePlayerSummary_Serialize(GamePlayerSummary __instance)
@@ -287,10 +378,16 @@ public static class Main
     }
 
     /// <summary>
-    /// Serialization fixes for custom (modded) content.
-    /// PlayerState stores the play climate as a single byte, which custom climate ids (>= 1000) overflow into garbage.
-    /// Instead the climate is overriden by the tribe value, as those are effectively the same.
+    /// Patches <c>PlayerState.Deserialize</c> as a postfix.
+    /// Sets the climate of a player with a custom tribe to the tribe value.
     /// </summary>
+    /// <remarks>
+    /// The player state reads the climate as one byte, and a custom climate ID does not fit in one byte.
+    /// The method sets the climate when the tribe ID is <see cref="Plugin.AUTOIDX_STARTS_FROM"/> or more.
+    /// </remarks>
+    /// <param name="__instance">The player state that the original method read.</param>
+    /// <param name="reader">The reader of the data. The method does not use it.</param>
+    /// <param name="version">The version of the data. The method does not use it.</param>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PlayerState), nameof(PlayerState.Deserialize))]
     private static void PlayerState_Deserialize(PlayerState __instance, Il2CppSystem.IO.BinaryReader reader, int version)
@@ -300,33 +397,16 @@ public static class Main
             __instance.climate = __instance.tribe;
         }
     }
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(NativeHelpers), nameof(NativeHelpers.IsValidInstall))]
-    public static bool NativeHelpers_IsValidInstall(ref bool __result)
-    {
-        __result = true;
-        return false;
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(SteamClient), nameof(SteamClient.IsValid), MethodType.Getter)]
-    public static bool SteamClient_IsValid(ref bool __result)
-    {
-        __result = true;
-        return false;
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(SteamClient), nameof(SteamClient.RestartAppIfNecessary))]
-    public static bool SteamClient_IsValid(ref bool __result, uint appid)
-    {
-        __result = false;
-        return false;
-    }
 
     /// <summary>
-    /// Initializes the Main manager.
+    /// Applies the Harmony patches of this class, then registers and loads the mods.
     /// </summary>
+    /// <remarks>
+    /// The method adds the game itself as the mod <c>polytopia</c> with the status <c>Success</c>.
+    /// Then it calls <see cref="Loader.RegisterMods"/> and <see cref="Loader.LoadMods"/>.
+    /// It keeps the dependency cycle result in <see cref="dependencyCycle"/>.
+    /// The method measures its time with <see cref="stopwatch"/>.
+    /// </remarks>
     internal static void Init()
     {
         stopwatch.Start();
@@ -346,6 +426,11 @@ public static class Main
         stopwatch.Stop();
     }
 
+    /// <summary>
+    /// Patches the getter of <c>Application.persistentDataPath</c> as a postfix.
+    /// Replaces the path with <see cref="Plugin.PERSISTENT_DATA_PATH"/>.
+    /// </summary>
+    /// <param name="__result">Set to <see cref="Plugin.PERSISTENT_DATA_PATH"/>.</param>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(UnityEngine.Application), nameof(UnityEngine.Application.persistentDataPath), MethodType.Getter)]
     private static void Application_persistentDataPath_get(ref string __result)
@@ -354,9 +439,28 @@ public static class Main
     }
 
     /// <summary>
-    /// Loads all mod content.
+    /// Loads the content of all mods that have the status <c>Success</c>.
     /// </summary>
-    /// <param name="json">The JSON object representing the game logic data.</param>
+    /// <remarks>
+    /// First, the method loads the PolyMod localization. If <see cref="dependencyCycle"/> is true, it stops there.
+    /// Then it reads the files of each mod and uses the file name or the file extension to select the action:
+    /// <list type="bullet">
+    /// <item><description><c>localization.json</c> and <c>localization_*.json</c>: calls <see cref="Loader.LoadLocalizationFile"/>.</description></item>
+    /// <item><description><c>patch.json</c> and <c>patch_*.json</c>: renders the file as a <see cref="Api.GldConfigTemplate"/> and merges it into <paramref name="json"/> with <see cref="Loader.LoadGameLogicDataPatch"/>. If the render gives null, the mod gets the status <c>Error</c>.</description></item>
+    /// <item><description><c>prefabs</c>, <c>unitPrefab</c>, <c>improvementPrefab</c>, and <c>resourcePrefab</c> JSON files: adds the file to <see cref="Registry.filesQueueToBeProcessedAfterGLDMerge"/>.</description></item>
+    /// <item><description>Files with the extension <c>.png</c>: calls <see cref="Loader.LoadTextureFile"/>.</description></item>
+    /// <item><description>Files with the extension <c>.bundle</c>: calls <see cref="Loader.LoadAssetBundle"/>.</description></item>
+    /// </list>
+    /// The method stops reading the files of a mod when the status of the mod is not <c>Success</c>.
+    /// It does not load <c>.wav</c> files.
+    /// <para>
+    /// After all mods, the method fills <c>TechItem.techTierFirebaseId</c> with IDs for the tiers from 0 to <see cref="MAX_TECH_TIER"/>.
+    /// Then it calls <see cref="Loader.ProcessGameLogicData"/>, <see cref="Loader.ProcessFilesQueue"/>, <see cref="Visual.CreateSprites"/>, and <see cref="Prefabs.CreatePrefabs"/>.
+    /// Last, it writes the load time to the log.
+    /// </para>
+    /// </remarks>
+    /// <param name="gameLogicData">The game logic data that the game parses.</param>
+    /// <param name="json">The root JSON object of the GLD. The method merges the mod patches into it.</param>
     internal static void Load(GameLogicData gameLogicData, JObject json)
     {
         stopwatch.Start();
@@ -431,9 +535,9 @@ public static class Main
                     case ".png":
                         Loader.LoadTextureFile(mod, file);
                         break;
-                    case ".wav":
-                        Loader.LoadAudioFile(mod, file);
-                        break;
+                    // case ".wav":
+                    //     Loader.LoadAudioFile(mod, file);
+                    //     break;
                     case ".bundle":
                         Loader.LoadAssetBundle(mod, file);
                         break;

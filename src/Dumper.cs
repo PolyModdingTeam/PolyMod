@@ -8,8 +8,8 @@ using UnityEngine;
 namespace PolyMod.Managers;
 
 /// <summary>
-/// Writes the game's own data (logic, localization, sprites, tribe previews and prefabs) to disk
-/// so that mod authors can use it as a reference.
+/// The manager that writes the data of the game to disk as a reference for mod authors.
+/// It writes the game logic, the localization, the sprites, the tribe previews, and the prefabs.
 /// </summary>
 internal static class Dumper
 {
@@ -30,8 +30,18 @@ internal static class Dumper
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    /// <summary>
+    /// Gets the full path of the folder that contains the dump.
+    /// </summary>
     internal static string RootPath => Path.GetFullPath(Plugin.DUMPED_DATA_PATH);
 
+    /// <summary>
+    /// Makes the dump folder and writes all parts of the dump.
+    /// </summary>
+    /// <remarks>
+    /// The method calls <see cref="DumpLogic"/>, <see cref="DumpLocalization"/>, <see cref="DumpSprites"/>, <see cref="DumpTribePreviews"/>, and <see cref="DumpPrefabs"/>.
+    /// Each of these methods writes an error to the log if it fails, and the next method runs.
+    /// </remarks>
     internal static void DumpAll()
     {
         Directory.CreateDirectory(Plugin.DUMPED_DATA_PATH);
@@ -43,8 +53,12 @@ internal static class Dumper
     }
 
     /// <summary>
-    /// Dumps every version of the game logic and avatar data.
+    /// Writes each version of the game logic data and of the avatar data to <see cref="Plugin.LOGIC_DUMP_PATH"/>.
     /// </summary>
+    /// <remarks>
+    /// The file names are <c>GameLogicData{version}.json</c> and <c>AvatarData{version}.json</c>.
+    /// If an error occurs, the method writes it to the log.
+    /// </remarks>
     internal static void DumpLogic()
     {
         try
@@ -71,6 +85,15 @@ internal static class Dumper
         }
     }
 
+    /// <summary>
+    /// Writes the localization of the game to <see cref="Plugin.LOCALIZATION_DUMP_PATH"/>.
+    /// </summary>
+    /// <remarks>
+    /// The method uses the first localization source of the game.
+    /// For each language, it writes a <c>language_{code}.json</c> file with all terms that have a translation.
+    /// For each category, it writes a <c>localization_{category}.csv</c> file.
+    /// If an error occurs, the method writes it to the log.
+    /// </remarks>
     internal static void DumpLocalization()
     {
         try
@@ -111,6 +134,16 @@ internal static class Dumper
         }
     }
 
+    /// <summary>
+    /// Writes the sprites of the loaded atlases to <see cref="Plugin.SPRITES_DUMP_PATH"/>.
+    /// </summary>
+    /// <remarks>
+    /// The method uses the atlas list in <c>AtlasData.raw</c> and skips each atlas that is not loaded.
+    /// For each atlas, it makes a folder with the atlas name.
+    /// It writes each sprite of the atlas as a PNG file in that folder.
+    /// It also writes the sprite information of the atlas to <c>sprites_{atlas}.json</c>.
+    /// If an error occurs, the method writes it to the log.
+    /// </remarks>
     internal static void DumpSprites()
     {
         try
@@ -150,6 +183,16 @@ internal static class Dumper
         }
     }
 
+    /// <summary>
+    /// Writes the tribe preview map of each tribe to <see cref="Plugin.DUMPED_DATA_PATH"/>.
+    /// </summary>
+    /// <remarks>
+    /// The method uses only the preview of the default skin.
+    /// For each tribe that has a preview, it reads the save state of the preview.
+    /// It writes the terrain, resource, unit, improvement, and tile effects of each tile to <c>preview_{tribe}.json</c>.
+    /// If the method cannot read a save state, it writes a warning and skips that tribe.
+    /// If an error occurs, the method writes it to the log.
+    /// </remarks>
     internal static void DumpTribePreviews()
     {
         try
@@ -193,6 +236,16 @@ internal static class Dumper
         }
     }
 
+    /// <summary>
+    /// Writes the unit, improvement, and resource prefabs to <c>prefabs.json</c> in <see cref="Plugin.PREFABS_DUMP_PATH"/>.
+    /// </summary>
+    /// <remarks>
+    /// The method writes the file in the <see cref="PrefabsInfo"/> format.
+    /// The units come from <see cref="Prefabs.unitsNew"/>, and the improvements and resources come from <c>PrefabManager</c>.
+    /// The method skips each prefab that has no <c>SkinVisualsReference</c>.
+    /// It does not write weapon prefabs.
+    /// If an error occurs, the method writes it to the log.
+    /// </remarks>
     internal static void DumpPrefabs()
     {
         try
@@ -268,6 +321,16 @@ internal static class Dumper
         }
     }
 
+    /// <summary>
+    /// Gets the descriptions of the visual parts of a prefab.
+    /// </summary>
+    /// <remarks>
+    /// The method skips each visual part that is null or that has no visual part object.
+    /// If the prefab has no <c>SkinVisualsReference</c> or no visual parts, the method writes a warning.
+    /// </remarks>
+    /// <param name="prefab">The prefab to read.</param>
+    /// <param name="key">The key of the prefab. The method uses it only in the warning.</param>
+    /// <returns>The descriptions of the visual parts, or null if the prefab has no <c>SkinVisualsReference</c> or no visual parts.</returns>
     private static List<VisualPartInfo>? CollectVisualParts(Component prefab, object key)
     {
         SkinVisualsReference skinVisualsReference = prefab.GetComponent<SkinVisualsReference>();
