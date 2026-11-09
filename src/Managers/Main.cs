@@ -398,6 +398,22 @@ public static class Main
         }
     }
 
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(AchievementManager), nameof(AchievementManager.CheckAchievements))]
+    [HarmonyPatch(typeof(AchievementManager), nameof(AchievementManager.CheckHoudini))]
+    private static bool AchievementManager_CheckAchievementsAndHoudini()
+    {
+        return false;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(AchievementManager), nameof(AchievementManager.IsAchievementValid))]
+    private static bool IsAchievementValid(ref bool __result, Achievement achievement, GameState gameState)
+    {
+        __result = false;
+        return false;
+    }
+
     /// <summary>
     /// Applies the Harmony patches of this class, then registers and loads the mods.
     /// </summary>

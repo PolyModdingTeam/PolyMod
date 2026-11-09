@@ -237,6 +237,10 @@
 		"English": "{0} is only available in vanilla Polytopia. Disable PolyMod in the launcher, or start the game without the launcher.",
 		"Russian": "{0} доступен только в ванильной Polytopia. Отключите PolyMod в лаунчере или запустите игру без лаунчера."
 	},
+	"polymod_achi_vanillaonly": {
+        "English": "Achievements are only available in vanilla Polytopia. Disable PolyMod in the launcher, or start the game without the launcher.",
+        "Russian": "Достижения доступны только в ванильной Polytopia. Отключите PolyMod в лаунчере или запустите игру без лаунчера."
+    },
 	"polymod_title_invalid": {
 		"English": "Invalid Launch",
 		"Russian": "Неверный Запуск"

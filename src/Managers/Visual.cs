@@ -866,6 +866,36 @@ public static class Visual
         );
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(ThroneRoomScreen_UI2), nameof(ThroneRoomScreen_UI2.RunLayout))]
+    private static void ThroneRoomScreen_UI2_RunLayout(ThroneRoomScreen_UI2 __instance)
+    {
+        SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
+        foreach (Achievement achievement in GameManager.GetAchievementManager().GetAchievements())
+        {
+            if (!__instance.achievementButtons.TryGetValue(achievement.type, out UIRoundButton_UI2 button))
+                continue;
+
+            button.SetSprite(spriteAtlasManager.GetSprite(achievement.GetSpriteName() + "_bw", "UI"));
+            button.SetStyle(UIButtonBase_UI2.ButtonStyle.Disabled);
+        }
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(ThroneRoomScreen_UI2), nameof(ThroneRoomScreen_UI2.OnAchievementButtonCliced))]
+    private static bool ThroneRoomScreen_UI2_OnAchievementButtonCliced()
+    {
+        BasicPopup popup = PopupManager.GetBasicPopup();
+        popup.Header = Localization.Get("polymod.hub");
+        popup.Description = Localization.Get(
+            "polymod.achi.vanillaonly",
+            new Il2CppSystem.Object[] { Localization.Get("throne.achievements", Array.Empty<Il2CppSystem.Object>()) }
+        );
+        popup.buttonData = new PopupBase.PopupButtonData[] { new("buttons.ok") };
+        popup.Show();
+        return false;
+    }
+
     private const string MIGHTYLEADER = "mightyleader";
 
     /// <summary>
