@@ -525,7 +525,7 @@ public static class Visual
     /// <param name="shouldDesaturate">If true, the renderer shows the sprite without color saturation.</param>
     /// <returns>Always false, which skips the original method.</returns>
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))] // Why prefix? I really hate repeating the logic. I would have to do the same bs 2 times.... anyway reviewers tell me ok?
+    [HarmonyPatch(typeof(TerrainRenderer), nameof(TerrainRenderer.UpdateGraphics))]
     private static bool TerrainRenderer_UpdateGraphics(TerrainRenderer __instance, Tile tile, TribeType climate, SkinType skin, bool shouldDesaturate)
     {
 
