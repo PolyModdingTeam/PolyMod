@@ -20,7 +20,7 @@ namespace PolyMod;
 /// <summary>
 /// The methods that register mods, sort them, load their files and apply their GLD data.
 /// </summary>
-internal static class Loader
+public static class Loader
 {
     private static readonly JsonSerializerOptions manifestJsonOptions = new()
     {
@@ -354,7 +354,7 @@ internal static class Loader
             }
             if (Plugin.config.disabledMods.Contains(manifest.id))
             {
-                Plugin.logger.LogError($"Mod {manifest.id} is disabled, skipping");
+                Plugin.logger.LogInfo($"Mod {manifest.id} is disabled, skipping");
                 continue;
             }
             if (manifest.version == null)
@@ -409,16 +409,15 @@ internal static class Loader
     /// Sorts the registered mods and loads their assemblies, sprite info files and language files.
     /// </summary>
     /// <remarks>
-    /// The method uses <see cref="Registry.mods"/>, not <paramref name="mods"/>.
+    /// The method uses <see cref="Registry.mods"/>.
     /// First, it sorts the mods with <see cref="SortMods"/>. If there is a dependency cycle, the method stops.
     /// For each mod with the status <see cref="Mod.Status.Success"/>, it loads the <c>.dll</c> files, the sprite info files and the language files.
     /// A sprite info file has the name <c>sprites.json</c> or <c>sprites_*.json</c>.
     /// A language file has the name <c>language.json</c> or <c>language_*.json</c>.
     /// At the end, it calls <c>Compatibility.ComputeChecksums</c>.
     /// </remarks>
-    /// <param name="mods">A dictionary of mods. The method does not use this parameter.</param>
     /// <param name="dependencyCycle">Set to true if the mods have a dependency cycle, false otherwise.</param>
-    internal static void LoadMods(Dictionary<string, Mod> mods, out bool dependencyCycle)
+    internal static void LoadMods(out bool dependencyCycle)
     {
         dependencyCycle = !SortMods(Registry.mods);
         if (dependencyCycle) return;
@@ -694,7 +693,7 @@ internal static class Loader
     {
         string name = Path.GetFileNameWithoutExtension(file.name).ToLowerInvariant();
         Texture2D texture2D = Visual.BuildTexture(file.bytes);
-        Registry.textures[name] = new KeyValuePair<Texture2D, bool>(texture2D, false);
+        Registry.textures[name] = texture2D;
     }
 
     /// <summary>
@@ -1060,10 +1059,8 @@ internal static class Loader
     {
         try
         {
-            foreach (KeyValuePair<Mod, Mod.File> keyValuePair in Registry.filesQueueToBeProcessedAfterGLDMerge)
+            foreach ((Mod mod, Mod.File file) in Registry.filesQueueToBeProcessedAfterGLDMerge)
             {
-                Mod mod = keyValuePair.Key;
-                Mod.File file = keyValuePair.Value;
                 Match prefabsMatch = Regex.Match(Path.GetFileName(file.name), @"^prefabs(?:_(.*))?\.json$");
                 if (prefabsMatch.Success)
                 {

@@ -206,7 +206,6 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
     /// It reads one line of JSON and sets <see cref="ValidLaunch"/>, <see cref="Disabled"/> and <see cref="Token"/> from it.
     /// If the line is empty, the method stops and does not change these values.
     /// If an error occurs, the method sets <see cref="ValidLaunch"/> to false.
-    /// In all cases other than an empty line, the method then sets <see cref="ValidLaunch"/> to true.
     /// </remarks>
     internal static void CaptureLaunchData()
     {
@@ -230,7 +229,6 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
         {
             ValidLaunch = false;
         }
-        ValidLaunch = true;
     }
 
     /// <summary>

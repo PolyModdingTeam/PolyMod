@@ -1363,71 +1363,54 @@ public static class Visual
         Registry.sprites[spriteName] = sprite;
     }
 
-    // Runs early: only touches your own textures, nothing from SpriteAtlasManager's lookup state.
     /// <summary>
     /// Makes and registers the sprites from mod textures.
     /// First, the method makes a sprite for each entry in <see cref="Registry.spriteInfos"/>.
-    /// It uses the texture with the sprite name, or else the texture with the <see cref="OriginType.Outer"/> origin name.
+    /// If the entry has an origin name, the method uses the texture with that name. Otherwise, it uses the texture with the sprite name.
     /// It skips an entry without a texture, and keeps <see cref="OriginType.Inner"/> entries for <see cref="CreateInnerOriginSprites"/>.
-    /// It marks the texture entry with the sprite name as processed in <see cref="Registry.textures"/>.
-    /// Then it makes a sprite with the default settings for each texture that is not processed.
-    /// A texture that only an origin name uses is not processed, so it also gets a sprite with its own name.
+    /// Then it makes a sprite with the default settings for each texture that does not have a registered sprite with the same name.
+    /// A texture that only an origin name uses therefore also gets a sprite with its own name.
     /// </summary>
     public static void CreateSprites()
     {
-        Plugin.logger.LogInfo($"Creating sprites with outer origin...");
+        Plugin.logger.LogInfo("Creating sprites with outer origin...");
         pendingInnerOriginSpriteInfos.Clear();
 
         SpriteAtlasManager spriteAtlasManager = GameManager.GetSpriteAtlasManager();
         const float defaultPixelsPerUnit = 2112f;
 
-        foreach (KeyValuePair<string, SpriteInfo> spriteInfoPair in Registry.spriteInfos)
+        foreach (var (spriteName, spriteInfo) in Registry.spriteInfos)
         {
-            string spriteName = spriteInfoPair.Key;
-            SpriteInfo spriteInfo = spriteInfoPair.Value;
-
-            bool isInnerOrigin = spriteInfo.spriteOrigin != null
-                && spriteInfo.spriteOrigin.originType == OriginType.Inner;
-
-            if (isInnerOrigin)
+            if (spriteInfo.spriteOrigin?.originType == OriginType.Inner)
             {
-                pendingInnerOriginSpriteInfos.Add(spriteInfoPair);
+                pendingInnerOriginSpriteInfos.Add(new(spriteName, spriteInfo));
                 continue;
             }
 
-            KeyValuePair<Texture2D, bool> textureEntry;
-            if (!Registry.textures.TryGetValue(spriteName, out textureEntry)) // search texture
-            {
-                if (spriteInfo.spriteOrigin == null ||
-                    spriteInfo.spriteOrigin.originType != OriginType.Outer ||
-                    spriteInfo.spriteOrigin.name == null ||
-                    !Registry.textures.TryGetValue(spriteInfo.spriteOrigin.name, out textureEntry)) // search texture in outer sprite origin
-                {
-                    continue;
-                }
-            }
-
+            string textureName = spriteInfo.spriteOrigin?.name ?? spriteName;
+            if (!Registry.textures.TryGetValue(textureName, out Texture2D? texture))
+                continue;
 
             Vector2 pivot = spriteInfo.pivot ?? GetPivotPreset(spriteName);
             float pixelsPerUnit = spriteInfo.pixelsPerUnit ?? defaultPixelsPerUnit;
-            bool transformToOutline = spriteInfo.transformToOutline;
-            float? gaussianBlurRadius = spriteInfo.gaussianBlurRadius;
 
-            Sprite sprite = BuildSpriteWithTexture(textureEntry.Key, pivot, pixelsPerUnit, transformToOutline, gaussianBlurRadius);
-            Registry.textures[spriteName] = new KeyValuePair<Texture2D, bool>(textureEntry.Key, true);
+            Sprite sprite = BuildSpriteWithTexture(
+                texture,
+                pivot,
+                pixelsPerUnit,
+                spriteInfo.transformToOutline,
+                spriteInfo.gaussianBlurRadius
+            );
             RegisterSprite(spriteAtlasManager, spriteName, sprite);
         }
 
-        foreach (KeyValuePair<string, KeyValuePair<Texture2D, bool>> texturePair in Registry.textures)
+        foreach (var (textureName, texture) in Registry.textures)
         {
-            if (texturePair.Value.Value)
-            {
+            if (Registry.sprites.ContainsKey(textureName))
                 continue;
-            }
 
-            string spriteName = texturePair.Key;
-            Sprite sprite = BuildSpriteWithTexture(texturePair.Value.Key, GetPivotPreset(spriteName), defaultPixelsPerUnit);
-            RegisterSprite(spriteAtlasManager, spriteName, sprite);
+            Sprite sprite = BuildSpriteWithTexture(texture, GetPivotPreset(textureName), defaultPixelsPerUnit);
+            RegisterSprite(spriteAtlasManager, textureName, sprite);
         }
     }
 
@@ -1533,9 +1516,9 @@ public static class Visual
     /// Makes and registers the sprites in <see cref="pendingInnerOriginSpriteInfos"/>, and then clears that list.
     /// For each entry, the method finds the game sprite with the origin name.
     /// If the game sprite does not exist, it writes a warning to the log and skips the entry.
-    /// If the entry has a pivot or pixels per unit, the method makes a new sprite with these settings.
-    /// Only a new sprite gets the outline and blur settings.
-    /// Without a pivot and pixels per unit, the method registers the game sprite with no changes.
+    /// If the entry has a pivot, pixels per unit, an outline or a blur, the method makes a new sprite with these settings.
+    /// A setting that the entry does not have comes from the game sprite.
+    /// Without these settings, the method registers the game sprite with no changes.
     /// </summary>
     public static void CreateInnerOriginSprites()
     {
@@ -1559,10 +1542,11 @@ public static class Visual
 
             bool hasPivotOverride = spriteInfo.pivot != null;
             bool hasPixelsPerUnitOverride = spriteInfo.pixelsPerUnit != null;
+            bool hasEffect = spriteInfo.transformToOutline || spriteInfo.gaussianBlurRadius != null;
 
             Sprite sprite = originalSprite;
 
-            if (hasPivotOverride || hasPixelsPerUnitOverride)
+            if (hasPivotOverride || hasPixelsPerUnitOverride || hasEffect)
             {
                 Vector2 normalizedOriginalPivot = new(
                     originalSprite.pivot.x / originalSprite.rect.width,

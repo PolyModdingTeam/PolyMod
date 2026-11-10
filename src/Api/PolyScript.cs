@@ -11,7 +11,8 @@ namespace PolyMod.Api;
 /// When PolyMod loads a mod assembly, it finds the first type in the assembly that is a subclass of this class.
 /// It makes an instance of that type, calls <see cref="Initialize"/>, and then calls <see cref="Load"/>.
 /// </remarks>
-public abstract class PolyScriptBase
+// should be public when i get through it
+internal abstract class PolyScriptBase
 {
     /// <summary>
     /// Gives the mod and the logger to the script. PolyMod calls this method before <see cref="Load"/>.
@@ -24,12 +25,14 @@ public abstract class PolyScriptBase
     /// Starts the mod script. PolyMod calls this method one time, after it loads the mod assembly.
     /// Put the code that starts your mod here, for example the code that applies your Harmony patches.
     /// </summary>
-    public abstract void Load();
+    // should be public when i get through it
+    internal abstract void Load();
 
     /// <summary>
     /// Stops the mod script. PolyMod does not call this method at this time.
     /// </summary>
-    public abstract void Unload();
+    // should be public when i get through it
+    internal abstract void Unload();
 
     /// <summary>
     /// Makes a script. The constructor is internal, so only classes in PolyMod can be direct subclasses.
@@ -47,7 +50,8 @@ public abstract class PolyScriptBase
 /// </remarks>
 /// <typeparam name="TConfig">The type of the per-mod config object.</typeparam>
 /// <typeparam name="TExposedConfig">The type of the exposed config object.</typeparam>
-public abstract class PolyScript<TConfig, TExposedConfig> : PolyScriptBase where TConfig : class where TExposedConfig : class
+// should be public when i get through it
+internal abstract class PolyScript<TConfig, TExposedConfig> : PolyScriptBase where TConfig : class where TExposedConfig : class
 {
     /// <summary>
     /// Sets the <see cref="Mod"/> and <see cref="Logger"/> properties.
@@ -76,12 +80,14 @@ public abstract class PolyScript<TConfig, TExposedConfig> : PolyScriptBase where
     /// <summary>
     /// Does nothing. Override this method to stop your mod. PolyMod does not call this method at this time.
     /// </summary>
-    public override void Unload() { }
+    // should be public when i get through it
+    internal override void Unload() { }
 
     /// <summary>
     /// Gets the mod that the script belongs to.
     /// </summary>
-    public Mod Mod { get; private set; } = null!;
+    // should be public when i get through it
+    internal Mod Mod { get; private set; } = null!;
     /// <summary>
     /// Gets the per-mod config. PolyMod keeps it in the file <c>Mods/{mod id}.json</c>.
     /// Call <see cref="PolyMod.Api.Config{T}.SetDefaultConfig"/> before you read it.
@@ -102,6 +108,7 @@ public abstract class PolyScript<TConfig, TExposedConfig> : PolyScriptBase where
 /// The base class for a mod script that uses <see cref="JObject"/> for the per-mod config and the exposed config.
 /// Make a subclass and override <see cref="PolyScriptBase.Load"/>.
 /// </summary>
-public abstract class PolyScript : PolyScript<JObject, JObject>
+// should be public when i get through it
+internal abstract class PolyScript : PolyScript<JObject, JObject>
 {
 }

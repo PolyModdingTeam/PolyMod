@@ -418,6 +418,7 @@ public static class Main
     /// Applies the Harmony patches of this class, then registers and loads the mods.
     /// </summary>
     /// <remarks>
+    /// First, the method makes the <see cref="Plugin.PERSISTENT_DATA_PATH"/> folder if it does not exist.
     /// The method adds the game itself as the mod <c>polytopia</c> with the status <c>Success</c>.
     /// Then it calls <see cref="Loader.RegisterMods"/> and <see cref="Loader.LoadMods"/>.
     /// It keeps the dependency cycle result in <see cref="dependencyCycle"/>.
@@ -426,6 +427,7 @@ public static class Main
     internal static void Init()
     {
         stopwatch.Start();
+        Directory.CreateDirectory(Plugin.PERSISTENT_DATA_PATH);
         Harmony.CreateAndPatchAll(typeof(Main));
         Mod.Manifest polytopia = new(
             "polytopia",
@@ -437,7 +439,7 @@ public static class Main
         );
         Registry.mods.Add(polytopia.id, new(polytopia, Mod.Status.Success, new()));
         Loader.RegisterMods(Registry.mods);
-        Loader.LoadMods(Registry.mods, out var cycle);
+        Loader.LoadMods(out var cycle);
         dependencyCycle = cycle;
         stopwatch.Stop();
     }
@@ -521,28 +523,28 @@ public static class Main
                 Match prefabsMatch = Regex.Match(Path.GetFileName(file.name), @"^prefabs(?:_(.*))?\.json$");
                 if (prefabsMatch.Success)
                 {
-                    Registry.filesQueueToBeProcessedAfterGLDMerge.Add(mod, file);
+                    Registry.filesQueueToBeProcessedAfterGLDMerge.Add((mod, file));
                     continue;
                 }
 
                 Match unitPrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^unitPrefab(?:_(.*))?\.json$");
                 if (unitPrefabMatch.Success)
                 {
-                    Registry.filesQueueToBeProcessedAfterGLDMerge.Add(mod, file);
+                    Registry.filesQueueToBeProcessedAfterGLDMerge.Add((mod, file));
                     continue;
                 }
 
                 Match improvementPrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^improvementPrefab(?:_(.*))?\.json$");
                 if (improvementPrefabMatch.Success)
                 {
-                    Registry.filesQueueToBeProcessedAfterGLDMerge.Add(mod, file);
+                    Registry.filesQueueToBeProcessedAfterGLDMerge.Add((mod, file));
                     continue;
                 }
 
                 Match resourcePrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^resourcePrefab(?:_(.*))?\.json$");
                 if (resourcePrefabMatch.Success)
                 {
-                    Registry.filesQueueToBeProcessedAfterGLDMerge.Add(mod, file);
+                    Registry.filesQueueToBeProcessedAfterGLDMerge.Add((mod, file));
                     continue;
                 }
 

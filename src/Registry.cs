@@ -25,10 +25,8 @@ public static class Registry
 
     /// <summary>
     /// The textures from the PNG files of mods, keyed by the lowercase file name without the extension.
-    /// The value contains the texture and a flag.
-    /// The flag is true when PolyMod already made a sprite from the texture with a sprite info.
     /// </summary>
-    internal static Dictionary<string, KeyValuePair<Texture2D, bool>> textures = new(); // string = texture name, bool, whether texture was processed or not. reviwers, pls tell me how to improve
+    internal static Dictionary<string, Texture2D> textures = new();
 
     /// <summary>
     /// The audio sources of mod audio files, keyed by the lowercase file name without the extension.
@@ -75,9 +73,9 @@ public static class Registry
 
     /// <summary>
     /// The prefab files that PolyMod loads after it merges the GLD patches.
-    /// The key is the mod and the value is the file.
+    /// Each entry contains the mod and one of its files. A mod can have more than one entry.
     /// </summary>
-    public static Dictionary<Mod, Mod.File> filesQueueToBeProcessedAfterGLDMerge = new(); // I dont know whether I should do sum abt it
+    internal static List<(Mod mod, Mod.File file)> filesQueueToBeProcessedAfterGLDMerge = new();
 
     /// <summary>
     /// Gets the mod sprite that is the best match for a base name, a tribe, a skin and a level.

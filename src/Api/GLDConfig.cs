@@ -19,7 +19,8 @@ namespace PolyMod.Api;
 /// The users can change the values in <c>mods.json</c>. The changes apply the next time that PolyMod loads the patch.
 /// </para>
 /// </remarks>
-public class GldConfigTemplate
+// should be public when i get through it
+internal class GldConfigTemplate
 {
     private static readonly string ConfigPath = Path.Combine(Plugin.BASE_PATH, "mods.json");
 
@@ -32,7 +33,8 @@ public class GldConfigTemplate
     /// </summary>
     /// <param name="templateText">The text of the patch file.</param>
     /// <param name="modName">The mod id. The template uses it as the key of the mod section in <c>mods.json</c>.</param>
-    public GldConfigTemplate(string templateText, string modName)
+    // should be public when i get through it
+    internal GldConfigTemplate(string templateText, string modName)
     {
         this.templateText = templateText;
         this.modName = modName;
@@ -64,7 +66,8 @@ public class GldConfigTemplate
     /// If the template uses a key that is not in the config, the method writes the default value to <c>mods.json</c>.
     /// </summary>
     /// <returns>The rendered text, or null if the template has an error. The method writes the error to the log.</returns>
-    public string? Render()
+    // should be public when i get through it
+    internal string? Render()
     {
         if (!templateText.Contains("{{")) return templateText;
         var template = Template.Parse(templateText);
@@ -109,7 +112,8 @@ public class GldConfigTemplate
     /// The method replaces the section of the mod and keeps the sections of other mods.
     /// If the file does not exist or does not contain a JSON object, the method makes a new file.
     /// </summary>
-    public void SaveChanges()
+    // should be public when i get through it
+    internal void SaveChanges()
     {
         JsonObject modsConfigJson;
         if (File.Exists(ConfigPath))

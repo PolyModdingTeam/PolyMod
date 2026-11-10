@@ -475,6 +475,7 @@ public static class Prefabs
     /// Then it adds the visual parts from <see cref="ApplyUnitVisualParts"/>.
     /// The head position marker is the visual part with the name <see cref="UnitPrefabInfo.headPositionMarker"/>.
     /// If no visual part has this name, the method uses the first visual part that it made.
+    /// If the description has no visual parts, the method uses the <c>SpriteContainer</c> object.
     /// <para>
     /// The method keeps the prefab when the scene changes.
     /// If <see cref="UnitPrefabInfo.uiOverride"/> is true, it adds the prefab to <see cref="unitUIOverridesNew"/>, otherwise to <see cref="unitsNew"/>.
@@ -513,7 +514,8 @@ public static class Prefabs
             }
         }
 
-        unitInstance.headPositionMarker = headPositionMarker ?? visualParts[0].visualPart.transform;
+        unitInstance.headPositionMarker = headPositionMarker
+            ?? (visualParts.Count > 0 ? visualParts[0].visualPart.transform : spriteContainer);
 
         var svr = unitInstance.GetComponent<SkinVisualsReference>();
         svr.visualParts = visualParts.ToArray();
@@ -532,8 +534,8 @@ public static class Prefabs
     /// Makes the visual parts of a custom unit prefab.
     /// </summary>
     /// <remarks>
-    /// The method reverses the sequence of <see cref="BasePrefabInfo.visualParts"/> in the description itself.
-    /// Then it makes the visual parts in the new sequence with <see cref="CreateUnitVisualPart"/>.
+    /// The method makes the visual parts with <see cref="CreateUnitVisualPart"/>, from the last item of <see cref="BasePrefabInfo.visualParts"/> to the first.
+    /// It does not change the description.
     /// The first part gets the sorting order 0, and each next part gets a sorting order that is 1 more.
     /// The outline sorting order starts at minus the number of parts and increases by 1 for each part, to a maximum of -1.
     /// <see cref="VisualPartInfo.sortingOrderOverride"/> and <see cref="VisualPartInfo.outlineSortingOrderOverride"/> replace these values when they are set.
@@ -553,10 +555,9 @@ public static class Prefabs
 
         int nextPartSortingOrder = 0;
         int nextOutlineSortingOrder = -visualPartInfos.Count;
-        var newVisualInfo = visualPartInfos;
-        newVisualInfo.Reverse();
-        foreach (var info in newVisualInfo)
+        for (int i = visualPartInfos.Count - 1; i >= 0; i--)
         {
+            VisualPartInfo info = visualPartInfos[i];
             parts.Add(CreateUnitVisualPart(info, spriteContainer, info.sortingOrderOverride ?? nextPartSortingOrder, info.outlineSortingOrderOverride ?? nextOutlineSortingOrder));
             if (nextOutlineSortingOrder < -1)
             {

@@ -43,38 +43,54 @@
 		"Elyrion": "{0}þr∑∑Ŧ!{1}\niii ŋ∑ƒ ƒ§§π mȱΔ#:",
 		"German (Germany)": "{0} Willkommen! {1}\nDiese Mods sind gerade eben geladen:"
 	},
-	"polymod_hub_mod": {
-		"English": "Name: {0}\nStatus: {1}\nAuthors: {2}\nVersion: {3}\nDescription: {4}",
-		"Russian": "Имя: {0}\nСтатус: {1}\nАвторы: {2}\nВерсия: {3}\nОписание: {4}",
-		"Turkish": "İsim: {0}\nDurum: {1}\nYaratıcılar: {2}\nSürüm: {3}",
-		"Spanish (Mexico)": "Titulo: {0}\nEstado: {1}\nPublicador: {2}\nVersion: {3}",
-		"French (France)": "Titre: {0}\nEtat: {1}\nAuteurs: {2}\nVersion: {3}",
-		"Polish": "Nazwa: {0}\nStatus: {1}\nAutorzy: {2}\nWersja: {3}",
-		"Portuguese (Brazil)": "Nome: {0}\nStatus: {1}\nAutores: {2}\nVersão: {3}",
-		"Elyrion": "r₼: {0}\n^ŦaŦ₺^: {1}\na₺Ŧţȱr: {2}\nƒƒƒƒƒƒƒ: {3}",
-		"German (Germany)": "Name: {0}\nStatus: {1}\nAutoren: {2}\nVersion: {3}"
-	},
 	"polymod_hub_dump": {
 		"English": "DUMP DATA",
 		"Russian": "ЗАДАМПИТЬ ДАННЫЕ",
+		"Turkish": "VERİLERİ DIŞA AKTAR",
+		"Spanish (Mexico)": "VOLCAR DATOS",
+		"French (France)": "EXTRAIRE LES DONNÉES",
+		"Polish": "ZRZUĆ DANE",
+		"Portuguese (Brazil)": "EXTRAIR DADOS",
 		"German (Germany)": "DATENDUMP"
 	},
 	"polymod_hub_dumped": {
 		"English": "Dump completed successfully!\n\n{0}",
 		"Russian": "Дамп завершен успешно!\n\n{0}",
+		"Turkish": "Veriler başarıyla dışa aktarıldı!\n\n{0}",
+		"Spanish (Mexico)": "¡Volcado completado con éxito!\n\n{0}",
+		"French (France)": "Extraction terminée avec succès!\n\n{0}",
+		"Polish": "Zrzut zakończony pomyślnie!\n\n{0}",
+		"Portuguese (Brazil)": "Extração concluída com sucesso!\n\n{0}",
 		"German (Germany)": "Dump erfolgreich beendet!\n\n{0}"
 	},
 	"polymod_hub_openfolder": {
 		"English": "OPEN FOLDER",
-		"Russian": "ОТКРЫТЬ ПАПКУ"
+		"Russian": "ОТКРЫТЬ ПАПКУ",
+		"Turkish": "KLASÖRÜ AÇ",
+		"Spanish (Mexico)": "ABRIR CARPETA",
+		"French (France)": "OUVRIR LE DOSSIER",
+		"Polish": "OTWÓRZ FOLDER",
+		"Portuguese (Brazil)": "ABRIR PASTA",
+		"German (Germany)": "ORDNER ÖFFNEN"
 	},
 	"polymod_cycle": {
 		"English": "Dependency cycle detected",
-		"Russian": "Обнаружен цикл зависимостей"
+		"Russian": "Обнаружен цикл зависимостей",
+		"Turkish": "Bağımlılık döngüsü algılandı",
+		"Spanish (Mexico)": "Se detectó un ciclo de dependencias",
+		"French (France)": "Cycle de dépendances détecté",
+		"Polish": "Wykryto cykl zależności",
+		"Portuguese (Brazil)": "Ciclo de dependências detectado",
+		"German (Germany)": "Abhängigkeitszyklus erkannt"
 	},
 	"polymod_cycle_description": {
 		"English": "Unable to determine mod loading order!",
 		"Russian": "Невозможно определить порядок загрузки модов!",
+		"Turkish": "Mod yükleme sırası belirlenemedi!",
+		"Spanish (Mexico)": "¡No se pudo determinar el orden de carga de los mods!",
+		"French (France)": "Impossible de déterminer l'ordre de chargement des mods!",
+		"Polish": "Nie można określić kolejności ładowania modów!",
+		"Portuguese (Brazil)": "Não foi possível determinar a ordem de carregamento dos mods!",
 		"German (Germany)": "Mod - ladereihenfolge konnte nicht bestimmt werden!"
 	},
 	"polymod_hub_mod_status_error": {
@@ -121,17 +137,6 @@
 		"Elyrion": "#₺rr∑ŋŦ mȱΔ# ₼π₺þþţ∫ ȱriþiŋa∫ mȱΔ#!",
 		"German (Germany)": "Einige aktuelle mods sind nicht mit Älteren kompatibel!"
 	},
-	"polymod_signature_maybe_incompatible": {
-		"English": "Current mods may not be compatible with original mods!",
-		"Russian": "Текущие моды могут быть несовместимы с оригинальными модами!",
-		"Turkish": "Mevcut modlar orijinal modlarla uyumlu olmayabilir!",
-		"Spanish (Mexico)": "Es posible que este mod no sea compatibile con el original!",
-		"French (France)": "Les mods actuels peuvent ne pas être compatibles avec les mods originaux!",
-		"Polish": "Obecne mody mogą nie być kompatybilne z oryginalnymi modami!",
-		"Portuguese (Brazil)": "É possível que os mods carregados não sejam compatíveis com os mods originais",
-		"Elyrion": "#₺rr∑ŋŦ mȱΔ# maỹ ₼π₺þþţ∫ ȱriþiŋa∫ mȱΔ#!",
-		"German (Germany)": "Einige aktuelle mods könnten mit Älteren inkompatibel sein!"
-	},
 	"polymod_signature_mismatch": {
 		"English": "Signature mismatch",
 		"Russian": "Несоответствие подписи",
@@ -176,133 +181,205 @@
 		"Elyrion": "Δ∑o₺þ",
 		"German (Germany)": "Debuggen"
 	},
-	"polymod_autoupdate": {
-		"English": "Auto-update",
-		"Russian": "Автообновление",
-		"Turkish": "Otomatik güncelleme",
-		"Spanish (Mexico)": "Actualización automática",
-		"French (France)": "MAJ auto",
-		"Polish": "Auto aktualizacja",
-		"Portuguese (Brazil)": "Atualização automática",
-		"Elyrion": "a₺Ŧȱ₺πΔaŦ∑",
-		"German (Germany)": "Auto Aktualisierung"
-	},
-	"polymod_autoupdate_alpha": {
-		"English": "Include alphas",
-		"Russian": "Включить альфы",
-		"Elyrion": "iŋ#∫₺Δ∑ a∫πţaȓ"
-	},
-	"polymod_autoupdate_description": {
-		"English": "New update available!",
-		"Russian": "Доступно новое обновление!",
-		"Elyrion": "ŋ∑~ ₺πΔaŦ∑ a‡ai∫ao∫∑"
-	},
-	"polymod_autoupdate_update": {
-		"English": "Update",
-		"Russian": "Обновить",
-		"Elyrion": "₺πΔaŦ∑"
-	},
 	"polymod_hub_config": {
 		"English": "CONFIG",
 		"Russian": "КОНФИГ",
-		"Elyrion": "#ȱŋ₼iþ"
-	},
-	"polymod_hub_config_enable": {
-		"English": "ENABLE {0}",
-		"Russian": "ВКЛЮЧИТЬ {0}",
-		"Elyrion": "∑ŋao∫∑ {0}"
-	},
-	"polymod_hub_config_disable": {
-		"English": "DISABLE {0}",
-		"Russian": "ВЫКЛЮЧИТЬ {0}",
-		"Elyrion": "Δiȓao∫∑ {0}"
-	},
-	"polymod_config_setto": {
-		"English": "{0} is set to {1}!",
-		"Russian": "{0} задан на {1}!",
-		"Elyrion": "{0} iȓ ȓ∑Ŧ Ŧȱ {1}!"
+		"Turkish": "AYARLAR",
+		"Spanish (Mexico)": "CONFIGURACIÓN",
+		"French (France)": "CONFIGURATION",
+		"Polish": "KONFIGURACJA",
+		"Portuguese (Brazil)": "CONFIGURAÇÕES",
+		"Elyrion": "#ȱŋ₼iþ",
+		"German (Germany)": "KONFIGURATION"
 	},
 	"polymod_hub_hotreload": {
-		"English": "HOT RELOAD"
-	},
-	"polymod_hotreload_success": {
-		"English": "Hot reload completed for the mod {0}!"
-	},
-	"polymod_hotreload_failure": {
-		"English": "No mods for hot reload!",
-		"Russian": "Данные спрайтов не найдены!",
-		"Elyrion": "ŋȱ ȓπriŦ∑ iŋ₼ȱȓ ~∑r∑ ₼ȱ₺ŋΔ!"
+		"English": "HOT RELOAD",
+		"Russian": "ГОРЯЧАЯ ПЕРЕЗАГРУЗКА",
+		"Turkish": "ANINDA YENİDEN YÜKLE",
+		"Spanish (Mexico)": "RECARGA EN CALIENTE",
+		"French (France)": "RECHARGEMENT À CHAUD",
+		"Polish": "PRZEŁADOWANIE NA GORĄCO",
+		"Portuguese (Brazil)": "RECARGA A QUENTE",
+		"German (Germany)": "SOFORT NEU LADEN"
 	},
 	"polymod_wc_vanillaonly": {
 		"English": "{0} is only available in vanilla Polytopia. Disable PolyMod in the launcher, or start the game without the launcher.",
-		"Russian": "{0} доступен только в ванильной Polytopia. Отключите PolyMod в лаунчере или запустите игру без лаунчера."
+		"Russian": "{0} доступен только в ванильной Polytopia. Отключите PolyMod в лаунчере или запустите игру без лаунчера.",
+		"Turkish": "{0} yalnızca orijinal Polytopia'da kullanılabilir. Başlatıcıda PolyMod'u devre dışı bırak veya oyunu başlatıcı olmadan başlat.",
+		"Spanish (Mexico)": "{0} solo está disponible en Polytopia sin mods. Desactiva PolyMod en el launcher o inicia el juego sin el launcher.",
+		"French (France)": "{0} n'est disponible que dans Polytopia sans mods. Désactivez PolyMod dans le launcher ou lancez le jeu sans le launcher.",
+		"Polish": "{0} jest dostępne tylko w niezmodowanej Polytopii. Wyłącz PolyMod w launcherze lub uruchom grę bez launchera.",
+		"Portuguese (Brazil)": "{0} só está disponível no Polytopia sem mods. Desative o PolyMod no launcher ou inicie o jogo sem o launcher.",
+		"German (Germany)": "{0} ist nur im unmodifizierten Polytopia verfügbar. Deaktiviere PolyMod im Launcher oder starte das Spiel ohne den Launcher."
 	},
 	"polymod_achi_vanillaonly": {
-        "English": "Achievements are only available in vanilla Polytopia. Disable PolyMod in the launcher, or start the game without the launcher.",
-        "Russian": "Достижения доступны только в ванильной Polytopia. Отключите PolyMod в лаунчере или запустите игру без лаунчера."
-    },
+		"English": "{0} are only available in vanilla Polytopia. Disable PolyMod in the launcher, or start the game without the launcher.",
+		"Russian": "{0} доступны только в ванильной Polytopia. Отключите PolyMod в лаунчере или запустите игру без лаунчера.",
+		"Turkish": "{0} yalnızca orijinal Polytopia'da kullanılabilir. Başlatıcıda PolyMod'u devre dışı bırak veya oyunu başlatıcı olmadan başlat.",
+		"Spanish (Mexico)": "{0} solo están disponibles en Polytopia sin mods. Desactiva PolyMod en el launcher o inicia el juego sin el launcher.",
+		"French (France)": "{0} ne sont disponibles que dans Polytopia sans mods. Désactivez PolyMod dans le launcher ou lancez le jeu sans le launcher.",
+		"Polish": "{0} są dostępne tylko w niezmodowanej Polytopii. Wyłącz PolyMod w launcherze lub uruchom grę bez launchera.",
+		"Portuguese (Brazil)": "{0} só estão disponíveis no Polytopia sem mods. Desative o PolyMod no launcher ou inicie o jogo sem o launcher.",
+		"German (Germany)": "{0} sind nur im unmodifizierten Polytopia verfügbar. Deaktiviere PolyMod im Launcher oder starte das Spiel ohne den Launcher."
+	},
 	"polymod_title_invalid": {
 		"English": "Invalid Launch",
-		"Russian": "Неверный Запуск"
+		"Russian": "Неверный Запуск",
+		"Turkish": "Geçersiz Başlatma",
+		"Spanish (Mexico)": "Inicio no válido",
+		"French (France)": "Lancement invalide",
+		"Polish": "Nieprawidłowe uruchomienie",
+		"Portuguese (Brazil)": "Inicialização inválida",
+		"German (Germany)": "Ungültiger Start"
 	},
 	"polymod_description_invalid": {
 		"English": "PolyMod launch was invalid. Please, open the game via the PolyMod Launcher or proceed to our site to install it :)",
-		"Russian": "PolyMod запущен неккоректно. Пожалуйста, откройте игру через PolyMod Launcher или перейдите на наш сайт и установите его :)"
+		"Russian": "PolyMod запущен некорректно. Пожалуйста, откройте игру через PolyMod Launcher или перейдите на наш сайт и установите его :)",
+		"Turkish": "PolyMod geçersiz şekilde başlatıldı. Lütfen oyunu PolyMod Launcher ile aç veya yüklemek için sitemize git :)",
+		"Spanish (Mexico)": "PolyMod se inició de forma incorrecta. Abre el juego con el PolyMod Launcher o visita nuestro sitio para instalarlo :)",
+		"French (France)": "PolyMod a été lancé de manière incorrecte. Veuillez ouvrir le jeu via le PolyMod Launcher ou vous rendre sur notre site pour l'installer :)",
+		"Polish": "PolyMod został uruchomiony nieprawidłowo. Otwórz grę przez PolyMod Launcher lub przejdź na naszą stronę, aby go zainstalować :)",
+		"Portuguese (Brazil)": "O PolyMod foi iniciado de forma inválida. Abra o jogo pelo PolyMod Launcher ou acesse nosso site para instalá-lo :)",
+		"German (Germany)": "PolyMod wurde ungültig gestartet. Öffne das Spiel bitte über den PolyMod Launcher oder besuche unsere Website, um ihn zu installieren :)"
 	},
 	"buttons_download_launcher": {
 		"English": "OUR SITE",
-		"Russian": "НАШ САЙТ"
+		"Russian": "НАШ САЙТ",
+		"Turkish": "SİTEMİZ",
+		"Spanish (Mexico)": "NUESTRO SITIO",
+		"French (France)": "NOTRE SITE",
+		"Polish": "NASZA STRONA",
+		"Portuguese (Brazil)": "NOSSO SITE",
+		"German (Germany)": "UNSERE WEBSITE"
 	},
 	"polymod_hub_summary": {
 		"English": "{0} of {1} mods loaded.",
-		"Russian": "Загружено модов: {0} из {1}."
+		"Russian": "Загружено модов: {0} из {1}.",
+		"Turkish": "{1} moddan {0} tanesi yüklendi.",
+		"Spanish (Mexico)": "{0} de {1} mods cargados.",
+		"French (France)": "{0} mods sur {1} chargés.",
+		"Polish": "Załadowano modów: {0} z {1}.",
+		"Portuguese (Brazil)": "{0} de {1} mods carregados.",
+		"German (Germany)": "{0} von {1} Mods geladen."
 	},
 	"polymod_hub_mods_none": {
 		"English": "No mods are installed yet. Put mod archives into the Mods folder next to the game and restart it.",
-		"Russian": "Моды пока не установлены. Положите архивы модов в папку Mods рядом с игрой и перезапустите её."
+		"Russian": "Моды пока не установлены. Положите архивы модов в папку Mods рядом с игрой и перезапустите её.",
+		"Turkish": "Henüz yüklü mod yok. Mod arşivlerini oyunun yanındaki Mods klasörüne koy ve oyunu yeniden başlat.",
+		"Spanish (Mexico)": "Aún no hay mods instalados. Coloca los archivos de mods en la carpeta Mods junto al juego y reinícialo.",
+		"French (France)": "Aucun mod n'est encore installé. Placez les archives de mods dans le dossier Mods à côté du jeu, puis redémarrez-le.",
+		"Polish": "Nie zainstalowano jeszcze żadnych modów. Umieść archiwa modów w folderze Mods obok gry i uruchom ją ponownie.",
+		"Portuguese (Brazil)": "Nenhum mod instalado ainda. Coloque os arquivos dos mods na pasta Mods ao lado do jogo e reinicie-o.",
+		"German (Germany)": "Es sind noch keine Mods installiert. Lege Mod-Archive in den Ordner Mods neben dem Spiel und starte es neu."
 	},
 	"polymod_hub_mod_authors": {
 		"English": "by {0}",
-		"Russian": "от {0}"
+		"Russian": "от {0}",
+		"Turkish": "{0} tarafından",
+		"Spanish (Mexico)": "por {0}",
+		"French (France)": "par {0}",
+		"Polish": "autor: {0}",
+		"Portuguese (Brazil)": "por {0}",
+		"German (Germany)": "von {0}"
 	},
 	"polymod_hub_mod_checksum": {
 		"English": "checksum {0}",
-		"Russian": "контрольная сумма {0}"
+		"Russian": "контрольная сумма {0}",
+		"Turkish": "sağlama toplamı {0}",
+		"Spanish (Mexico)": "suma de verificación {0}",
+		"French (France)": "somme de contrôle {0}",
+		"Polish": "suma kontrolna {0}",
+		"Portuguese (Brazil)": "soma de verificação {0}",
+		"German (Germany)": "Prüfsumme {0}"
 	},
 	"polymod_hub_checksum": {
 		"English": "Global checksum: {0}",
-		"Russian": "Общая контрольная сумма: {0}"
+		"Russian": "Общая контрольная сумма: {0}",
+		"Turkish": "Genel sağlama toplamı: {0}",
+		"Spanish (Mexico)": "Suma de verificación global: {0}",
+		"French (France)": "Somme de contrôle globale: {0}",
+		"Polish": "Globalna suma kontrolna: {0}",
+		"Portuguese (Brazil)": "Soma de verificação global: {0}",
+		"German (Germany)": "Globale Prüfsumme: {0}"
 	},
 	"polymod_hub_config_debug": {
 		"English": "DEBUG",
-		"Russian": "ОТЛАДКА"
+		"Russian": "ОТЛАДКА",
+		"Turkish": "HATA AYIKLAMA",
+		"Spanish (Mexico)": "DEPURACIÓN",
+		"French (France)": "DÉBOGAGE",
+		"Polish": "DEBUGOWANIE",
+		"Portuguese (Brazil)": "DEPURAÇÃO",
+		"German (Germany)": "DEBUGGEN"
 	},
 	"polymod_hub_config_coordinates": {
 		"English": "COORDINATES",
-		"Russian": "КООРДИНАТЫ"
+		"Russian": "КООРДИНАТЫ",
+		"Turkish": "KOORDİNATLAR",
+		"Spanish (Mexico)": "COORDENADAS",
+		"French (France)": "COORDONNÉES",
+		"Polish": "WSPÓŁRZĘDNE",
+		"Portuguese (Brazil)": "COORDENADAS",
+		"German (Germany)": "KOORDINATEN"
 	},
 	"polymod_debug_description": {
 		"English": "Opens the developer console and writes verbose logs.",
-		"Russian": "Открывает консоль разработчика и включает подробные логи."
+		"Russian": "Открывает консоль разработчика и включает подробные логи.",
+		"Turkish": "Geliştirici konsolunu açar ve ayrıntılı günlük kaydı tutar.",
+		"Spanish (Mexico)": "Abre la consola de desarrollador y escribe registros detallados.",
+		"French (France)": "Ouvre la console de développement et écrit des journaux détaillés.",
+		"Polish": "Otwiera konsolę deweloperską i zapisuje szczegółowe logi.",
+		"Portuguese (Brazil)": "Abre o console de desenvolvedor e grava logs detalhados.",
+		"German (Germany)": "Öffnet die Entwicklerkonsole und schreibt ausführliche Logs."
 	},
 	"polymod_coordinates": {
 		"English": "Coordinates",
-		"Russian": "Координаты"
+		"Russian": "Координаты",
+		"Turkish": "Koordinatlar",
+		"Spanish (Mexico)": "Coordenadas",
+		"French (France)": "Coordonnées",
+		"Polish": "Współrzędne",
+		"Portuguese (Brazil)": "Coordenadas",
+		"German (Germany)": "Koordinaten"
 	},
 	"polymod_coordinates_description": {
 		"English": "Shows the coordinates of every tile on the map.",
-		"Russian": "Показывает координаты каждой клетки на карте."
+		"Russian": "Показывает координаты каждой клетки на карте.",
+		"Turkish": "Haritadaki her karenin koordinatlarını gösterir.",
+		"Spanish (Mexico)": "Muestra las coordenadas de cada casilla del mapa.",
+		"French (France)": "Affiche les coordonnées de chaque case de la carte.",
+		"Polish": "Pokazuje współrzędne każdego pola na mapie.",
+		"Portuguese (Brazil)": "Mostra as coordenadas de cada casa do mapa.",
+		"German (Germany)": "Zeigt die Koordinaten jedes Feldes auf der Karte."
 	},
 	"polymod_on": {
 		"English": "ON",
-		"Russian": "ВКЛ"
+		"Russian": "ВКЛ",
+		"Turkish": "AÇIK",
+		"Spanish (Mexico)": "ACTIVADO",
+		"French (France)": "ACTIVÉ",
+		"Polish": "WŁ.",
+		"Portuguese (Brazil)": "LIGADO",
+		"German (Germany)": "AN"
 	},
 	"polymod_off": {
 		"English": "OFF",
-		"Russian": "ВЫКЛ"
+		"Russian": "ВЫКЛ",
+		"Turkish": "KAPALI",
+		"Spanish (Mexico)": "DESACTIVADO",
+		"French (France)": "DÉSACTIVÉ",
+		"Polish": "WYŁ.",
+		"Portuguese (Brazil)": "DESLIGADO",
+		"German (Germany)": "AUS"
 	},
 	"polymod_hotreload_unavailable": {
 		"English": "Hot reload is not available yet.",
-		"Russian": "Горячая перезагрузка пока недоступна."
+		"Russian": "Горячая перезагрузка пока недоступна.",
+		"Turkish": "Anında yeniden yükleme henüz kullanılamıyor.",
+		"Spanish (Mexico)": "La recarga en caliente aún no está disponible.",
+		"French (France)": "Le rechargement à chaud n'est pas encore disponible.",
+		"Polish": "Przeładowanie na gorąco nie jest jeszcze dostępne.",
+		"Portuguese (Brazil)": "A recarga a quente ainda não está disponível.",
+		"German (Germany)": "Sofortiges Neuladen ist noch nicht verfügbar."
 	}
 }

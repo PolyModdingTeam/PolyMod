@@ -222,7 +222,7 @@ internal static class Compatibility
     {
         if (!Plugin.ValidLaunch && Application.platform != RuntimePlatform.Android)
         {
-            PopupManager.GetBasicPopupWithData(
+            BasicPopup invalidLaunchPopup = PopupManager.GetBasicPopupWithData(
                 new(
                     Localization.Get("polymod.title.invalid"),
                     Localization.Get("polymod.description.invalid"),
@@ -241,7 +241,9 @@ internal static class Compatibility
                         )
                     }
                 )
-            ).Show();
+            );
+            invalidLaunchPopup.IsUnskippable = true;
+            invalidLaunchPopup.Show();
 
             void OpenSite()
             {

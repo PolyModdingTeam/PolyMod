@@ -99,7 +99,7 @@ public class VisualPartInfo
     /// The sorting orders come from the <c>SpriteRenderer</c> of the visual part object and of the outline object.
     /// If an object has no <c>SpriteRenderer</c>, its sorting order is null.
     /// <see cref="coordinates"/> gets the world position of the visual part object.
-    /// <see cref="rotation"/> gets the z component of the rotation quaternion, not an angle in degrees.
+    /// <see cref="rotation"/> gets the world rotation of the visual part object around the z axis, in degrees.
     /// </remarks>
     /// <param name="visualPart">The visual part to copy. Its visual part object must not be null.</param>
     public void CopyFromVisualPart(SkinVisualsReference.VisualPart visualPart)
@@ -123,7 +123,7 @@ public class VisualPartInfo
         }
 
         coordinates = visualPart.visualPart.transform.position;
-        rotation = visualPart.visualPart.transform.rotation.z;
+        rotation = visualPart.visualPart.transform.eulerAngles.z;
         defaultSpriteName = visualPart.DefaultSpriteName;
         tintable = visualPart.tintable;
         skinningLogic = visualPart.skinLogic;

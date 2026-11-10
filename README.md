@@ -7,7 +7,7 @@
 |         | x86 | ARM |
 |:-------:|:---:|:---:|
 | Windows |  ✅  |  ❌  |
-|  Linux  |  ✅  |  ❌  |
+|  Linux  |  ⏺️  |  ❌  |
 |  MacOS  |  ❌  |  ❌  |
 | Android |  ➖  |  🚧  |
 |   IOS   |  ➖  |  ❌  |

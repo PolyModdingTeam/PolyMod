@@ -16,7 +16,8 @@ namespace PolyMod.Api;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The type of the config object.</typeparam>
-public class Config<T> where T : class
+// should be public when i get through it
+internal class Config<T> where T : class
 {
     private static readonly JsonSerializerOptions indentedJsonOptions = new() { WriteIndented = true };
     private T? currentConfig;
@@ -30,7 +31,8 @@ public class Config<T> where T : class
     /// </summary>
     /// <param name="modName">The mod name, normally the mod id. The config uses it as the file name or as the key in <c>mods.json</c>.</param>
     /// <param name="configType">The place on disk for the config.</param>
-    public Config(string modName, ConfigTypes configType)
+    // should be public when i get through it
+    internal Config(string modName, ConfigTypes configType)
     {
         this.modName = modName;
         this.configType = configType;
@@ -79,7 +81,8 @@ public class Config<T> where T : class
     /// If there is a config in memory, for example a config that the constructor read from disk, the method keeps that config.
     /// </summary>
     /// <param name="defaultValue">The config object to use when there is no config in memory.</param>
-    public void SetDefaultConfig(T defaultValue)
+    // should be public when i get through it
+    internal void SetDefaultConfig(T defaultValue)
     {
         defaultConfig = defaultValue;
         if (currentConfig is not null) return;
@@ -92,7 +95,8 @@ public class Config<T> where T : class
     /// This method does not write to disk. Call <see cref="SaveChanges"/> to write the config to disk.
     /// </summary>
     /// <param name="config">The new config object.</param>
-    public void Write(T config)
+    // should be public when i get through it
+    internal void Write(T config)
     {
         currentConfig = config;
     }
@@ -101,7 +105,8 @@ public class Config<T> where T : class
     /// </summary>
     /// <returns>The config object. Changes to it stay in memory until you call <see cref="SaveChanges"/>.</returns>
     /// <exception cref="InvalidOperationException">There is no config in memory. This occurs when there is no config on disk and you did not call <see cref="SetDefaultConfig"/>.</exception>
-    public T Get()
+    // should be public when i get through it
+    internal T Get()
     {
         return currentConfig ?? throw new InvalidOperationException("Must set default before reading config.");
     }
@@ -111,7 +116,8 @@ public class Config<T> where T : class
     /// <remarks>This method does not write to disk. Call <see cref="SaveChanges"/> after you edit the config.</remarks>
     /// <param name="editor">The action that changes the config object.</param>
     /// <exception cref="InvalidOperationException">There is no config in memory. This occurs when there is no config on disk and you did not call <see cref="SetDefaultConfig"/>.</exception>
-    public void Edit(Action<T> editor)
+    // should be public when i get through it
+    internal void Edit(Action<T> editor)
     {
         editor(currentConfig ?? throw new InvalidOperationException("Must set default before reading config."));
     }
@@ -122,7 +128,8 @@ public class Config<T> where T : class
     /// <param name="getter">The function that gets the value from the config object.</param>
     /// <returns>The value that <paramref name="getter"/> gives.</returns>
     /// <exception cref="InvalidOperationException">There is no config in memory. This occurs when there is no config on disk and you did not call <see cref="SetDefaultConfig"/>.</exception>
-    public TResult Get<TResult>(Func<T, TResult> getter)
+    // should be public when i get through it
+    internal TResult Get<TResult>(Func<T, TResult> getter)
     {
         return getter(currentConfig ?? throw new InvalidOperationException("Must set default before reading config."));
     }
@@ -133,7 +140,8 @@ public class Config<T> where T : class
     /// It keeps the values of other mods in <c>mods.json</c>.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The config type is not a known <see cref="ConfigTypes"/> value.</exception>
-    public void SaveChanges()
+    // should be public when i get through it
+    internal void SaveChanges()
     {
         switch (configType)
         {
@@ -145,7 +153,7 @@ public class Config<T> where T : class
                 var modsConfigText = File.ReadAllText(ExposedConfigPath);
                 var modsConfigJson = JsonNode.Parse(modsConfigText)!.AsObject();
                 modsConfigJson[modName] = JsonSerializer.SerializeToNode(currentConfig!);
-                File.WriteAllText(ExposedConfigPath, modsConfigJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                File.WriteAllText(ExposedConfigPath, modsConfigJson.ToJsonString(indentedJsonOptions));
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -155,7 +163,8 @@ public class Config<T> where T : class
     /// <summary>
     /// The places on disk for a config.
     /// </summary>
-    public enum ConfigTypes
+    // should be public when i get through it
+    internal enum ConfigTypes
     {
         /// <summary>The config is in its own file, <c>Mods/{modName}.json</c>.</summary>
         PerMod,
