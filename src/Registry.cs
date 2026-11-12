@@ -164,7 +164,7 @@ public static class Registry
     /// <param name="tribeText">The tribe part of the audio name, or an empty string.</param>
     /// <param name="skinText">The skin part of the audio name, or an empty string.</param>
     /// <returns>The clip of the audio source that is the best match, or null if no audio source matches.</returns>
-    public static AudioClip? GetAudioClipByText(string baseName, string tribeText = "", string skinText = "")
+    private static AudioClip? GetAudioClipByText(string baseName, string tribeText = "", string skinText = "")
     {
         AudioSource? audioSource = null;
         baseName = baseName.ToLowerInvariant();
