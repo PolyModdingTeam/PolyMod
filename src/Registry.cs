@@ -30,7 +30,7 @@ public static class Registry
     /// <returns>The next free index for the type.</returns>
     public static int GetAutoIndex(Type type)
     {
-        if(!autoindexes.TryGetValue(type, out int value))
+        if (!autoindexes.TryGetValue(type, out int value))
         {
             autoindexes[type] = value = Plugin.AUTOIDX_STARTS_FROM;
         }
@@ -44,7 +44,7 @@ public static class Registry
     /// <param name="type">The enum type.</param>
     public static void IncrementAutoIndex(Type type)
     {
-        if(!autoindexes.ContainsKey(type))
+        if (!autoindexes.ContainsKey(type))
             autoindexes[type] = Plugin.AUTOIDX_STARTS_FROM;
 
         autoindexes[type]++;
