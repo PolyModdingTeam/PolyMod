@@ -1,3 +1,4 @@
+using System.Globalization;
 using BepInEx.Logging;
 using Cpp2IL.Core.Extensions;
 using Il2CppSystem.Linq;
@@ -6,12 +7,9 @@ using Newtonsoft.Json.Linq;
 using PolyMod.Json;
 using PolyMod.Managers;
 using Polytopia.Data;
-using PolytopiaBackendBase.Game;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO.Compression;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -20,14 +18,35 @@ using PolytopiaBackendBase.Common;
 namespace PolyMod;
 
 /// <summary>
-/// Handles loading of mods and their assets.
+/// The methods that register mods, sort them, load their files and apply their GLD data.
 /// </summary>
 public static class Loader
 {
+    private static readonly JsonSerializerOptions manifestJsonOptions = new()
+    {
+        Converters = { new VersionJson() },
+    };
+
+    private static readonly JsonSerializerOptions spriteInfoJsonOptions = new()
+    {
+        Converters = { new Vector2Json() },
+    };
+
+    private static readonly JsonSerializerOptions prefabJsonOptions = new()
+    {
+        Converters = { new Vector2Json() },
+        PropertyNameCaseInsensitive = true,
+    };
+
+    /// <summary>
+    /// The C# type that PolyMod uses for one GLD data category.
+    /// </summary>
+    /// <param name="type">The C# type of the data category. To make <c>EnumCache</c> mappings, this type must be an enum.</param>
+    /// <param name="shouldCreateCache">If true, <see cref="CreateMappings"/> makes <c>EnumCache</c> mappings for new entries of the category. If false, it only calls the type handlers.</param>
     internal record TypeMapping(Type type, bool shouldCreateCache = true);
 
     /// <summary>
-    /// Mappings from JSON data types to their corresponding C# types.
+    /// The type mappings of the GLD data categories, keyed by the category name in the GLD, for example <c>unitData</c>.
     /// </summary>
     internal static Dictionary<string, TypeMapping> typeMappings = new()
     {
@@ -47,13 +66,20 @@ public static class Loader
     };
 
     /// <summary>
-    /// List of custom game modes to be added.
+    /// The type handlers that <see cref="CreateMappings"/> calls for each GLD entry, keyed by the C# type of the data category.
     /// </summary>
-    internal static List<GameModeButtonsInformation> gamemodes = new();
-
-    /// <summary>
-    /// Handlers for processing specific data types during mod loading.
-    /// </summary>
+    /// <remarks>
+    /// Each handler gets the JSON object of the entry and a flag.
+    /// The flag is true when <see cref="CreateMappings"/> calls the handler just after it made a new <c>EnumCache</c> mapping for the entry.
+    /// The flag is false in the second pass, in which <see cref="CreateMappings"/> calls the handler for all entries of the category.
+    /// <list type="bullet">
+    /// <item><description><see cref="TribeType"/>: in the first pass, adds the tribe to <see cref="Registry.customTribes"/> and gives it a new style and climate. In the second pass, makes <c>EnumCache</c> mappings for new skins, makes a flood tile effect for each new skin of a tribe with the <c>Flooded</c> ability, changes the skin ids to indexes, and keeps the tribe preview.</description></item>
+    /// <item><description><c>UnitData.Type</c>: in the second pass, adds the <c>embarksTo</c> value to <c>Main.embarkNames</c> and changes the <c>weapon</c> name to its index.</description></item>
+    /// <item><description><c>ImprovementData.Type</c>: in the second pass, adds the improvement to the prefabs to make if <c>prefab</c> is true. It also adds the <c>attractsResource</c>, <c>attractsToTerrain</c> and <c>infoOverride</c> values to the related dictionaries.</description></item>
+    /// <item><description><c>ResourceData.Type</c>: in the second pass, adds the resource to the prefabs to make if <c>prefab</c> is true.</description></item>
+    /// <item><description><c>SkinData</c>: changes the name of the entry to lowercase.</description></item>
+    /// </list>
+    /// </remarks>
     internal static readonly Dictionary<Type, List<Action<JObject, bool>>> typeHandlers = new()
     {
         [typeof(TribeType)] = new List<Action<JObject, bool>>() {
@@ -77,12 +103,16 @@ public static class Loader
                             string skinId = skin.ToString();
                             if (!Enum.TryParse<SkinType>(skinId, ignoreCase: true, out _))
                             {
-                                SkinType skinValue = (SkinType)Registry.autoidx;
+                                int index = Registry.GetAutoIndex(typeof(SkinType));
+                                SkinType skinValue = (SkinType)index;
+
                                 EnumCache<SkinType>.AddMapping(skinId.ToLowerInvariant(), skinValue);
                                 EnumCache<SkinType>.AddMapping(skinId.ToLowerInvariant(), skinValue);
-                                Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinId, null));
-                                Plugin.logger.LogInfo("Created mapping for skinType with id " + skinId + " and index " + Registry.autoidx);
-                                Registry.autoidx++;
+
+                                Registry.skinInfo.Add(new Visual.SkinInfo(index, skinId, null));
+                                Plugin.logger.LogInfo("Created mapping for skinType with id " + skinId + " and index " + index);
+                                Registry.IncrementAutoIndex(typeof(SkinType));
+
                                 if(token["tribeAbilities"] != null)
                                 {
                                     JArray tribeAbilities = token["tribeAbilities"].Cast<JArray>();
@@ -98,11 +128,14 @@ public static class Loader
                                             ) && tribeAbilityType == TribeAbility.Type.Flooded)
                                         {
                                             string tileEffectId = skinId.ToLowerInvariant() + "_flood";
-                                            EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
-                                            EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
-                                            Visual.customFloodingSkins.Add((TileData.EffectType)Registry.autoidx, skinValue);
-                                            Plugin.logger.LogInfo("Created mapping for tileEffect with id " + tileEffectId + " and index " + Registry.autoidx);
-                                            Registry.autoidx++;
+                                            int autoidx = Registry.GetAutoIndex(typeof(TileData.EffectType));
+
+                                            TileData.EffectType effectType = (TileData.EffectType)autoidx;
+                                            EnumCache<TileData.EffectType>.AddMapping(tileEffectId, effectType);
+                                            EnumCache<TileData.EffectType>.AddMapping(tileEffectId, effectType);
+                                            Visual.customFloodingSkins.Add(effectType, skinValue);
+                                            Plugin.logger.LogInfo("Created mapping for tileEffect with id " + tileEffectId + " and index " + autoidx);
+                                            Registry.IncrementAutoIndex(typeof(TileData.EffectType));
                                         }
                                     }
                                 }
@@ -114,7 +147,7 @@ public static class Loader
                             if (modifiedSkins.Contains(skin.id))
                             {
                                 modifiedSkins.Remove(skin.id);
-                                modifiedSkins.Add(skin.idx.ToString());
+                                modifiedSkins.Add(skin.idx.ToString(CultureInfo.InvariantCulture));
                             }
                         }
                         JArray newSkins = new JArray();
@@ -126,7 +159,7 @@ public static class Loader
                     }
                     if (token["preview"] != null)
                     {
-                        Visual.PreviewTile[] preview = JsonSerializer.Deserialize<Visual.PreviewTile[]>(token["preview"].ToString())!;
+                        TribePreviews.PreviewTile[] preview = JsonSerializer.Deserialize<TribePreviews.PreviewTile[]>(token["preview"].ToString())!;
                         Registry.tribePreviews[Util.GetJTokenName(token)] = preview;
                     }
                 }
@@ -135,19 +168,8 @@ public static class Loader
         [typeof(UnitData.Type)] = new List<Action<JObject, bool>>() {
             new((token, duringEnumCacheCreation) =>
             {
-                if(duringEnumCacheCreation)
+                if(!duringEnumCacheCreation)
                 {
-                    if (token["prefab"] == null)
-                    {
-                        Registry.prefabNames.Add((int)token["idx"], EnumCache<UnitData.Type>.GetName(UnitData.Type.Scout).ToLowerInvariant());
-                    }
-                }
-                else
-                {
-                    if (token["prefab"] != null)
-                    {
-                        Registry.prefabNames.Add((int)token["idx"], token["prefab"].ToString().ToLowerInvariant());
-                    }
                     if (token["embarksTo"] != null)
                     {
                         string unitId = Util.GetJTokenName(token);
@@ -170,34 +192,31 @@ public static class Loader
         new((token, duringEnumCacheCreation) =>
         {
             if (duringEnumCacheCreation)
+                return;
+
+            if (token["prefab"] != null && (bool)token["prefab"])
             {
-                ImprovementData.Type improvementPrefabType = ImprovementData.Type.CustomsHouse;
-                if (token["prefab"] != null)
+                bool levels = false;
+                if(token["maxLevel"] != null && (int)token["maxLevel"] > 0)
                 {
-                    string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
-                    if (Enum.TryParse(prefabId, out ImprovementData.Type parsedType))
-                        improvementPrefabType = parsedType;
+                    levels = true;
                 }
-                if(token["idx"] != null)
-                    PrefabManager.improvements.TryAdd((ImprovementData.Type)(int)token["idx"], PrefabManager.improvements[improvementPrefabType]);
+                Prefabs.improvementPrefabInfosToCreate[(ImprovementData.Type)(int)token["idx"]] = levels;
             }
-            else
+            string improvementId = Util.GetJTokenName(token);
+            if (token["attractsResource"] != null)
             {
-                string improvementId = Util.GetJTokenName(token);
-                if (token["attractsResource"] != null)
-                {
-                    string attractsId = token["attractsResource"].ToString();
-                    Main.attractsResourceNames[improvementId] = attractsId;
-                }
-                if (token["attractsToTerrain"] != null)
-                {
-                    string attractsId = token["attractsToTerrain"].ToString();
-                    Main.attractsTerrainNames[improvementId] = attractsId;
-                }
-                if(token["infoOverride"] != null)
-                {
-                    Loc.buildingsInfoOverrides[improvementId] = Loc.ReplaceDashesWithDots(token["infoOverride"].ToString());
-                }
+                string attractsId = token["attractsResource"].ToString();
+                Main.attractsResourceNames[improvementId] = attractsId;
+            }
+            if (token["attractsToTerrain"] != null)
+            {
+                string attractsId = token["attractsToTerrain"].ToString();
+                Main.attractsTerrainNames[improvementId] = attractsId;
+            }
+            if(token["infoOverride"] != null)
+            {
+                Loc.buildingsInfoOverrides[improvementId] = Loc.ReplaceDashesWithDots(token["infoOverride"].ToString());
             }
         })
         },
@@ -206,16 +225,11 @@ public static class Loader
             new((token, duringEnumCacheCreation) =>
             {
                 if (duringEnumCacheCreation)
+                    return;
+
+                if (token["prefab"] != null && (bool)token["prefab"])
                 {
-                    ResourceData.Type resourcePrefabType = ResourceData.Type.Game;
-                    if (token["prefab"] != null)
-                    {
-                        string prefabId = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(token["prefab"]!.ToString());
-                        if (Enum.TryParse(prefabId, out ResourceData.Type parsedType))
-                            resourcePrefabType = parsedType;
-                    }
-                    if(token["idx"] != null)
-                        PrefabManager.resources.TryAdd((ResourceData.Type)(int)token["idx"], PrefabManager.resources[resourcePrefabType]);
+                    Prefabs.resourcePrefabsInfosToCreate.Add((ResourceData.Type)(int)token["idx"]);
                 }
             })
         },
@@ -224,55 +238,43 @@ public static class Loader
             new((token, duringEnumCacheCreation) =>
             {
                 var prop = token.Parent.Cast<JProperty>();
-                prop.Replace(new JProperty(prop.Name.ToLower(), prop.Value));
+                prop.Replace(new JProperty(prop.Name.ToLowerInvariant(), prop.Value));
             })
         },
     };
 
     /// <summary>
-    /// Represents information for a custom game mode button.
+    /// Adds a type mapping for a GLD data category. <see cref="CreateMappings"/> makes <c>EnumCache</c> mappings for new entries of this category.
+    /// If <see cref="typeMappings"/> already contains the category name, the method does nothing.
     /// </summary>
-    /// <param name="gameModeIndex">The index of the game mode.</param>
-    /// <param name="action">The action to perform when the button is clicked.</param>
-    /// <param name="buttonIndex">The index of the button in the UI.</param>
-    /// <param name="sprite">The sprite for the button.</param>
-    /// <param name="spriteName">The name of the sprite for the button.</param>
-    public record GameModeButtonsInformation(int gameModeIndex, UIButtonBase.ButtonAction action, int? buttonIndex, Sprite? sprite, string? spriteName);
-
-    /// <summary>
-    /// Adds a new game mode button.
-    /// </summary>
-    /// <param name="id">The unique identifier for the game mode.</param>
-    /// <param name="action">The action to perform when the button is clicked.</param>
-    /// <param name="shouldShowInMenu">The boolean which decides if GameMode should appear in the menu.</param>
-    /// <param name="sprite">The sprite for the button.</param>
-    /// <param name="spriteName">The name of the sprite for the button.</param>
-    public static void AddGameMode(string id, UIButtonBase.ButtonAction action, bool shouldShowInMenu = true, Sprite? sprite = null, string? spriteName = null)
-    {
-        EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
-        EnumCache<GameMode>.AddMapping(id, (GameMode)Registry.gameModesAutoidx);
-        if (shouldShowInMenu)
-            gamemodes.Add(new GameModeButtonsInformation(Registry.gameModesAutoidx, action, null, sprite, spriteName));
-        Registry.gameModesAutoidx++;
-    }
-
-    /// <summary>
-    /// Adds a new data type for patching.
-    /// </summary>
-    /// <param name="typeId">The identifier for the data type in JSON.</param>
-    /// <param name="type">"The C# type corresponding to the identifier.</param>
+    /// <param name="typeId">The name of the data category in the GLD, for example <c>unitData</c>.</param>
+    /// <param name="type">The C# enum type of the data category.</param>
     public static void AddPatchDataType(string typeId, Type type)
     {
         if (!typeMappings.ContainsKey(typeId))
             typeMappings.Add(typeId, new TypeMapping(type));
     }
 
+    /// <summary>
+    /// Adds a type mapping for a GLD data category.
+    /// If <see cref="typeMappings"/> already contains the category name, the method does nothing.
+    /// </summary>
+    /// <param name="typeId">The name of the data category in the GLD, for example <c>unitData</c>.</param>
+    /// <param name="type">The C# type of the data category.</param>
+    /// <param name="shouldCreateCache">If true, <see cref="CreateMappings"/> makes <c>EnumCache</c> mappings for new entries of the category. If false, it only calls the type handlers.</param>
     public static void AddPatchDataType(string typeId, Type type, bool shouldCreateCache)
     {
         if (!typeMappings.ContainsKey(typeId))
             typeMappings.Add(typeId, new TypeMapping(type, shouldCreateCache));
     }
 
+    /// <summary>
+    /// Adds a type handler for a C# type to <see cref="typeHandlers"/>.
+    /// A type mapping for the type must exist in <see cref="typeMappings"/>.
+    /// If no type mapping exists, the method writes a warning to the log and does not add the handler.
+    /// </summary>
+    /// <param name="type">The C# type of the data category.</param>
+    /// <param name="handler">The handler to add. It gets the JSON object of a GLD entry and a flag. The flag is true when <see cref="CreateMappings"/> just made a new <c>EnumCache</c> mapping for the entry.</param>
     public static void AddTypeHandler(Type type, Action<JObject, bool> handler)
     {
         string typeString = type.ToString();
@@ -290,9 +292,20 @@ public static class Loader
     }
 
     /// <summary>
-    /// Loads all mods from the mods directory.
+    /// Finds the mods in <see cref="Plugin.MODS_PATH"/> and adds them to a dictionary.
     /// </summary>
-    /// <param name="mods">A dictionary to populate with the loaded mods.</param>
+    /// <remarks>
+    /// The method makes the mods directory if it does not exist.
+    /// A mod can be a directory, a <c>.polymod</c> file or a <c>.zip</c> file.
+    /// The method reads all files of the mod and gets the manifest from <c>manifest.json</c> at the root.
+    /// It does not add a mod if the manifest is missing, not valid, or has an id that the dictionary already contains.
+    /// A manifest is not valid if it has no id, no version or no authors.
+    /// A manifest is also not valid if the id is <c>polytopia</c> or contains characters other than lowercase letters and underscores.
+    /// The method also does not add a mod that the configuration disables.
+    /// For each mod that it does not add, the method writes an error to the log.
+    /// The method gives each added mod the status <see cref="Mod.Status.Success"/> and then calls <see cref="CheckDependencies"/>.
+    /// </remarks>
+    /// <param name="mods">The dictionary to which the method adds the mods, keyed by the mod id.</param>
     internal static void RegisterMods(Dictionary<string, Mod> mods)
     {
         Directory.CreateDirectory(Plugin.MODS_PATH);
@@ -346,6 +359,11 @@ public static class Loader
                 Plugin.logger.LogError($"Mod id {manifest.id} is invalid in {modContainer}");
                 continue;
             }
+            if (Plugin.config.disabledMods.Contains(manifest.id))
+            {
+                Plugin.logger.LogInfo($"Mod {manifest.id} is disabled, skipping");
+                continue;
+            }
             if (manifest.version == null)
             {
                 Plugin.logger.LogError($"Mod version not found in {modContainer}");
@@ -373,34 +391,49 @@ public static class Loader
         CheckDependencies(mods);
     }
 
+    /// <summary>
+    /// Adds one file of a mod to the file list, or reads it as the manifest.
+    /// If the file is <c>manifest.json</c> at the root of the mod, the method parses it into <paramref name="manifest"/> and does not add it to the list.
+    /// </summary>
+    /// <param name="fullName">The path of the file, relative to the root of the mod.</param>
+    /// <param name="bytes">The contents of the file.</param>
+    /// <param name="files">The file list of the mod.</param>
+    /// <param name="manifest">The manifest of the mod. The method sets it when the file is <c>manifest.json</c>.</param>
     private static void ProcessModFile(string fullName, byte[] bytes, List<Mod.File> files, ref Mod.Manifest? manifest)
     {
         if (fullName == "manifest.json")
         {
             manifest = JsonSerializer.Deserialize<Mod.Manifest>(
                 bytes,
-                new JsonSerializerOptions()
-                {
-                    Converters = { new VersionJson() },
-                }
+                manifestJsonOptions
             );
             return;
         }
         files.Add(new(fullName, bytes));
     }
 
-    internal static void LoadMods(Dictionary<string, Mod> mods, out bool dependencyCycle)
+    /// <summary>
+    /// Sorts the registered mods and loads their assemblies, sprite info files and language files.
+    /// </summary>
+    /// <remarks>
+    /// The method uses <see cref="Registry.mods"/>.
+    /// First, it sorts the mods with <see cref="SortMods"/>. If there is a dependency cycle, the method stops.
+    /// For each mod with the status <see cref="Mod.Status.Success"/>, it loads the <c>.dll</c> files, the sprite info files and the language files.
+    /// A sprite info file has the name <c>sprites.json</c> or <c>sprites_*.json</c>.
+    /// A language file has the name <c>language.json</c> or <c>language_*.json</c>.
+    /// At the end, it calls <c>Compatibility.ComputeChecksums</c>.
+    /// </remarks>
+    /// <param name="dependencyCycle">Set to true if the mods have a dependency cycle, false otherwise.</param>
+    internal static void LoadMods(out bool dependencyCycle)
     {
         dependencyCycle = !SortMods(Registry.mods);
         if (dependencyCycle) return;
 
-        StringBuilder checksumString = new();
         foreach (var (id, mod) in Registry.mods)
         {
             if (mod.status != Mod.Status.Success) continue;
             foreach (var file in mod.files)
             {
-                checksumString.Append(JsonSerializer.Serialize(file));
                 if (Path.GetExtension(file.name) == ".dll")
                 {
                     LoadAssemblyFile(mod, file);
@@ -421,15 +454,20 @@ public static class Loader
                     );
                 }
             }
-            if (!mod.client && id != "polytopia")
-            {
-                checksumString.Append(id);
-                checksumString.Append(mod.version.ToString());
-            }
         }
-        Compatibility.HashSignatures(checksumString);
-
+        Compatibility.ComputeChecksums(Registry.mods);
     }
+
+    /// <summary>
+    /// Checks the dependencies of each mod in a dictionary.
+    /// </summary>
+    /// <remarks>
+    /// A dependency fails if the dictionary does not contain it, or if its version is out of the permitted range.
+    /// For a required dependency that fails, the method writes an error to the log.
+    /// It also sets the status of the mod to <see cref="Mod.Status.DependenciesUnsatisfied"/>.
+    /// For an optional dependency that fails, the method only writes a warning to the log.
+    /// </remarks>
+    /// <param name="mods">The mods to check, keyed by the mod id.</param>
     internal static void CheckDependencies(Dictionary<string, Mod> mods)
     {
         foreach (var (id, mod) in mods)
@@ -437,13 +475,13 @@ public static class Loader
             foreach (var dependency in mod.dependencies ?? Array.Empty<Mod.Dependency>())
             {
                 string? message = null;
-                if (!mods.ContainsKey(dependency.id))
+                if (!mods.TryGetValue(dependency.id, out Mod? dependencyMod))
                 {
                     message = $"Dependency {dependency.id} not found";
                 }
                 else
                 {
-                    Version version = mods[dependency.id].version;
+                    Version version = dependencyMod.version;
                     if (
                         (dependency.min != null && version < dependency.min)
                         ||
@@ -470,10 +508,17 @@ public static class Loader
     }
 
     /// <summary>
-    /// Sorts mods based on their dependencies using a topological sort.
+    /// Sorts the mods in a dictionary so that each mod comes after its dependencies.
     /// </summary>
-    /// <param name="mods">The dictionary of mods to sort.</param>
-    /// <returns>True if the mods could be sorted (no circular dependencies), false otherwise.</returns>
+    /// <remarks>
+    /// The method uses a topological sort on the mods with the status <see cref="Mod.Status.Success"/>.
+    /// It ignores dependencies that are not in the dictionary or that do not have the status <see cref="Mod.Status.Success"/>.
+    /// If the sort succeeds, the method replaces the contents of the dictionary.
+    /// The sorted mods come first, then the mods with a different status.
+    /// If there is a dependency cycle, the method does not change the dictionary.
+    /// </remarks>
+    /// <param name="mods">The mods to sort, keyed by the mod id.</param>
+    /// <returns>True if the sort succeeds, false if the mods have a dependency cycle.</returns>
     internal static bool SortMods(Dictionary<string, Mod> mods)
     {
         Stopwatch s = new();
@@ -535,10 +580,19 @@ public static class Loader
     }
 
     /// <summary>
-    /// Loads an assembly file from a mod.
+    /// Loads a <c>.dll</c> file of a mod as an assembly and starts its code.
     /// </summary>
-    /// <param name="mod">The mod the assembly belongs to.</param>
-    /// <param name="file">The assembly file to load.</param>
+    /// <remarks>
+    /// If the assembly has a subclass of <see cref="Api.PolyScriptBase"/>, the method makes an instance of the first one.
+    /// It calls <c>Initialize</c> and then <c>Load</c> on that instance, and does nothing more.
+    /// If the assembly has no such subclass, the method calls each static <c>Load(ManualLogSource)</c> method and each static <c>Load()</c> method in the assembly.
+    /// If a static <c>Load</c> method or the constructor of the subclass throws an exception, the method writes an error to the log.
+    /// It also sets the status of the mod to <see cref="Mod.Status.Error"/>.
+    /// The method catches only exceptions of the type <see cref="TargetInvocationException"/>.
+    /// For this reason, it does not catch an exception from <c>Initialize</c> or from <c>Load</c> on a <see cref="Api.PolyScriptBase"/> instance.
+    /// </remarks>
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The <c>.dll</c> file to load.</param>
     public static void LoadAssemblyFile(Mod mod, Mod.File file)
     {
         try
@@ -584,9 +638,14 @@ public static class Loader
     }
 
     /// <summary>
-    /// Loads a localization file from a mod.
+    /// Loads a localization file of a mod and adds its terms to the game localization.
     /// </summary>
-    /// <param name="mod">The mod the localization file belongs to.</param>
+    /// <remarks>
+    /// The file is a JSON object. Each key is a term name, and each value is an object that maps language names to texts.
+    /// The method gives the data to <c>Loc.BuildAndLoadLocalization</c>.
+    /// If an error occurs, the method writes the error to the log.
+    /// </remarks>
+    /// <param name="mod">The mod that contains the file.</param>
     /// <param name="file">The localization file to load.</param>
     public static void LoadLocalizationFile(Mod mod, Mod.File file)
     {
@@ -602,6 +661,17 @@ public static class Loader
         }
     }
 
+    /// <summary>
+    /// Loads a language file of a mod and adds it to <c>Loc.languagesToAdd</c>.
+    /// </summary>
+    /// <remarks>
+    /// The file is a JSON object that maps term names to texts.
+    /// If an error occurs, the method writes the error to the log.
+    /// An error occurs, for example, when a different file already added the same language code.
+    /// </remarks>
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The language file to load.</param>
+    /// <param name="languageName">The language code from the file name. It is the text after <c>language_</c>, or an empty string for <c>language.json</c>.</param>
     public static void LoadLanguageFile(Mod mod, Mod.File file, string languageName)
     {
         try
@@ -620,74 +690,46 @@ public static class Loader
     }
 
     /// <summary>
-    /// Loads a sprite file from a mod.
+    /// Loads a PNG file of a mod as a texture and adds it to <see cref="Registry.textures"/>.
+    /// The key is the lowercase file name without the extension.
+    /// The method does not make a sprite. <c>Visual.CreateSprites</c> makes the sprites later.
     /// </summary>
-    /// <param name="mod">The mod the sprite file belongs to.</param>
-    /// <param name="file">The sprite file to load.</param>
-    public static void LoadSpriteFile(Mod mod, Mod.File file)
+    /// <param name="mod">The mod that contains the file. The method does not use this parameter.</param>
+    /// <param name="file">The PNG file to load.</param>
+    public static void LoadTextureFile(Mod mod, Mod.File file)
     {
-        string name = Path.GetFileNameWithoutExtension(file.name);
-        Vector2 pivot = name.Split("_")[0] switch
-        {
-            "field" => new(0.5f, 0.0f),
-            "mountain" => new(0.5f, -0.375f),
-            _ => new(0.5f, 0.5f),
-        };
-        float pixelsPerUnit = 2112f;
-        if (Registry.spriteInfos.ContainsKey(name))
-        {
-            Visual.SpriteInfo spriteData = Registry.spriteInfos[name];
-            pivot = spriteData.pivot ?? pivot;
-            pixelsPerUnit = spriteData.pixelsPerUnit ?? pixelsPerUnit;
-        }
-        Sprite sprite = Visual.BuildSprite(file.bytes, pivot, pixelsPerUnit);
-        GameManager.GetSpriteAtlasManager().cachedSprites.TryAdd("Heads", new());
-        GameManager.GetSpriteAtlasManager().cachedSprites["Heads"].Add(name, sprite);
-        Registry.sprites.Add(name, sprite);
+        string name = Path.GetFileNameWithoutExtension(file.name).ToLowerInvariant();
+        Texture2D texture2D = Visual.BuildTexture(file.bytes);
+        Registry.textures[name] = texture2D;
     }
 
     /// <summary>
-    /// Updates a sprite with new information.
+    /// Loads a sprite info file of a mod and adds its sprite infos to <see cref="Registry.spriteInfos"/>.
     /// </summary>
-    /// <param name="name">The name of the sprite to update.</param>
-    public static void UpdateSprite(string name)
-    {
-        if (Registry.spriteInfos.ContainsKey(name) && Registry.sprites.ContainsKey(name))
-        {
-            Visual.SpriteInfo spriteData = Registry.spriteInfos[name];
-            Sprite sprite = Visual.BuildSpriteWithTexture(
-                Registry.sprites[name].texture,
-                spriteData.pivot,
-                spriteData.pixelsPerUnit
-            );
-            GameManager.GetSpriteAtlasManager().cachedSprites["Heads"][name] = sprite;
-            Registry.sprites[name] = sprite;
-        }
-    }
-
-    /// <summary>
-    /// Loads a sprite info file from a mod.
-    /// </summary>
-    /// <param name="mod">The mod the sprite info file belongs to.</param>
+    /// <remarks>
+    /// The method changes each sprite name and each sprite origin name to lowercase.
+    /// A sprite info replaces an existing sprite info with the same name.
+    /// If an error occurs, the method writes the error to the log.
+    /// </remarks>
+    /// <param name="mod">The mod that contains the file.</param>
     /// <param name="file">The sprite info file to load.</param>
-    /// <returns>A dictionary of sprite information, or null if an error occurred.</returns>
+    /// <returns>The sprite infos from the file, keyed by the sprite name as the file gives it, or null if an error occurs.</returns>
     public static Dictionary<string, Visual.SpriteInfo>? LoadSpriteInfoFile(Mod mod, Mod.File file)
     {
         try
         {
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, Visual.SpriteInfo>>(
                 file.bytes,
-                new JsonSerializerOptions()
-                {
-                    Converters = { new Vector2Json() },
-                }
+                spriteInfoJsonOptions
             );
 
             if (deserialized != null)
             {
                 foreach (var kvp in deserialized)
                 {
-                    Registry.spriteInfos[kvp.Key] = kvp.Value;
+                    if (kvp.Value.spriteOrigin?.name != null)
+                        kvp.Value.spriteOrigin.name = kvp.Value.spriteOrigin.name.ToLowerInvariant();
+                    Registry.spriteInfos[kvp.Key.ToLowerInvariant()] = kvp.Value;
                 }
             }
 
@@ -702,181 +744,149 @@ public static class Loader
     }
 
     /// <summary>
-    /// Loads an audio file from a mod.
+    /// Loads an audio file of a mod and adds it to <see cref="Registry.audioClips"/>.
     /// </summary>
-    /// <param name="mod">The mod the audio file belongs to.</param>
+    /// <remarks>
+    /// The method uses <c>Audio.BuildAudioClip</c> to make the audio clip.
+    /// It puts the clip on a new audio source that stays loaded when the scene changes.
+    /// The key is the lowercase file name without the extension.
+    /// If an error occurs, the method writes the error to the log.
+    /// </remarks>
+    /// <param name="mod">The mod that contains the file.</param>
     /// <param name="file">The audio file to load.</param>
-    public static void LoadAudioFile(Mod mod, Mod.File file)
+    private static void LoadAudioFile(Mod mod, Mod.File file)
     {
-        // AudioSource audioSource = new GameObject().AddComponent<AudioSource>();
-        // GameObject.DontDestroyOnLoad(audioSource);
-        // audioSource.clip = Managers.Audio.BuildAudioClip(file.bytes);
-        // Registry.audioClips.Add(Path.GetFileNameWithoutExtension(file.name), audioSource);
-        // TODO: issue #71
-    }
-
-    /// <summary>
-    /// Loads a prefab info file from a mod and creates a new unit prefab.
-    /// </summary>
-    /// <param name="mod">The mod the prefab info file belongs to.</param>
-    /// <param name="file">The prefab info file to load.</param>
-    public static void LoadPrefabInfoFile(Mod mod, Mod.File file)
-    {
+        string name = Path.GetFileNameWithoutExtension(file.name).ToLowerInvariant();
         try
         {
-            var prefab = JsonSerializer.Deserialize<Visual.PrefabInfo>(file.bytes, new JsonSerializerOptions
-            {
-                Converters = { new Vector2Json() },
-                PropertyNameCaseInsensitive = true,
-            });
-            if (prefab == null || prefab.type != Visual.PrefabType.Unit || prefab.visualParts.Count == 0)
-                return;
+            AudioClip clip = Managers.Audio.BuildAudioClip(file.bytes, name);
+            AudioSource audioSource = new GameObject($"PolyModAudio_{name}").AddComponent<AudioSource>();
+            UnityEngine.Object.DontDestroyOnLoad(audioSource.gameObject);
+            audioSource.clip = clip;
+            Registry.audioClips[name] = audioSource;
 
-            if (Registry.unitPrefabs.Keys.Any(pref => pref.name == prefab.name))
-            {
-                Plugin.logger.LogInfo($"Prefab {prefab.name} already exists, skipping.");
-            }
-            var baseUnit = PrefabManager.GetPrefab(UnitData.Type.Warrior, TribeType.Imperius, SkinType.Default);
-            if (baseUnit == null)
-                return;
-
-            var unitInstance = GameObject.Instantiate(baseUnit);
-            if (unitInstance == null)
-                return;
-
-            var spriteContainer = unitInstance.transform.GetChild(0);
-            var material = ClearExistingPartsAndExtractMaterial(spriteContainer);
-
-            var visualParts = ApplyVisualParts(prefab, spriteContainer, material);
-
-            Transform? headPositionMarker = null;
-            foreach (var vp in visualParts)
-            {
-                if (vp.visualPart.gameObject.name == prefab.headPositionMarker)
-                {
-                    headPositionMarker = vp.visualPart.gameObject.transform;
-                    break;
-                }
-            }
-
-            unitInstance.headPositionMarker = headPositionMarker ?? visualParts[0].visualPart.transform;
-
-            var svr = unitInstance.GetComponent<SkinVisualsReference>();
-            svr.visualParts = visualParts.ToArray();
-
-            GameObject.DontDestroyOnLoad(unitInstance.gameObject);
-            Registry.unitPrefabs.Add(prefab, unitInstance.GetComponent<Unit>());
-
-            Plugin.logger.LogInfo($"Registered prefab {prefab.name} info from {mod.id} mod.");
+            Plugin.logger.LogInfo(
+                $"Registered audio {name} file from {mod.id} mod"
+                    + $" ({clip.channels}ch {clip.frequency}Hz {clip.length:F2}s)."
+            );
         }
         catch (Exception e)
         {
-            Plugin.logger.LogError($"Error on loading prefab {Path.GetFileNameWithoutExtension(file.name)} info from {mod.id} mod: {e.StackTrace}.");
+            Plugin.logger.LogError($"Error on loading audio {name} file from {mod.id} mod: {e.Message}");
         }
     }
 
     /// <summary>
-    /// Clears existing visual parts from a prefab and extracts the material.
+    /// Loads a prefabs file of a mod.
+    /// The method adds its unit, improvement and resource prefab infos to the lists in <c>Prefabs</c>.
+    /// If the file contains JSON null, the method does nothing.
+    /// If an error occurs, the method writes the error to the log.
     /// </summary>
-    /// <param name="spriteContainer">The transform containing the sprite parts.</param>
-    /// <returns>The material of the original sprite parts.</returns>
-    private static Material? ClearExistingPartsAndExtractMaterial(Transform spriteContainer)
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The prefabs file to load.</param>
+    public static void LoadPrefabsFile(Mod mod, Mod.File file)
     {
-        Material? material = null;
-        for (int i = 0; i < spriteContainer.childCount; i++)
+        try
         {
-            var child = spriteContainer.GetChild(i);
-            if (child.gameObject.name == "Head")
-            {
-                var renderer = child.GetComponent<SpriteRenderer>();
-                if (renderer != null)
-                    material = renderer.material;
-            }
-            GameObject.Destroy(child.gameObject);
+            var prefab = JsonSerializer.Deserialize<PrefabsInfo>(file.bytes, prefabJsonOptions);
+            if (prefab == null)
+                return;
+
+            Prefabs.unitInfos.AddRange(prefab.units);
+            Prefabs.improvementInfos.AddRange(prefab.improvements);
+            Prefabs.resourceInfos.AddRange(prefab.resources);
+
+            Plugin.logger.LogInfo($"Registered prefabs {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
         }
-        return material;
-    }
-
-    /// <summary>
-    /// Applies new visual parts to a prefab.
-    /// </summary>
-    /// <param name="partInfos">A list of visual part information.</param>
-    /// <param name="spriteContainer">The transform to add the parts to.</param>
-    /// <param name="material">The material to use for the parts.</param>
-    /// <returns>A list of the created visual parts.</returns>
-    private static List<SkinVisualsReference.VisualPart> ApplyVisualParts(
-        Visual.PrefabInfo prefab,
-        Transform spriteContainer,
-        Material? material)
-    {
-        if (prefab.visualParts.Count == 0)
-            return new List<SkinVisualsReference.VisualPart>();
-
-        List<SkinVisualsReference.VisualPart> parts = new();
-
-        foreach (var info in prefab.visualParts)
+        catch (Exception e)
         {
-            parts.Add(CreateVisualPart(info, spriteContainer, material));
+            Plugin.logger.LogError($"Error on loading prefabs {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod: {e.StackTrace}.");
         }
-
-        return parts;
     }
 
     /// <summary>
-    /// Creates a single visual part for a prefab.
+    /// Loads a unit prefab file of a mod and adds its unit prefab info to <c>Prefabs.unitInfos</c>.
+    /// If the file contains JSON null, the method does nothing.
+    /// If an error occurs, the method writes the error to the log.
     /// </summary>
-    /// <param name="info">The information for the visual part.</param>
-    /// <param name="parent">The parent transform for the part.</param>
-    /// <param name="material">The material to use for the part.</param>
-    /// <returns>The created visual part.</returns>
-    private static SkinVisualsReference.VisualPart CreateVisualPart(
-        Visual.VisualPartInfo info,
-        Transform parent,
-        Material? material)
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The unit prefab file to load.</param>
+    public static void LoadUnitPrefabFile(Mod mod, Mod.File file)
     {
-        var visualPartObj = new GameObject(info.gameObjectName);
-        visualPartObj.transform.SetParent(parent);
-        visualPartObj.transform.position = info.coordinates;
-        visualPartObj.transform.localScale = info.scale;
-        visualPartObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
-
-        var outlineObj = new GameObject("Outline");
-        outlineObj.transform.SetParent(visualPartObj.transform);
-        outlineObj.transform.position = info.coordinates;
-        outlineObj.transform.localScale = info.scale;
-        outlineObj.transform.rotation = Quaternion.Euler(0f, 0f, info.rotation);
-
-        var visualPart = new SkinVisualsReference.VisualPart
+        try
         {
-            DefaultSpriteName = info.baseName,
-            visualPart = visualPartObj,
-            outline = outlineObj,
-            tintable = info.tintable
-        };
+            var unitPrefab = JsonSerializer.Deserialize<UnitPrefabInfo>(file.bytes, prefabJsonOptions);
+            if (unitPrefab == null)
+                return;
 
-        var renderer = visualPartObj.AddComponent<SpriteRenderer>();
-        renderer.material = material;
-        renderer.sortingLayerName = "Units";
-        renderer.sortingOrder = info.tintable ? 0 : 1;
+            Prefabs.unitInfos.Add(unitPrefab);
 
-        visualPart.renderer = new SkinVisualsReference.RendererUnion { spriteRenderer = renderer };
-
-        var outlineRenderer = outlineObj.AddComponent<SpriteRenderer>();
-        outlineRenderer.material = material;
-        outlineRenderer.sortingLayerName = "Units";
-        outlineRenderer.sortingOrder = -1;
-
-        visualPart.outlineRenderer = new SkinVisualsReference.RendererUnion { spriteRenderer = outlineRenderer };
-
-        return visualPart;
+            Plugin.logger.LogInfo($"Registered unit prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
+        }
+        catch (Exception e)
+        {
+            Plugin.logger.LogError($"Error on loading unit prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod: {e.StackTrace}.");
+        }
     }
 
     /// <summary>
-    /// Loads and applies a game logic data patch from a mod.
+    /// Loads an improvement prefab file of a mod and adds its improvement prefab info to <c>Prefabs.improvementInfos</c>.
+    /// If the file contains JSON null, the method does nothing.
+    /// If an error occurs, the method writes the error to the log.
     /// </summary>
-    /// <param name="mod">The mod the patch belongs to.</param>
-    /// <param name="gld">The original game logic data.</param>
-    /// <param name="patch">The patch to apply.</param>
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The improvement prefab file to load.</param>
+    public static void LoadImprovementPrefabFile(Mod mod, Mod.File file)
+    {
+        try
+        {
+            var improvementPrefab = JsonSerializer.Deserialize<ImprovementPrefabInfo>(file.bytes, prefabJsonOptions);
+            if (improvementPrefab == null)
+                return;
+
+            Prefabs.improvementInfos.Add(improvementPrefab);
+
+            Plugin.logger.LogInfo($"Registered improvement prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
+        }
+        catch (Exception e)
+        {
+            Plugin.logger.LogError($"Error on loading improvement prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod: {e.StackTrace}.");
+        }
+    }
+
+    /// <summary>
+    /// Loads a resource prefab file of a mod and adds its resource prefab info to <c>Prefabs.resourceInfos</c>.
+    /// If the file contains JSON null, the method does nothing.
+    /// If an error occurs, the method writes the error to the log.
+    /// </summary>
+    /// <param name="mod">The mod that contains the file.</param>
+    /// <param name="file">The resource prefab file to load.</param>
+    public static void LoadResourcePrefabFile(Mod mod, Mod.File file)
+    {
+        try
+        {
+            var resourcePrefab = JsonSerializer.Deserialize<ResourcePrefabInfo>(file.bytes, prefabJsonOptions);
+            if (resourcePrefab == null)
+                return;
+
+            Prefabs.resourceInfos.Add(resourcePrefab);
+
+            Plugin.logger.LogInfo($"Registered resource prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod.");
+        }
+        catch (Exception e)
+        {
+            Plugin.logger.LogError($"Error on loading resource prefab {Path.GetFileNameWithoutExtension(file.name)} file from {mod.id} mod: {e.StackTrace}.");
+        }
+    }
+
+    /// <summary>
+    /// Merges a GLD patch of a mod into the GLD.
+    /// The method uses <see cref="JsonMerger.Merge"/>, which changes <paramref name="gld"/> in place.
+    /// If an error occurs, the method writes the error to the log and sets the status of the mod to <see cref="Mod.Status.Error"/>.
+    /// </summary>
+    /// <param name="mod">The mod that contains the patch.</param>
+    /// <param name="gld">The GLD as a JSON object. The method changes this object.</param>
+    /// <param name="patch">The patch to merge.</param>
     public static void LoadGameLogicDataPatch(Mod mod, JObject gld, JObject patch)
     {
         try
@@ -893,9 +903,10 @@ public static class Loader
     }
 
     /// <summary>
-    /// Loads an asset bundle from a mod.
+    /// Loads a <c>.bundle</c> file of a mod as an asset bundle and adds it to <see cref="Registry.assetBundles"/>.
+    /// The key is the file name without the extension.
     /// </summary>
-    /// <param name="mod">The mod the asset bundle belongs to.</param>
+    /// <param name="mod">The mod that contains the file. The method does not use this parameter.</param>
     /// <param name="file">The asset bundle file to load.</param>
     public static void LoadAssetBundle(Mod mod, Mod.File file)
     {
@@ -906,17 +917,18 @@ public static class Loader
     }
 
     /// <summary>
-    /// Processes the merged game logic data after all mods have been loaded and patched.
+    /// Uses the merged GLD to make enum mappings and to fill the PolyMod overrides.
+    /// The method calls <see cref="CreateMappings"/>, <see cref="ProcessCustomTribes"/>, <see cref="ProcessEmbarkOverrides"/> and <see cref="ProcessAttractOverrides"/> in sequence.
+    /// If an error occurs, the method writes the error to the log.
     /// </summary>
-    /// <param name="gameLogicData">The game logic data object to populate.</param>
-    /// <param name="rootObject">The root JObject of the merged game logic data.</param>
+    /// <param name="gameLogicData">The game logic data. The method does not use this parameter.</param>
+    /// <param name="rootObject">The root JSON object of the merged GLD.</param>
     internal static void ProcessGameLogicData(GameLogicData gameLogicData, JObject rootObject)
     {
         try
         {
             CreateMappings(rootObject);
             ProcessCustomTribes();
-            ProcessPrefabs();
             ProcessEmbarkOverrides();
             ProcessAttractOverrides();
         }
@@ -926,6 +938,9 @@ public static class Loader
         }
     }
 
+    /// <summary>
+    /// Adds each tribe in <see cref="Registry.customTribes"/> to <c>GameLogicData.legacyTribeTypesOrder</c>, if the list does not contain it.
+    /// </summary>
     internal static void ProcessCustomTribes()
     {
         foreach (var tribe in Registry.customTribes)
@@ -938,9 +953,20 @@ public static class Loader
     }
 
     /// <summary>
-    /// Creates EnumCache mappings for custom enum values and invokes type handlers.
+    /// Makes <c>EnumCache</c> mappings for new GLD entries and calls the type handlers.
     /// </summary>
-    /// <param name="rootObject"></param>
+    /// <remarks>
+    /// The method does two passes over all entries of all data categories in the GLD.
+    /// In the first pass, it uses only entries that have an <c>idx</c>, in categories with <c>shouldCreateCache</c> set to true.
+    /// If the type of the category is not an enum, the method writes a warning to the log and ignores the entry.
+    /// If <c>idx</c> is -1, the method sets <c>idx</c> to the next free index of the enum type of the category, from <see cref="Registry.GetAutoIndex"/>.
+    /// If <c>allowUnsafeIndexes</c> is true, the method also uses an entry with an <c>idx</c> larger than all existing enum values.
+    /// The method ignores all other entries in the first pass.
+    /// For each entry that it uses, it calls <c>EnumCache.AddMapping</c> two times. The first call adds the name, and the second call adds the type.
+    /// Then it calls the type handlers of the category with the flag set to true.
+    /// In the second pass, the method calls the type handlers for all entries of categories in <see cref="typeMappings"/>, with the flag set to false.
+    /// </remarks>
+    /// <param name="rootObject">The root JSON object of the merged GLD.</param>
     internal static void CreateMappings(JObject rootObject)
     {
         foreach (JToken jtoken in rootObject.SelectTokens("$.*.*").ToArray())
@@ -967,8 +993,8 @@ public static class Loader
 
             if ((int)token["idx"] == -1)
             {
-                token["idx"] = Registry.autoidx;
-                Registry.autoidx++;
+                token["idx"] = Registry.GetAutoIndex(targetType);
+                Registry.IncrementAutoIndex(targetType);
             }
             else if (Plugin.config.allowUnsafeIndexes)
             {
@@ -1026,43 +1052,62 @@ public static class Loader
     }
 
     /// <summary>
-    /// Processes the prefab registry and populates the PrefabManager with custom prefabs.
+    /// Loads the prefab files in <see cref="Registry.filesQueueToBeProcessedAfterGLDMerge"/>.
     /// </summary>
-    internal static void ProcessPrefabs()
+    /// <remarks>
+    /// The method uses the file name to select the load method.
+    /// It calls <see cref="LoadPrefabsFile"/> for <c>prefabs.json</c>, <see cref="LoadUnitPrefabFile"/> for <c>unitPrefab.json</c>,
+    /// <see cref="LoadImprovementPrefabFile"/> for <c>improvementPrefab.json</c> and <see cref="LoadResourcePrefabFile"/> for <c>resourcePrefab.json</c>.
+    /// Each of these names can also have a suffix that starts with an underscore, for example <c>unitPrefab_knight.json</c>.
+    /// The method ignores other files.
+    /// If an error occurs, the method writes the error to the log and stops.
+    /// </remarks>
+    internal static void ProcessFilesQueue()
     {
-        Plugin.logger.LogInfo($"Processing prefabs, count: {Registry.prefabNames.Count}.");
-        foreach (KeyValuePair<int, string> item in Registry.prefabNames)
+        try
         {
-            UnitData.Type unitPrefabType = UnitData.Type.Scout;
-            string prefabId = item.Value;
-            int hashKey = PrefabManager.GetSkinnedHashKey((UnitData.Type)item.Key, TribeType.None, SkinType.Default);
-            if (!Enum.TryParse(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(prefabId), out unitPrefabType)) // Existing unit prefabs
+            foreach ((Mod mod, Mod.File file) in Registry.filesQueueToBeProcessedAfterGLDMerge)
             {
-                KeyValuePair<Visual.PrefabInfo, Unit> prefabInfo = Registry.unitPrefabs.FirstOrDefault(
-                    kv => kv.Key.name == prefabId
-                );
-                if (!EqualityComparer<Visual.PrefabInfo>.Default.Equals(prefabInfo.Key, default))
+                Match prefabsMatch = Regex.Match(Path.GetFileName(file.name), @"^prefabs(?:_(.*))?\.json$");
+                if (prefabsMatch.Success)
                 {
-                    Visual.UnitPrefabInfo unitPrefabInfo = new(
-                        EnumCache<UnitData.Type>.GetName((UnitData.Type)item.Key),
-                        EnumCache<TribeType>.GetName(TribeType.None),
-                        EnumCache<SkinType>.GetName(SkinType.Default)
-                    );
-                    Visual.customPrefabs.Add(unitPrefabInfo, prefabInfo.Value);
-                    Plugin.logger.LogInfo($"Using custom prefab {prefabId} for unit {item.Key}.");
+                    LoadPrefabsFile(mod, file);
                     continue;
                 }
+
+                Match unitPrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^unitPrefab(?:_(.*))?\.json$");
+                if (unitPrefabMatch.Success)
+                {
+                    LoadUnitPrefabFile(mod, file);
+                    continue;
+                }
+
+                Match improvementPrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^improvementPrefab(?:_(.*))?\.json$");
+                if (improvementPrefabMatch.Success)
+                {
+                    LoadImprovementPrefabFile(mod, file);
+                    continue;
+                }
+
+                Match resourcePrefabMatch = Regex.Match(Path.GetFileName(file.name), @"^resourcePrefab(?:_(.*))?\.json$");
+                if (resourcePrefabMatch.Success)
+                {
+                    LoadResourcePrefabFile(mod, file);
+                    continue;
+                }
+
             }
-            Plugin.logger.LogInfo($"Using existing prefab {EnumCache<UnitData.Type>.GetName(unitPrefabType)} for unit {item.Key}.");
-            PrefabManager.units.TryAdd(
-                hashKey,
-                PrefabManager.units[PrefabManager.GetSkinnedHashKey(unitPrefabType, TribeType.None, SkinType.Default)]
-            );
+        }
+        catch (Exception e)
+        {
+            Plugin.logger.LogError($"Error on processing post gld merge files queue : {e.StackTrace}");
         }
     }
 
     /// <summary>
-    /// Processes embark overrides by mapping original embark unit types to configured overrides.
+    /// Changes the unit ids in <c>Main.embarkNames</c> to unit types and adds them to <c>Main.embarkOverrides</c>.
+    /// Each entry maps a unit to the unit that it becomes when it embarks.
+    /// If a unit id is not valid, the method writes an error to the log and continues with the next entry.
     /// </summary>
     internal static void ProcessEmbarkOverrides()
     {
@@ -1083,7 +1128,10 @@ public static class Loader
     }
 
     /// <summary>
-    /// Processes attract overrides by mapping improvements to resources and terrain types based on configured overrides.
+    /// Changes the ids in <c>Main.attractsResourceNames</c> and <c>Main.attractsTerrainNames</c> to enum values.
+    /// The method adds the results to <c>Main.attractsResourceOverrides</c> and <c>Main.attractsTerrainOverrides</c>.
+    /// Each entry maps an improvement to the resource that it attracts, or to the terrain on which it attracts resources.
+    /// If an id is not valid, the method writes an error to the log and continues with the next entry.
     /// </summary>
     internal static void ProcessAttractOverrides()
     {

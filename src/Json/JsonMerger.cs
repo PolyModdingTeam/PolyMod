@@ -4,16 +4,28 @@ using Newtonsoft.Json.Linq;
 namespace PolyMod.Json;
 
 /// <summary>
-/// Provides functionality to merge JSON objects, with special handling for arrays.
+/// The merge of a JSON patch into a JSON object, for example a GLD patch into the game logic data.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Objects merge recursively. A value in the patch replaces the value in the original, and a null value in the patch sets the value to null.
+/// </para>
+/// <para>
+/// Arrays have special rules. A string that starts with <c>+</c> adds the string without the <c>+</c> to the original array.
+/// A string that starts with <c>-</c> removes all equal strings from the original array.
+/// In an array with the name <c>skins</c>, a plain string also adds the string.
+/// If an array has none of these items, the patch array replaces the original array.
+/// If an array has some of these items, the merge ignores the other plain strings in it.
+/// </para>
+/// </remarks>
 public static class JsonMerger
 {
     /// <summary>
-    /// Merges a patch JObject into an original JObject.
+    /// Merges a patch into an original JSON object. The method changes <paramref name="original"/> and <paramref name="patch"/>.
     /// </summary>
-    /// <param name="original">The original JObject.</param>
-    /// <param name="patch">The patch JObject to merge.</param>
-    /// <returns>The merged JObject.</returns>
+    /// <param name="original">The JSON object to change.</param>
+    /// <param name="patch">The JSON object with the changes.</param>
+    /// <returns>The <paramref name="original"/> object, after the merge.</returns>
     public static JObject Merge(JObject original, JObject patch)
     {
         patch = MergeRecursive(original, patch);
@@ -22,11 +34,13 @@ public static class JsonMerger
     }
 
     /// <summary>
-    /// Recursively applies custom merging logic to arrays.
+    /// Replaces each array in the patch with the result of <see cref="MergeArrays"/>, at all levels of the patch.
+    /// If the original does not have a matching array or object, the method uses an empty one.
+    /// After this method, a normal merge with array replacement gives the correct arrays.
     /// </summary>
-    /// <param name="original"></param>
-    /// <param name="patch"></param>
-    /// <returns></returns>
+    /// <param name="original">The JSON object that the patch applies to.</param>
+    /// <param name="patch">The JSON object with the changes. The method changes this object.</param>
+    /// <returns>The <paramref name="patch"/> object, with the merged arrays.</returns>
     private static JObject MergeRecursive(JObject original, JObject patch)
     {
         foreach (var property in patch.Properties().ToArray().ToList())
@@ -61,12 +75,15 @@ public static class JsonMerger
     }
 
     /// <summary>
-    /// Merges two JArrays, with special handling for adding and removing elements.
+    /// Merges a patch array into a copy of an original array.
+    /// A string that starts with <c>+</c> adds the string without the <c>+</c>. A string that starts with <c>-</c> removes all equal strings.
+    /// The method adds all items that are not strings. It ignores plain strings, but adds them if <paramref name="isSkins"/> is true.
+    /// If the patch has no <c>+</c> strings, no <c>-</c> strings, and no plain strings in a skins array, the method gives a copy of the patch array.
     /// </summary>
-    /// <param name="original">The original JArray.</param>
-    /// <param name="patch">The patch JArray to merge.</param>
-    /// <param name="isSkins">A flag to indicate if the array is a 'skins' array, which has special merging logic.</param>
-    /// <returns>The merged JArray.</returns>
+    /// <param name="original">The original array. The method does not change it.</param>
+    /// <param name="patch">The patch array.</param>
+    /// <param name="isSkins">True if the array has the name <c>skins</c>. Then plain strings add to the original array.</param>
+    /// <returns>A new array with the merged items.</returns>
     private static JArray MergeArrays(JArray original, JArray patch, bool isSkins)
     {
         var result = new JArray(original);
@@ -83,13 +100,13 @@ public static class JsonMerger
 
             string str = token.ToString();
 
-            if (str.StartsWith("+"))
+            if (str.StartsWith('+'))
             {
                 string value = str.Substring(1);
                 result.Add(value);
                 hasCustomValues = true;
             }
-            else if (str.StartsWith("-"))
+            else if (str.StartsWith('-'))
             {
                 string value = str.Substring(1);
                 var toRemove = result._values.ToArray()
