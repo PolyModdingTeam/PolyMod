@@ -35,7 +35,7 @@ That's it. The PolyMod button on the start screen opens the hub.
 
 The easiest way is to download mods directly in the launcher or on [polymod.dev](https://polymod.dev).
 
-You can also install a mod by hand: put it into the `Mods` folder next to the game and restart. A mod can be a folder, a `.zip` or a `.polymod` file.
+You can also install a mod by hand: put it into the `Mods` folder next to the game and restart.
 
 > [!NOTE]
 > Modded multiplayer is not supported yet. Weekly challenges and achievements are only available in vanilla Polytopia, so they are turned off while PolyMod is active.
@@ -51,7 +51,7 @@ You need the [.NET 8 SDK](https://dotnet.microsoft.com/download).
 ```bash
 git clone https://github.com/PolyModdingTeam/PolyMod.git
 cd PolyMod
-dotnet build src/PolyMod.csproj -c IL2CPP
+dotnet build
 ```
 
 Copy `src/bin/IL2CPP/net6.0/PolyMod.dll` into the `BepInEx/plugins` folder of your game. Run `dotnet test` to run the tests.
