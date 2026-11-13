@@ -1,2 +1,28 @@
 - name: Introduction
   href: introduction.md
+- name: Your first mod
+  href: getting-started.md
+- name: Mod structure
+  href: mod-structure.md
+- name: Manifest
+  href: manifest.md
+- name: Content
+  items:
+  - name: GLD patching
+    href: gld-patching.md
+  - name: Localization
+    href: localization.md
+  - name: Textures
+    href: textures.md
+  - name: Sprites
+    href: sprites.md
+  - name: Prefabs
+    href: prefabs.md
+  - name: Tribe previews
+    href: tribe-previews.md
+- name: PolyScripts
+  href: polyscripts.md
+- name: Debugging and dumping
+  href: debugging.md
+- name: Porting from PolyMod 1.x
+  href: porting.md
