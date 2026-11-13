@@ -11,8 +11,7 @@ The Battle of Polytopia/
 │   │   ├── patch.json
 │   │   └── ...
 │   └── other_mod.polymod    ← a mod as an archive
-├── PolyMod.json             ← PolyMod settings
-└── mods.json                ← config values of mods
+└── PolyMod.json             ← PolyMod settings
 ```
 
 ## Mod types

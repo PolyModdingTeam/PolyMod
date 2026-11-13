@@ -13,7 +13,6 @@ This documentation is for **PolyMod 2.0** (`2.0.0-pre`). It was written against 
 | --- | --- | --- |
 | Describe your mod (id, version, authors, dependencies) | `manifest.json` | [Manifest](manifest.md) |
 | Change units, tribes, techs, buildings and other game rules | `patch.json` | [GLD patching](gld-patching.md), [Game logic data](../gld/index.md) |
-| Let players configure values of your patch | `{{ config }}` templates | [Config](config.md) |
 | Add names and descriptions for new content, or translate it | `localization.json` | [Localization](localization.md) |
 | Add a completely new language | `language_<code>.json` | [Localization](localization.md#adding-a-new-language) |
 | Replace or add images | `.png` files | [Textures](textures.md) |

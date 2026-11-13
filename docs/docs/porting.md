@@ -12,7 +12,7 @@ PolyMod 2.0 changes several file formats. Check this list when you update a mod 
 | New improvement or resource look | Custom house or animal sprites by default | `"prefab": true` in the GLD entry, or a prefab file | [Prefabs](prefabs.md#simple-prefabs-from-the-gld) |
 | Arrays in patches | Before 1.2: always replaced. Since 1.2: `+`/`-` items | `"+value"` adds, `"-value"` removes; plain arrays still replace; plain strings in `skins` add. The old wiki only describes the pre-1.2 rule. | [GLD patching](gld-patching.md#merge-rules) |
 | `null` in patches | The old wiki says it removed the value | Sets the value to `null`; the key stays | [GLD patching](gld-patching.md#merge-rules) |
-| Config templates | `{% if config "key" true %}` examples | Scriban syntax only: `{{ if (config "key" "true") == "true" }}`; `config` always gives text | [Config](config.md) |
+| Config templates | `{% if config "key" true %}` examples | Not supported at this time. Write fixed values in the patch. | — |
 | Tribe preview coordinates | Shown in debug mode | Shown with the **Show coordinates** setting, or in the dumped `preview_<tribe>.json` | [Tribe previews](tribe-previews.md#finding-coordinates) |
 | Manifest | `id`, `name`, `version`, `authors`, `dependencies` | Also `description` and `client` | [Manifest](manifest.md) |
 | Localization files | Only `localization.json` | Also `localization_*.json`, and `language_<code>.json` for new languages | [Localization](localization.md) |

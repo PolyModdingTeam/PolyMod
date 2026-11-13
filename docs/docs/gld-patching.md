@@ -242,14 +242,10 @@ PolyMod reads some extra fields in GLD entries. The game ignores them.
 
 The [GLD reference](../gld/index.md) explains each field on the page of its section.
 
-## Making values configurable
-
-A patch can read values that the player can change, with `{{ config "key" "default" }}`. See [Config](config.md).
-
 ## Errors
 
 - **Invalid JSON.** PolyMod does not catch JSON syntax errors in patch files. An invalid patch can stop the game data from loading. Check every patch with a JSON validator before you test it.
-- **Template errors.** If a patch has an error in its [config template](config.md), PolyMod writes the error to the log and sets the status of the mod to *Error*.
+- **Templates.** PolyMod does not support config templates at this time. A patch that contains `{{ }}` is not valid JSON.
 - **Unknown ids.** A wrong or uppercase id makes the game fail while it reads the GLD. The log shows `Missing enum value for string <id>`.
 
 See [Debugging and dumping](debugging.md) for how to read the log.

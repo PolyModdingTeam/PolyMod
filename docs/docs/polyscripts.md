@@ -145,4 +145,4 @@ if (unitData.HasAbility(berserk)) { /* ... */ }
 
 ## Configuration
 
-PolyMod 2.0 contains a class-based script API: a `PolyScript` base class with typed per-mod and shared config objects (`Mods/<mod id>.json` and `mods.json`). In the current build (`2.0.0-pre`) these classes are internal, so mods cannot use them yet. Until they are public, use static `Load` methods, and use [GLD config templates](config.md) for values that players can change.
+PolyMod 2.0 does not support mod configuration at this time. Mods cannot read config files or values that players can change. PolyMod 2.0 also contains a class-based script API with a `PolyScript` base class. In the current build (`2.0.0-pre`) it is internal, so mods cannot use it yet. Until it is public, use static `Load` methods.

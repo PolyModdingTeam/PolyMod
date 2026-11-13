@@ -120,5 +120,4 @@ Zip the *contents* of `Mods/first_mod` (so that `manifest.json` is at the root o
 
 - [GLD patching](gld-patching.md): all merge rules, new tribes, skins and PolyMod-only fields.
 - [Game logic data reference](../gld/index.md): every GLD section and field.
-- [Config](config.md): let players change values of your patch.
 - [PolyScripts](polyscripts.md): change game code with C#.
