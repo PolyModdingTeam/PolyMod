@@ -29,6 +29,13 @@
         "files": [
           "images/**"
         ]
+      },
+      {
+        "src": "../resources",
+        "files": [
+          "polymod_icon.png"
+        ],
+        "dest": "images"
       }
     ],
     "output": "_site",
@@ -39,6 +46,8 @@
     "globalMetadata": {
       "_appName": "PolyMod",
       "_appTitle": "PolyMod",
+      "_appLogoPath": "images/polymod_icon.png",
+      "_appFaviconPath": "images/polymod_icon.png",
       "_enableSearch": true,
       "pdf": false
     }
