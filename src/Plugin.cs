@@ -229,6 +229,8 @@ public partial class Plugin : BepInEx.Unity.IL2CPP.BasePlugin
         {
             ValidLaunch = false;
         }
+
+        ValidLaunch = true; // IN THIS 2.0 ALPHA LAUNCH IS ALWAYS VALID!!!!!!!!!!!
     }
 
     /// <summary>
