@@ -11,14 +11,14 @@ A localization file is a JSON object. Each key is a term key. Each value is an o
 
 ```json
 {
-  "polymod": {
-    "English": "PolyMod",
-    "Elyrion": "πȱ∫ỹmȱΔ"
-  },
-  "unit_names_lancer": {
-    "English": "Lancer",
-    "Russian": "Копейщик"
-  }
+	"polymod": {
+		"English": "PolyMod",
+		"Elyrion": "πȱ∫ỹmȱΔ"
+	},
+	"unit_names_lancer": {
+		"English": "Lancer",
+		"Russian": "Копейщик"
+	}
 }
 ```
 
@@ -81,9 +81,9 @@ The file is a JSON object that maps term keys to texts. Here the keys use dots, 
 
 ```json
 {
-    "language": "Pirate English",
-    "unit.names.warrior": "Deckhand",
-    "unit.names.archer": "Musketeer"
+	"language": "Pirate English",
+	"unit.names.warrior": "Deckhand",
+	"unit.names.archer": "Musketeer"
 }
 ```
 

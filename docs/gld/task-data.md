@@ -4,8 +4,10 @@
 
 ```json
 "wealth": {
-  "idx": 4,
-  "improvementUnlocks": ["monument4"]
+	"improvementUnlocks": [
+		"monument4"
+	],
+	"idx": 4
 }
 ```
 

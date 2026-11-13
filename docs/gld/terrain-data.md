@@ -4,8 +4,12 @@
 
 ```json
 "terrainData": {
-  "field": { "idx": 3 },
-  "mountain": { "idx": 4 }
+	"field": {
+		"idx": 3
+	},
+	"mountain": {
+		"idx": 4
+	}
 }
 ```
 

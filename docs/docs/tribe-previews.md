@@ -4,24 +4,24 @@ The tribe selection screen shows a small preview map for each tribe. PolyMod let
 
 ```json
 {
-  "tribeData": {
-    "testingtribe": {
-      "preview": [
-        {
-          "x": 0,
-          "y": 0,
-          "terrainType": "mountain",
-          "unitType": "swordsman",
-          "improvementType": "mine"
-        },
-        {
-          "x": 1,
-          "y": 0,
-          "resourceType": "none"
-        }
-      ]
-    }
-  }
+	"tribeData": {
+		"testingtribe": {
+			"preview": [
+				{
+					"x": 0,
+					"y": 0,
+					"terrainType": "mountain",
+					"unitType": "swordsman",
+					"improvementType": "mine"
+				},
+				{
+					"x": 1,
+					"y": 0,
+					"resourceType": "none"
+				}
+			]
+		}
+	}
 }
 ```
 

@@ -43,10 +43,13 @@ Change the pivot and size of a texture:
 
 ```json
 {
-  "lumberhut": {
-    "pixelsPerUnit": 1056,
-    "pivot": [0.5, 0.1]
-  }
+	"lumberhut": {
+		"pixelsPerUnit": 1056,
+		"pivot": [
+			0.5,
+			0.1
+		]
+	}
 }
 ```
 
@@ -54,10 +57,15 @@ Use one texture for two sprites with different pivots. The texture `lancer.png` 
 
 ```json
 {
-  "lancer_head": {
-    "spriteOrigin": { "name": "lancer" },
-    "pivot": [0.5, 0.2]
-  }
+	"lancer_head": {
+		"spriteOrigin": {
+			"name": "lancer"
+		},
+		"pivot": [
+			0.5,
+			0.2
+		]
+	}
 }
 ```
 
@@ -65,9 +73,12 @@ Reuse a vanilla sprite under a new name, for example for a new improvement:
 
 ```json
 {
-  "mytemple": {
-    "spriteOrigin": { "name": "temple", "originType": "Inner" }
-  }
+	"mytemple": {
+		"spriteOrigin": {
+			"name": "temple",
+			"originType": "Inner"
+		}
+	}
 }
 ```
 
@@ -77,10 +88,12 @@ Units have an outline sprite next to each body sprite, named like the sprite plu
 
 ```json
 {
-  "lancer_body_outline": {
-    "spriteOrigin": { "name": "lancer_body" },
-    "transformToOutline": true
-  }
+	"lancer_body_outline": {
+		"spriteOrigin": {
+			"name": "lancer_body"
+		},
+		"transformToOutline": true
+	}
 }
 ```
 

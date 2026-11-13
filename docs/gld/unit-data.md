@@ -2,22 +2,30 @@
 
 `unitData` lists the units: their stats, abilities, movement and upgrades.
 
-The example uses the baby dragon (values from an older game version):
+The example uses the baby dragon (values from game logic data version 28):
 
 ```json
 "babydragon": {
-  "idx": 18,
-  "health": 150,
-  "defence": 30,
-  "movement": 2,
-  "range": 1,
-  "attack": 30,
-  "cost": 10,
-  "hidden": true,
-  "upgradesFrom": "dragonegg",
-  "unitAbilities": ["grow", "dash", "fly", "escape", "scout", "static"],
-  "weapon": 7,
-  "growthRate": 3
+	"health": 150,
+	"defence": 30,
+	"movement": 2,
+	"range": 1,
+	"attack": 30,
+	"cost": 10,
+	"hidden": true,
+	"upgradesFrom": "dragonegg",
+	"unitAbilities": [
+		"grow",
+		"dash",
+		"fly",
+		"escape",
+		"scout",
+		"static"
+	],
+	"weapon": 7,
+	"promotionLimit": 0,
+	"idx": 18,
+	"growthRate": 3
 }
 ```
 
@@ -150,7 +158,7 @@ For units with `grow`: the number of turns after which the unit grows, at the en
 | `scout` | 3 | Sees 2 tiles far instead of 1. |
 | `sneak` | 4 | Ignores enemy zones of control: enemies next to it do not stop it. |
 | `hide` | 5 | Becomes invisible when it moves, can move through enemy units, and ignores zones of control. Embarks into a `cloak_boat`. |
-| `persist` | 7 | Can attack again after a kill, if another target is in range. |
+| `persist` | 7 | Can attack again after a kill, if another target is in range. Needs `dash` or `escape`: every attack marks the unit as moved, and a moved unit can only attack with `dash`. |
 | `convert` | 8 | A hit that does not kill converts the target to the attacker's side. The target does not strike back. Works with 0 attack. |
 | `heal` | 9 | Can heal friendly units next to it by 4 HP, or cure their poison, instead of moving. |
 | `swim` | 10 | Moves on water without a port and never embarks. See [movementTerrain](#movementterrain). |
@@ -189,7 +197,7 @@ For units with `grow`: the number of turns after which the unit grows, at the en
 | `algae` | 51 | Spreads algae on the water tiles along its path. |
 | `consumed` | 52 | Dies when it attacks. |
 | `swarm` | 53 | Like `boost`. |
-| `doubleattack` | 54 | Can attack twice per turn. |
+| `doubleattack` | 54 | Can attack twice per turn. Needs `dash` or `escape` for the same reason as `persist`. |
 
 New unit abilities can be added with the PolyMod section `unitAbility`; they need a [PolyScript](../docs/polyscripts.md) to do something. The name of an ability is the localization key `unit.abilities.<id>`.
 

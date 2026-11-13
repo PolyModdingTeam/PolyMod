@@ -8,11 +8,11 @@ A patch is a small GLD that only contains the values that you want to change. It
 
 ```json
 {
-  "unitData": {
-    "warrior": {
-      "attack": 1000
-    }
-  }
+	"unitData": {
+		"warrior": {
+			"attack": 1000
+		}
+	}
 }
 ```
 
@@ -39,16 +39,21 @@ Arrays such as `unitAbilities` or `techUnlocks` hold many values. To change only
 
 ```json
 {
-  "unitData": {
-    "warrior": {
-      "unitAbilities": ["+fortify", "-dash"]
-    }
-  },
-  "techData": {
-    "riding": {
-      "unitUnlocks": ["+lancer"]
-    }
-  }
+	"unitData": {
+		"warrior": {
+			"unitAbilities": [
+				"+fortify",
+				"-dash"
+			]
+		}
+	},
+	"techData": {
+		"riding": {
+			"unitUnlocks": [
+				"+lancer"
+			]
+		}
+	}
 }
 ```
 
@@ -75,20 +80,28 @@ To add new content, write an entry with a new id and set its `idx` to `-1`:
 
 ```json
 {
-  "unitData": {
-    "lancer": {
-      "idx": -1,
-      "health": 100,
-      "defence": 10,
-      "movement": 2,
-      "range": 1,
-      "attack": 25,
-      "cost": 4,
-      "weapon": "sword",
-      "unitAbilities": ["dash", "fortify", "land"],
-      "movementTerrain": ["field", "forest", "mountain"]
-    }
-  }
+	"unitData": {
+		"lancer": {
+			"idx": -1,
+			"health": 100,
+			"defence": 10,
+			"movement": 2,
+			"range": 1,
+			"attack": 25,
+			"cost": 4,
+			"weapon": "sword",
+			"unitAbilities": [
+				"dash",
+				"fortify",
+				"land"
+			],
+			"movementTerrain": [
+				"field",
+				"forest",
+				"mountain"
+			]
+		}
+	}
 }
 ```
 
@@ -117,23 +130,36 @@ A new tribe is an entry in `tribeData` with `"idx": -1`. PolyMod also:
 
 ```json
 {
-  "tribeData": {
-    "testingtribe": {
-      "idx": -1,
-      "color": 15713321,
-      "language": "az,bar,bryn,dum,girt,hall,kar,khaz,kol,kruk,lok,rudh,ruf,und,vorn,zak",
-      "startingTech": ["basic", "mining"],
-      "startingResource": ["metal"],
-      "startingUnit": "warrior",
-      "skins": ["testingskin"],
-      "priceTier": 0,
-      "category": 1,
-      "bonus": 0,
-      "preview": [
-        { "x": 0, "y": 0, "terrainType": "mountain", "unitType": "swordsman", "improvementType": "mine" }
-      ]
-    }
-  }
+	"tribeData": {
+		"testingtribe": {
+			"idx": -1,
+			"color": 15713321,
+			"language": "az,bar,bryn,dum,girt,hall,kar,khaz,kol,kruk,lok,rudh,ruf,und,vorn,zak",
+			"startingTech": [
+				"basic",
+				"mining"
+			],
+			"startingResource": [
+				"metal"
+			],
+			"startingUnit": "warrior",
+			"skins": [
+				"testingskin"
+			],
+			"priceTier": 0,
+			"category": 1,
+			"bonus": 0,
+			"preview": [
+				{
+					"x": 0,
+					"y": 0,
+					"terrainType": "mountain",
+					"unitType": "swordsman",
+					"improvementType": "mine"
+				}
+			]
+		}
+	}
 }
 ```
 
@@ -145,17 +171,19 @@ When a tribe lists a skin id that does not exist in `skins`, PolyMod creates tha
 
 ```json
 {
-  "tribeData": {
-    "imperius": {
-      "skins": ["goldenimperius"]
-    }
-  },
-  "skinData": {
-    "goldenimperius": {
-      "color": 16766720,
-      "language": "au,rum,gol,den"
-    }
-  }
+	"tribeData": {
+		"imperius": {
+			"skins": [
+				"goldenimperius"
+			]
+		}
+	},
+	"skinData": {
+		"goldenimperius": {
+			"color": 16766720,
+			"language": "au,rum,gol,den"
+		}
+	}
 }
 ```
 
@@ -179,14 +207,18 @@ PolyMod reads some GLD sections that the game itself does not have. They only cr
 
 ```json
 {
-  "unitAbility": {
-    "berserk": { "idx": -1 }
-  },
-  "unitData": {
-    "lancer": {
-      "unitAbilities": ["+berserk"]
-    }
-  }
+	"unitAbility": {
+		"berserk": {
+			"idx": -1
+		}
+	},
+	"unitData": {
+		"lancer": {
+			"unitAbilities": [
+				"+berserk"
+			]
+		}
+	}
 }
 ```
 

@@ -4,12 +4,13 @@
 
 ```json
 "diplomacyData": {
-  "embassyCost": 5,
-  "embassyIncome": 2,
-  "embasyGrowthTime": 3,
-  "embassyMaxLevel": 3,
-  "embassyUpgradeCost": 20,
-  "dividendIncome": 2
+	"embassyCost": 5,
+	"embassyIncome": 2,
+	"embasyGrowthTime": 3,
+	"embassyMaxLevel": 3,
+	"embassyTechPriceMultiplier": 0.5,
+	"embassyUpgradeCost": 20,
+	"dividendIncome": 2
 }
 ```
 

@@ -2,46 +2,69 @@
 
 `tribeData` lists the tribes: their color, city names, start, abilities, skins and the tribe-specific versions of techs, units and improvements.
 
-The example uses Cymanti (values from an older game version):
+The example uses Cymanti (values from game logic data version 28):
 
 ```json
 "cymanti": {
-  "idx": 17,
-  "color": 12778752,
-  "language": "cy,zi,phy,dio,bio,tic,sy,ca,ly,um,sis,ci,hex,pod,ea,rhi,the,exo,neo,ner,seg,ho,lo,chy,ia,ce,li,co,ta,my,aph,ich,zo,di,bo",
-  "startingStars": 5,
-  "bonus": 0,
-  "startingUnit": "shaman",
-  "category": 2,
-  "priceTier": 2,
-  "terrainModifier": { "mountain": 1.2 },
-  "resourceModifier": { "spores": 0.2, "crop": 0 },
-  "startingTech": ["basic", "farming"],
-  "startingResource": ["spores"],
-  "tribeAbilities": ["poisonresist"],
-  "techOverrides": {
-    "construction": "recycling",
-    "chivalry": "shock",
-    "aquaculture": "hydrology",
-    "sailing": "pescetism",
-    "fishing": "fishingsimple",
-    "navigation": "oceanology"
-  },
-  "unitOverrides": {
-    "rider": "hexapod",
-    "giant": "centipede",
-    "knight": "doomux",
-    "archer": "phychi",
-    "catapult": "exida",
-    "defender": "kiton",
-    "mindbender": "shaman"
-  },
-  "improvementOverrides": {
-    "market": "clathrus",
-    "farm": "fungi",
-    "road": "mycelium",
-    "bridge": "none"
-  }
+	"color": 12778752,
+	"style": 16,
+	"climate": 16,
+	"skins": [
+		"Cute"
+	],
+	"language": "cy,zi,phy,dio,bio,tic,sy,ca,ly,um,sis,ci,hex,pod,ea,rhi,the,exo,neo,ner,seg,ho,lo,chy,ia,ce,li,co,ta,my,aph,ich,zo,di,bo",
+	"unitOverrides": {
+		"rider": "hexapod",
+		"giant": "centipede",
+		"knight": "doomux",
+		"archer": "phychi",
+		"swordsman": "mantis",
+		"catapult": "exida",
+		"defender": "kiton",
+		"mindbender": "shaman",
+		"cloak": "moth",
+		"dagger": "bugegg",
+		"pirate": "bugegg",
+		"rammership": "boomchi",
+		"scoutship": "raychi",
+		"bombership": "island"
+	},
+	"techOverrides": {
+		"construction": "recycling",
+		"chivalry": "shock",
+		"meditation": "rituals",
+		"philosophy": "mysticism"
+	},
+	"startingTech": [
+		"basic",
+		"farming"
+	],
+	"startingResource": [
+		"spores",
+		"spores"
+	],
+	"improvementOverrides": {
+		"market": "clathrus",
+		"farm": "fungi",
+		"port": "algae",
+		"road": "mycelium",
+		"bridge": "none"
+	},
+	"priceTier": 2,
+	"category": 2,
+	"bonus": 0,
+	"startingUnit": "shaman",
+	"tribeAbilities": [
+		"poisonresist"
+	],
+	"idx": 17,
+	"terrainModifier": {
+		"mountain": 1.2
+	},
+	"resourceModifier": {
+		"spores": 0.3,
+		"crop": 0
+	}
 }
 ```
 
@@ -186,7 +209,9 @@ Some Polaris behavior is tied to the tribe `polaris` itself, not to its abilitie
 `techOverrides`, `unitOverrides` and `improvementOverrides` replace vanilla content with the tribe's own version. Each key is the id of the original content, and each value is the id of the tribe version:
 
 ```json
-"unitOverrides": { "rider": "hexapod" }
+"unitOverrides": {
+	"rider": "hexapod"
+}
 ```
 
 The game applies overrides when it builds the tech tree of the tribe, lists the units that it can train, and lists the improvements that it can build. So where other tribes get a `rider`, this tribe gets a `hexapod`. Overrides do **not** apply to the `startingUnit`, to the improvements of tasks (monuments), to embark boats, or to unit growth.

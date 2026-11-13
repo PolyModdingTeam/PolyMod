@@ -4,8 +4,10 @@
 
 ```json
 "crop": {
-  "idx": 2,
-  "resourceTerrainRequirements": ["field"]
+	"resourceTerrainRequirements": [
+		"field"
+	],
+	"idx": 2
 }
 ```
 

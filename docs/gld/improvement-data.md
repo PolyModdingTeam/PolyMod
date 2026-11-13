@@ -2,20 +2,43 @@
 
 `improvementData` lists everything that can be built or done on a tile: buildings such as the farm or the temple, and tile actions such as clearing a forest or fishing. In the game code, improvements are also called buildings.
 
-The example uses the windmill (values from an older game version):
+The example uses the windmill (values from game logic data version 28):
 
 ```json
 "windmill": {
-  "idx": 6,
-  "cost": 5,
-  "work": 1,
-  "maxLevel": 8,
-  "terrainRequirements": [ { "terrain": "field" } ],
-  "adjacencyRequirements": [ { "improvement": "farm" } ],
-  "adjacencyImprovements": [ { "improvement": "farm" } ],
-  "improvementAbilities": [ "limited" ],
-  "rewards": [ { "population": 1 } ],
-  "growthRewards": [ { "population": 1 } ]
+	"cost": 5,
+	"adjacencyImprovements": [
+		{
+			"improvement": "farm"
+		},
+		{
+			"improvement": "aquafarm"
+		}
+	],
+	"adjacencyRequirements": [
+		{
+			"improvement": "farm"
+		},
+		{
+			"improvement": "aquafarm"
+		}
+	],
+	"improvementAbilities": [
+		"limited"
+	],
+	"maxLevel": 8,
+	"terrainRequirements": [
+		{
+			"terrain": "field"
+		}
+	],
+	"idx": 6,
+	"growthRewards": [
+		{
+			"score": 0,
+			"population": 1
+		}
+	]
 }
 ```
 
@@ -84,7 +107,14 @@ What the improvement creates on its tile when it is built. Each entry is an obje
 | `effect` | [tile effect](effects.md#tile-effects) id | Adds the effect to the tile. |
 
 ```json
-"creates": [ { "terrain": "field" }, { "resource": "crop" } ]
+"creates": [
+	{
+		"terrain": "field"
+	},
+	{
+		"resource": "crop"
+	}
+]
 ```
 
 The improvement cannot be built if the tile already has the resource or the effect that it creates.
@@ -100,7 +130,11 @@ What the player gets when the improvement is built. The values of all entries ar
 | `score` | integer | Score for the player. It is lost for improvements that do not stay on the tile (roads, `consumed` and `discrete` improvements). |
 
 ```json
-"rewards": [ { "population": 2 } ]
+"rewards": [
+	{
+		"population": 2
+	}
+]
 ```
 
 When the improvement is destroyed, its score and the population that it gave (including from levels) are taken away again.
@@ -113,7 +147,12 @@ When the improvement is destroyed, its score and the population that it gave (in
 The tiles that the improvement can be built on. Each entry is an object with a `terrain` and/or a `resource` (ids):
 
 ```json
-"terrainRequirements": [ { "terrain": "field", "resource": "crop" } ]
+"terrainRequirements": [
+	{
+		"terrain": "field",
+		"resource": "crop"
+	}
+]
 ```
 
 The game collects all terrains and all resources of all entries. The tile must have **one of the terrains** (if any are listed) **and one of the resources** (if any are listed). A terrain and a resource in the same entry are *not* paired: `[{ "terrain": "field", "resource": "crop" }, { "terrain": "forest" }]` means "field or forest, with crop". An empty list allows every tile.
@@ -139,7 +178,11 @@ What the 8 neighbor tiles must have. Each entry is an object with one of these f
 | `notImprovement` | improvement id | No neighbor, of any owner, has this improvement. |
 
 ```json
-"adjacencyRequirements": [ { "improvement": "farm" } ]
+"adjacencyRequirements": [
+	{
+		"improvement": "farm"
+	}
+]
 ```
 
 `improvement`, `terrain` and `resource` entries are alternatives: one match is enough.
@@ -159,7 +202,11 @@ Neighbors that give the improvement its level. If this list is not empty, the le
 | `resources` | resource id | 1 for each neighbor with this resource and no improvement. Note the plural field name. |
 
 ```json
-"adjacencyImprovements": [ { "improvement": "farm" } ]
+"adjacencyImprovements": [
+	{
+		"improvement": "farm"
+	}
+]
 ```
 
 The abilities `simple` (each neighbor counts 1) and `picky` (each type counts once) change the count. The level is capped by `maxLevel` and recomputed when neighbors change and at the start of each turn. This is how the windmill, sawmill, forge and market work.
@@ -169,7 +216,10 @@ The abilities `simple` (each neighbor counts 1) and `picky` (each type counts on
 An improvement with a non-empty `routes` list opens **routes**, like the port. Two route openers of a player connect if they are within the `range` of the first one, over a path of the terrains that both list and that the player can move on. The tiles of the path get a route: units following it move at road speed, and the route connects cities. With the `network` ability, the improvement also connects to the player's cities within `range`.
 
 ```json
-"routes": [ "water", "ocean" ],
+"routes": [
+	"water",
+	"ocean"
+],
 "range": 5
 ```
 
@@ -184,7 +234,11 @@ The number of turns per level for the `patina` ability, and the number of turns 
 What each level-up of the improvement gives, whatever caused it. Each entry has `population` (for the city of the tile) and `score`.
 
 ```json
-"growthRewards": [ { "population": 1 } ]
+"growthRewards": [
+	{
+		"population": 1
+	}
+]
 ```
 
 When the level goes down, the population is taken away again, but not the score.
@@ -195,7 +249,7 @@ When the level goes down, the population is taken away again, but not the score.
 | --- | --- | --- |
 | `none` | 0 | No effect. |
 | `unique` | 1 | Each player can build it only once per game, also if it is destroyed. |
-| `limited` | 2 | Only one per city (checks 2 tiles around the city). |
+| `limited` | 2 | Only one per city. The check only looks at the city tiles up to 2 tiles from the city. This covers all vanilla cities, but if a mod lets city borders grow past 2 tiles, the outer tiles are not checked. |
 | `expand` | 3 | No effect found in the game code. |
 | `consumed` | 4 | An action, not a building: nothing stays on the tile. It removes the resource of the tile (except for the canal). |
 | `patina` | 5 | Gains a level every `growthRate` turns, up to `maxLevel`. |

@@ -2,16 +2,40 @@
 
 `techData` lists the technologies: the tech tree, what each tech unlocks, and how much it costs.
 
-The example uses the basic tech, the root of the tree (values from an older game version):
+The example uses the basic tech, the root of the tree (values from game logic data version 28):
 
 ```json
 "basic": {
-  "idx": 0,
-  "cost": 0,
-  "techUnlocks": ["organization", "climbing", "fishing", "hunting", "riding"],
-  "unitUnlocks": ["giant", "bunny", "scout", "transportship", "warrior", "babydragon", "firedragon", "dagger"],
-  "improvementUnlocks": ["city", "ruin", "landfill"],
-  "movementUnlocks": { "field": 1, "forest": 2, "ice": 1, "wetland": 2 }
+	"techUnlocks": [
+		"organization",
+		"climbing",
+		"fishing",
+		"hunting",
+		"riding"
+	],
+	"unitUnlocks": [
+		"giant",
+		"bunny",
+		"scout",
+		"transportship",
+		"warrior",
+		"babydragon",
+		"firedragon",
+		"dagger",
+		"larva"
+	],
+	"improvementUnlocks": [
+		"city",
+		"ruin"
+	],
+	"movementUnlocks": {
+		"field": 1,
+		"forest": 2,
+		"ice": 1,
+		"wetland": 2
+	},
+	"cost": 0,
+	"idx": 0
 }
 ```
 
@@ -74,7 +98,9 @@ The [tasks](task-data.md) that start when the player gets the tech. Some tasks a
 The terrains that the units of the player can enter once they own the tech. Only the keys matter; the game does not read the numbers. Unlocking `ocean` also unlocks `water`.
 
 ```json
-"movementUnlocks": { "mountain": 1 }
+"movementUnlocks": {
+	"mountain": 1
+}
 ```
 
 A unit with a non-empty [`movementTerrain`](unit-data.md#movementterrain) can only use the unlocked terrains that are also in its list (or all terrains of its list with `navigate`).
@@ -84,7 +110,10 @@ A unit with a non-empty [`movementTerrain`](unit-data.md#movementterrain) can on
 The terrains on which the units of the player get a defence bonus. Any number above 1 gives the same bonus of 1.5×; the exact number does not matter.
 
 ```json
-"defenceBonusUnlocks": { "water": 15, "ocean": 15 }
+"defenceBonusUnlocks": {
+	"water": 15,
+	"ocean": 15
+}
 ```
 
 ## Player abilities

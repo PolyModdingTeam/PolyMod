@@ -30,24 +30,28 @@ Each section except `diplomacyData` is an object of entries. The key of an entry
 
 ```json
 {
-  "unitData": {
-    "warrior": {
-      "idx": 2,
-      "health": 100,
-      "defence": 20,
-      "attack": 20,
-      "movement": 1,
-      "range": 1,
-      "cost": 2,
-      "weapon": 1,
-      "unitAbilities": ["dash", "fortify", "land"],
-      "movementTerrain": ["field", "forest", "mountain"]
-    }
-  }
+	"unitData": {
+		"warrior": {
+			"health": 100,
+			"defence": 20,
+			"movement": 1,
+			"range": 1,
+			"attack": 20,
+			"cost": 2,
+			"unitAbilities": [
+				"dash",
+				"fortify",
+				"land"
+			],
+			"weapon": 1,
+			"promotionLimit": 3,
+			"idx": 2
+		}
+	}
 }
 ```
 
-The values on these pages are examples. Some are from older game versions. Check the dumped GLD for the current values.
+The main example on each page uses the values from game logic data version 28. The smaller examples only show the format. Check the dumped GLD for the current values.
 
 ## Ids
 

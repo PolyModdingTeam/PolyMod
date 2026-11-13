@@ -17,10 +17,10 @@ PolyMod keeps the values in `mods.json` in the game folder, in an object with th
 
 ```json
 {
-  "first_mod": {
-    "warriorCost": "5",
-    "lancers": "true"
-  }
+	"first_mod": {
+		"warriorCost": "5",
+		"lancers": "true"
+	}
 }
 ```
 

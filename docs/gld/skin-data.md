@@ -4,10 +4,10 @@
 
 ```json
 "skinData": {
-  "swamp": {
-    "color": 6786096,
-    "language": "bub,ly,sq,ee,to,ad,bo,swa,bu,oa,squ,am,goo,pho,am,oct"
-  }
+	"swamp": {
+		"color": 6786096,
+		"language": "bub,ly,sq,ee,to,ad,bo,swa,bu,oa,squ,am,goo,pho,am,oct"
+	}
 }
 ```
 

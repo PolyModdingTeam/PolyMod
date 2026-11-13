@@ -39,24 +39,24 @@ A dependency also sets the [load order](mod-structure.md#load-order): your mod a
 
 ```json
 {
-    "id": "docs_mod",
-    "name": "Docs Mod",
-    "description": "An example mod for the documentation.",
-    "version": "1.2.3",
-    "authors": [
-        "DocMan",
-        "bro0x7"
-    ],
-    "dependencies": [
-        {
-            "id": "polytopia",
-            "min": "2.18.0"
-        },
-        {
-            "id": "another_cool_mod",
-            "required": false
-        }
-    ]
+	"id": "docs_mod",
+	"name": "Docs Mod",
+	"description": "An example mod for the documentation.",
+	"version": "1.2.3",
+	"authors": [
+		"DocMan",
+		"bro0x7"
+	],
+	"dependencies": [
+		{
+			"id": "polytopia",
+			"min": "2.18.0"
+		},
+		{
+			"id": "another_cool_mod",
+			"required": false
+		}
+	]
 }
 ```
 

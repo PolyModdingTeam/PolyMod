@@ -28,7 +28,7 @@ Each prefab has a `visualParts` array. Each visual part is an object:
 | `defaultSpriteName` | string | — | The base name of the sprite of this part. The game looks up the sprite by this name with the tribe, skin and level, as [Textures](textures.md#texture-names) describes. It is also the name of the part's game object. |
 | `coordinates` | `[x, y]` | `[0, 0]` | The position of the part, in world units. |
 | `rotation` | number | `0` | The rotation around the z axis, in degrees. |
-| `tintable` | boolean | `false` | If `true`, the game tints the sprite with the color of the owner. Use it for parts that show the tribe color. |
+| `tintable` | boolean | `false` | If `true`, the game tints the sprite with the color of the owner. Use it for parts that show the tribe color. The game multiplies the sprite colors by the tribe color, so draw these parts in white: white becomes the exact tribe color, and gray becomes a darker shade of it. Use gray for shading. Other colors mix with the tribe color and do not tint completely. |
 | `skinningLogic` | string | `"UseTribe"` | Which skin the sprite uses: `UseTribe`, `UseClimate`, `UseBirthClimate` or `DontChangeSkin`. |
 | `improvementSkinningLogic` | string | `"FoundingTribe"` | Improvements only. Which skin the sprite uses: `TileOwner`, `TileClimate`, `FoundingTribe` or `DontChangeSkin`. |
 | `levels` | boolean | `false` | Improvements only. If `true`, the sprite changes with the level of the improvement (`base_level` sprite names). |
@@ -50,17 +50,36 @@ Each part also gets an outline object, named `defaultSpriteName` plus `_Outline`
 
 ```json
 {
-    "skinnedKey": {
-        "unitType": "lancer",
-        "tribeType": "none",
-        "skinType": "default"
-    },
-    "headPositionMarker": "lancer_head",
-    "visualParts": [
-        { "defaultSpriteName": "lancer_head", "coordinates": [0, 0.35] },
-        { "defaultSpriteName": "lancer_body", "coordinates": [0, 0.15], "tintable": true },
-        { "defaultSpriteName": "lancer_legs", "coordinates": [0, 0] }
-    ]
+	"skinnedKey": {
+		"unitType": "lancer",
+		"tribeType": "none",
+		"skinType": "default"
+	},
+	"headPositionMarker": "lancer_head",
+	"visualParts": [
+		{
+			"defaultSpriteName": "lancer_head",
+			"coordinates": [
+				0,
+				0.35
+			]
+		},
+		{
+			"defaultSpriteName": "lancer_body",
+			"coordinates": [
+				0,
+				0.15
+			],
+			"tintable": true
+		},
+		{
+			"defaultSpriteName": "lancer_legs",
+			"coordinates": [
+				0,
+				0
+			]
+		}
+	]
 }
 ```
 
@@ -89,10 +108,13 @@ You can also add a prefab for a vanilla unit, tribe and skin to replace the vani
 
 ```json
 {
-    "improvementType": "mytemple",
-    "visualParts": [
-        { "defaultSpriteName": "mytemple", "levels": true }
-    ]
+	"improvementType": "mytemple",
+	"visualParts": [
+		{
+			"defaultSpriteName": "mytemple",
+			"levels": true
+		}
+	]
 }
 ```
 
@@ -107,10 +129,12 @@ An improvement prefab replaces the prefab of that improvement for all tribes and
 
 ```json
 {
-    "resourceType": "gems",
-    "visualParts": [
-        { "defaultSpriteName": "gems" }
-    ]
+	"resourceType": "gems",
+	"visualParts": [
+		{
+			"defaultSpriteName": "gems"
+		}
+	]
 }
 ```
 
@@ -120,12 +144,19 @@ For an improvement or a resource with only one sprite, you do not need a prefab 
 
 ```json
 {
-    "improvementData": {
-        "mytemple": { "idx": -1, "prefab": true, "maxLevel": 5 }
-    },
-    "resourceData": {
-        "gems": { "idx": -1, "prefab": true }
-    }
+	"improvementData": {
+		"mytemple": {
+			"idx": -1,
+			"prefab": true,
+			"maxLevel": 5
+		}
+	},
+	"resourceData": {
+		"gems": {
+			"idx": -1,
+			"prefab": true
+		}
+	}
 }
 ```
 

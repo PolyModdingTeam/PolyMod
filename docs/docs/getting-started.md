@@ -12,10 +12,12 @@ Make a folder `Mods/first_mod` and add a `manifest.json`:
 
 ```json
 {
-    "id": "first_mod",
-    "name": "My First Mod",
-    "version": "1.0.0",
-    "authors": ["YourName"]
+	"id": "first_mod",
+	"name": "My First Mod",
+	"version": "1.0.0",
+	"authors": [
+		"YourName"
+	]
 }
 ```
 
@@ -27,11 +29,11 @@ Add a `patch.json` that gives the warrior 3 attack instead of 2:
 
 ```json
 {
-    "unitData": {
-        "warrior": {
-            "attack": 30
-        }
-    }
+	"unitData": {
+		"warrior": {
+			"attack": 30
+		}
+	}
 }
 ```
 
@@ -45,28 +47,38 @@ Extend `patch.json` to add a new unit and let the Imperius tribe train it with t
 
 ```json
 {
-    "unitData": {
-        "warrior": {
-            "attack": 30
-        },
-        "lancer": {
-            "idx": -1,
-            "health": 100,
-            "defence": 10,
-            "movement": 2,
-            "range": 1,
-            "attack": 25,
-            "cost": 4,
-            "weapon": "sword",
-            "unitAbilities": ["dash", "fortify", "land"],
-            "movementTerrain": ["field", "forest", "mountain"]
-        }
-    },
-    "techData": {
-        "riding": {
-            "unitUnlocks": ["+lancer"]
-        }
-    }
+	"unitData": {
+		"warrior": {
+			"attack": 30
+		},
+		"lancer": {
+			"idx": -1,
+			"health": 100,
+			"defence": 10,
+			"movement": 2,
+			"range": 1,
+			"attack": 25,
+			"cost": 4,
+			"weapon": "sword",
+			"unitAbilities": [
+				"dash",
+				"fortify",
+				"land"
+			],
+			"movementTerrain": [
+				"field",
+				"forest",
+				"mountain"
+			]
+		}
+	},
+	"techData": {
+		"riding": {
+			"unitUnlocks": [
+				"+lancer"
+			]
+		}
+	}
 }
 ```
 
@@ -80,10 +92,10 @@ The game shows a new unit by its localization key, `unit.names.lancer`. Add a `l
 
 ```json
 {
-    "unit_names_lancer": {
-        "English": "Lancer",
-        "German (Germany)": "Lanzenreiter"
-    }
+	"unit_names_lancer": {
+		"English": "Lancer",
+		"German (Germany)": "Lanzenreiter"
+	}
 }
 ```
 
