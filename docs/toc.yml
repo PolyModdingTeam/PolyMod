@@ -1,4 +1,6 @@
 - name: Docs
   href: docs/
+- name: Game logic data
+  href: gld/
 - name: API
   href: api/
