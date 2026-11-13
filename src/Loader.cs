@@ -754,7 +754,7 @@ public static class Loader
     /// </remarks>
     /// <param name="mod">The mod that contains the file.</param>
     /// <param name="file">The audio file to load.</param>
-    public static void LoadAudioFile(Mod mod, Mod.File file)
+    private static void LoadAudioFile(Mod mod, Mod.File file)
     {
         string name = Path.GetFileNameWithoutExtension(file.name).ToLowerInvariant();
         try

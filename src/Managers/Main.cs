@@ -464,7 +464,7 @@ public static class Main
     /// Then it reads the files of each mod and uses the file name or the file extension to select the action:
     /// <list type="bullet">
     /// <item><description><c>localization.json</c> and <c>localization_*.json</c>: calls <see cref="Loader.LoadLocalizationFile"/>.</description></item>
-    /// <item><description><c>patch.json</c> and <c>patch_*.json</c>: renders the file as a <see cref="Api.GldConfigTemplate"/> and merges it into <paramref name="json"/> with <see cref="Loader.LoadGameLogicDataPatch"/>. If the render gives null, the mod gets the status <c>Error</c>.</description></item>
+    /// <item><description><c>patch.json</c> and <c>patch_*.json</c>: reads the file as JSON and merges it into <paramref name="json"/> with <see cref="Loader.LoadGameLogicDataPatch"/>.</description></item>
     /// <item><description><c>prefabs</c>, <c>unitPrefab</c>, <c>improvementPrefab</c>, and <c>resourcePrefab</c> JSON files: adds the file to <see cref="Registry.filesQueueToBeProcessedAfterGLDMerge"/>.</description></item>
     /// <item><description>Files with the extension <c>.png</c>: calls <see cref="Loader.LoadTextureFile"/>.</description></item>
     /// <item><description>Files with the extension <c>.bundle</c>: calls <see cref="Loader.LoadAssetBundle"/>.</description></item>
@@ -505,17 +505,17 @@ public static class Main
                 if (patchMatch.Success)
                 {
                     var patchText = new StreamReader(new MemoryStream(file.bytes)).ReadToEnd();
-                    var template = new Api.GldConfigTemplate(patchText, mod.id);
-                    var text = template.Render();
-                    if (text is null)
-                    {
-                        mod.status = Mod.Status.Error;
-                        continue;
-                    }
+                    // var template = new Api.GldConfigTemplate(patchText, mod.id);
+                    // var text = template.Render();
+                    // if (text is null)
+                    // {
+                    //     mod.status = Mod.Status.Error;
+                    //     continue;
+                    // }
                     Loader.LoadGameLogicDataPatch(
                         mod,
                         json,
-                        JObject.Parse(text)
+                        JObject.Parse(patchText)
                     );
                     continue;
                 }

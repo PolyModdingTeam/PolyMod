@@ -1,11 +1,11 @@
 using BepInEx.Logging;
-using Newtonsoft.Json.Linq;
+// using Newtonsoft.Json.Linq;
 
 namespace PolyMod.Api;
 
 /// <summary>
 /// The base class of all mod scripts. Do not use this class directly.
-/// To make a mod script, make a subclass of <see cref="PolyScript"/> or <see cref="PolyScript{TConfig, TExposedConfig}"/>.
+/// To make a mod script, make a subclass of <see cref="PolyScript"/>.
 /// </summary>
 /// <remarks>
 /// When PolyMod loads a mod assembly, it finds the first type in the assembly that is a subclass of this class.
@@ -42,28 +42,26 @@ internal abstract class PolyScriptBase
     }
 }
 /// <summary>
-/// The base class for a mod script with a typed per-mod config and a typed exposed config.
+/// The base class for a mod script.
 /// </summary>
 /// <remarks>
 /// Make a subclass and override <see cref="PolyScriptBase.Load"/>.
-/// Before PolyMod calls <see cref="PolyScriptBase.Load"/>, it sets the <see cref="Mod"/>, <see cref="Config"/>, <see cref="ExposedConfig"/>, and <see cref="Logger"/> properties.
+/// Before PolyMod calls <see cref="PolyScriptBase.Load"/>, it sets the <see cref="Mod"/> and <see cref="Logger"/> properties.
 /// </remarks>
-/// <typeparam name="TConfig">The type of the per-mod config object.</typeparam>
-/// <typeparam name="TExposedConfig">The type of the exposed config object.</typeparam>
 // should be public when i get through it
-internal abstract class PolyScript<TConfig, TExposedConfig> : PolyScriptBase where TConfig : class where TExposedConfig : class
+// internal abstract class PolyScript<TConfig, TExposedConfig> : PolyScriptBase where TConfig : class where TExposedConfig : class
+internal abstract class PolyScript : PolyScriptBase
 {
     /// <summary>
     /// Sets the <see cref="Mod"/> and <see cref="Logger"/> properties.
-    /// Makes the per-mod config and the exposed config, with the mod id as the mod name.
     /// </summary>
     /// <param name="mod">The mod that the script belongs to.</param>
     /// <param name="logger">The log source of the mod.</param>
     internal override void Initialize(Mod mod, ManualLogSource logger)
     {
         Mod = mod;
-        Config = new Config<TConfig>(mod.id, Config<TConfig>.ConfigTypes.PerMod);
-        ExposedConfig = new Config<TExposedConfig>(mod.id, Config<TExposedConfig>.ConfigTypes.Exposed);
+        // Config = new Config<TConfig>(mod.id, Config<TConfig>.ConfigTypes.PerMod);
+        // ExposedConfig = new Config<TExposedConfig>(mod.id, Config<TExposedConfig>.ConfigTypes.Exposed);
         Logger = logger;
     }
 
@@ -88,27 +86,27 @@ internal abstract class PolyScript<TConfig, TExposedConfig> : PolyScriptBase whe
     /// </summary>
     // should be public when i get through it
     internal Mod Mod { get; private set; } = null!;
-    /// <summary>
-    /// Gets the per-mod config. PolyMod keeps it in the file <c>Mods/{mod id}.json</c>.
-    /// Call <see cref="PolyMod.Api.Config{T}.SetDefaultConfig"/> before you read it.
-    /// </summary>
-    protected Config<TConfig> Config { get; private set; } = null!;
-    /// <summary>
-    /// Gets the exposed config. PolyMod keeps it in the shared <c>mods.json</c> file, with the mod id as its key.
-    /// Call <see cref="PolyMod.Api.Config{T}.SetDefaultConfig"/> before you read it.
-    /// </summary>
-    protected Config<TExposedConfig> ExposedConfig { get; private set; } = null!;
+    // /// <summary>
+    // /// Gets the per-mod config. PolyMod keeps it in the file <c>Mods/{mod id}.json</c>.
+    // /// Call <see cref="PolyMod.Api.Config{T}.SetDefaultConfig"/> before you read it.
+    // /// </summary>
+    // protected Config<TConfig> Config { get; private set; } = null!;
+    // /// <summary>
+    // /// Gets the exposed config. PolyMod keeps it in the shared <c>mods.json</c> file, with the mod id as its key.
+    // /// Call <see cref="PolyMod.Api.Config{T}.SetDefaultConfig"/> before you read it.
+    // /// </summary>
+    // protected Config<TExposedConfig> ExposedConfig { get; private set; } = null!;
     /// <summary>
     /// Gets the log source of the mod. Use it to write messages to the BepInEx log.
     /// </summary>
     protected ManualLogSource Logger { get; private set; } = null!;
 }
 
-/// <summary>
-/// The base class for a mod script that uses <see cref="JObject"/> for the per-mod config and the exposed config.
-/// Make a subclass and override <see cref="PolyScriptBase.Load"/>.
-/// </summary>
-// should be public when i get through it
-internal abstract class PolyScript : PolyScript<JObject, JObject>
-{
-}
+// /// <summary>
+// /// The base class for a mod script that uses <see cref="JObject"/> for the per-mod config and the exposed config.
+// /// Make a subclass and override <see cref="PolyScriptBase.Load"/>.
+// /// </summary>
+// // should be public when i get through it
+// internal abstract class PolyScript : PolyScript<JObject, JObject>
+// {
+// }
