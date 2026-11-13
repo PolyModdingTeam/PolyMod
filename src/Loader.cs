@@ -103,12 +103,16 @@ public static class Loader
                             string skinId = skin.ToString();
                             if (!Enum.TryParse<SkinType>(skinId, ignoreCase: true, out _))
                             {
-                                SkinType skinValue = (SkinType)Registry.autoidx;
+                                int index = Registry.GetAutoIndex(typeof(SkinType));
+                                SkinType skinValue = (SkinType)index;
+
                                 EnumCache<SkinType>.AddMapping(skinId.ToLowerInvariant(), skinValue);
                                 EnumCache<SkinType>.AddMapping(skinId.ToLowerInvariant(), skinValue);
-                                Registry.skinInfo.Add(new Visual.SkinInfo(Registry.autoidx, skinId, null));
-                                Plugin.logger.LogInfo("Created mapping for skinType with id " + skinId + " and index " + Registry.autoidx);
-                                Registry.autoidx++;
+
+                                Registry.skinInfo.Add(new Visual.SkinInfo(index, skinId, null));
+                                Plugin.logger.LogInfo("Created mapping for skinType with id " + skinId + " and index " + index);
+                                Registry.IncrementAutoIndex(typeof(SkinType));
+
                                 if(token["tribeAbilities"] != null)
                                 {
                                     JArray tribeAbilities = token["tribeAbilities"].Cast<JArray>();
@@ -124,11 +128,14 @@ public static class Loader
                                             ) && tribeAbilityType == TribeAbility.Type.Flooded)
                                         {
                                             string tileEffectId = skinId.ToLowerInvariant() + "_flood";
-                                            EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
-                                            EnumCache<TileData.EffectType>.AddMapping(tileEffectId, (TileData.EffectType)Registry.autoidx);
-                                            Visual.customFloodingSkins.Add((TileData.EffectType)Registry.autoidx, skinValue);
-                                            Plugin.logger.LogInfo("Created mapping for tileEffect with id " + tileEffectId + " and index " + Registry.autoidx);
-                                            Registry.autoidx++;
+                                            int autoidx = Registry.GetAutoIndex(typeof(TileData.EffectType));
+
+                                            TileData.EffectType effectType = (TileData.EffectType)autoidx;
+                                            EnumCache<TileData.EffectType>.AddMapping(tileEffectId, effectType);
+                                            EnumCache<TileData.EffectType>.AddMapping(tileEffectId, effectType);
+                                            Visual.customFloodingSkins.Add(effectType, skinValue);
+                                            Plugin.logger.LogInfo("Created mapping for tileEffect with id " + tileEffectId + " and index " + autoidx);
+                                            Registry.IncrementAutoIndex(typeof(TileData.EffectType));
                                         }
                                     }
                                 }
@@ -952,7 +959,7 @@ public static class Loader
     /// The method does two passes over all entries of all data categories in the GLD.
     /// In the first pass, it uses only entries that have an <c>idx</c>, in categories with <c>shouldCreateCache</c> set to true.
     /// If the type of the category is not an enum, the method writes a warning to the log and ignores the entry.
-    /// If <c>idx</c> is -1, the method sets <c>idx</c> to the next value of <see cref="Registry.autoidx"/>.
+    /// If <c>idx</c> is -1, the method sets <c>idx</c> to the next free index of the enum type of the category, from <see cref="Registry.GetAutoIndex"/>.
     /// If <c>allowUnsafeIndexes</c> is true, the method also uses an entry with an <c>idx</c> larger than all existing enum values.
     /// The method ignores all other entries in the first pass.
     /// For each entry that it uses, it calls <c>EnumCache.AddMapping</c> two times. The first call adds the name, and the second call adds the type.
@@ -986,8 +993,8 @@ public static class Loader
 
             if ((int)token["idx"] == -1)
             {
-                token["idx"] = Registry.autoidx;
-                Registry.autoidx++;
+                token["idx"] = Registry.GetAutoIndex(targetType);
+                Registry.IncrementAutoIndex(targetType);
             }
             else if (Plugin.config.allowUnsafeIndexes)
             {

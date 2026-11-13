@@ -11,13 +11,44 @@ namespace PolyMod;
 /// </summary>
 public static class Registry
 {
-    /// <summary>
-    /// The next free index for an automatically indexed enum value.
-    /// PolyMod uses this one counter for all enum types, which include tribes, units, skins and tile effects.
-    /// The counter starts at <see cref="Plugin.AUTOIDX_STARTS_FROM"/>.
-    /// </summary>
-    internal static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
+    // internal static int autoidx = Plugin.AUTOIDX_STARTS_FROM;
 
+    /// <summary>
+    /// The next free index for automatically indexed enum values, keyed by the enum type.
+    /// Each enum type, for example tribes, units, skins and tile effects, has its own counter.
+    /// A counter starts at <see cref="Plugin.AUTOIDX_STARTS_FROM"/>.
+    /// Values of different enum types can therefore be the same number.
+    /// </summary>
+    internal static Dictionary<Type, int> autoindexes = new();
+
+    /// <summary>
+    /// Gets the next free index for an automatically indexed value of an enum type.
+    /// The method does not change the counter. Call <see cref="IncrementAutoIndex"/> after you use the index.
+    /// If the type has no counter yet, the method makes one that starts at <see cref="Plugin.AUTOIDX_STARTS_FROM"/>.
+    /// </summary>
+    /// <param name="type">The enum type.</param>
+    /// <returns>The next free index for the type.</returns>
+    public static int GetAutoIndex(Type type)
+    {
+        if(!autoindexes.TryGetValue(type, out int value))
+        {
+            autoindexes[type] = value = Plugin.AUTOIDX_STARTS_FROM;
+        }
+        return value;
+    }
+
+    /// <summary>
+    /// Increases the next free index of an enum type by 1.
+    /// If the type has no counter yet, the method makes one that starts at <see cref="Plugin.AUTOIDX_STARTS_FROM"/> and then increases it.
+    /// </summary>
+    /// <param name="type">The enum type.</param>
+    public static void IncrementAutoIndex(Type type)
+    {
+        if(!autoindexes.ContainsKey(type))
+            autoindexes[type] = Plugin.AUTOIDX_STARTS_FROM;
+
+        autoindexes[type]++;
+    }
     /// <summary>
     /// The sprites that PolyMod made from mod textures, keyed by the lowercase sprite name.
     /// </summary>

@@ -30,6 +30,7 @@ public static class Loc
     /// It finds a custom enum value in the parts of the key, which are separated by dots.
     /// A custom enum value is a number that is not less than <see cref="Plugin.AUTOIDX_STARTS_FROM"/>.
     /// The patch gets the enum name of this value from the enum caches of the type mappings in <see cref="Loader.typeMappings"/>.
+    /// If more than one enum type has a name for the value, the patch uses the last of these types in <see cref="Loader.typeMappings"/>.
     /// Then it replaces the number in the key with the enum name.
     /// If the key has more than one custom value, the patch uses only the last value.
     /// </summary>
