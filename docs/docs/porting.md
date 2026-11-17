@@ -7,7 +7,7 @@ PolyMod 2.0 changes several file formats. Check this list when you update a mod 
 | Texture names | `name_style_level.png` with empty parts, for example `lumberhut__.png` | `name.png`, `name_tribe.png`, `name_skin.png`, `name_level_tribe.png`, … without empty parts, for example `lumberhut.png` | [Textures](textures.md) |
 | Outline textures | `_outline` before the tribe or skin, for example `head_outline_bardur.png` | `_outline` at the end, after the tribe, skin and level, for example `head_bardur_outline.png` | [Textures](textures.md#outlines) |
 | Terrain, resource and improvement textures | Internal game sprite names | The GLD ids also work, for example `field.png` | [Textures](textures.md#base-names-of-terrain-resources-and-improvements) |
-| `sprites.json` | `pixelsPerUnit`, `pivot` | Also `spriteOrigin`, `transformToOutline`, `gaussianBlurRadius` | [Sprites](sprites.md) |
+| `sprites.json` | `pixelsPerUnit`, `pivot` | Also `spriteOrigin` and `outline` | [Sprites](sprites.md) |
 | Prefabs | `<name>.json` with `type`, `name` and `visualParts` (`gameObjectName`, `baseName`, `scale`) | `prefabs.json`, `unitPrefab.json`, `improvementPrefab.json`, `resourcePrefab.json` with `skinnedKey` and `visualParts` (`defaultSpriteName`, …) | [Prefabs](prefabs.md) |
 | Reusing a vanilla unit look | `"prefab": "mindbender"` in `unitData` | Not supported. Copy the dumped vanilla prefab into a `unitPrefab` file. | [Prefabs](prefabs.md#unit-prefabs) |
 | New improvement or resource look | Custom house or animal sprites by default | `"prefab": true` in the GLD entry, or a prefab file | [Prefabs](prefabs.md#simple-prefabs-from-the-gld) |

@@ -43,34 +43,57 @@ public static class Visual
         public SpriteOrigin? spriteOrigin = null;
 
         /// <summary>
-        /// If true, PolyMod changes the image into a white silhouette with a border before it makes the sprite.
+        /// The settings to change the image into an outline before PolyMod makes the sprite.
+        /// If this value is null, PolyMod uses the image as it is.
         /// </summary>
         [JsonInclude]
-        public bool transformToOutline = false;
-
-        /// <summary>
-        /// The radius of the Gaussian blur that PolyMod applies to the image.
-        /// If this value is null, PolyMod does not apply a blur.
-        /// </summary>
-        [JsonInclude]
-        public float? gaussianBlurRadius = null;
+        public OutlineInfo? outline = null;
 
         /// <summary>
         /// Makes a new <see cref="SpriteInfo"/> with the given settings.
         /// </summary>
         /// <param name="pixelsPerUnit">The number of texture pixels in one world unit, or null to use the default value.</param>
         /// <param name="pivot">The pivot of the sprite, or null to use the default pivot.</param>
-        /// <param name="transformToOutline">If true, the image changes into a white silhouette with a border.</param>
         /// <param name="spriteOrigin">The source of the sprite image, or null to use the texture with the same name.</param>
-        /// <param name="gaussianBlurRadius">The radius of the Gaussian blur, or null for no blur.</param>
-        public SpriteInfo(float? pixelsPerUnit, Vector2? pivot, bool transformToOutline = false, SpriteOrigin? spriteOrigin = null, float? gaussianBlurRadius = null)
+        /// <param name="outline">The outline settings, or null to use the image as it is.</param>
+        public SpriteInfo(float? pixelsPerUnit, Vector2? pivot, SpriteOrigin? spriteOrigin = null, OutlineInfo? outline = null)
         {
             this.pixelsPerUnit = pixelsPerUnit;
             this.pivot = pivot;
             this.spriteOrigin = spriteOrigin;
-            this.transformToOutline = transformToOutline;
-            this.gaussianBlurRadius = gaussianBlurRadius;
+            this.outline = outline;
         }
+    }
+
+    /// <summary>
+    /// The settings that change an image into an outline: a silhouette of the shape, made larger and optionally blurred.
+    /// </summary>
+    /// <remarks>
+    /// The texture grows by the thickness and by the reach of the blur, so the blur is never cut at the edge.
+    /// The pixels per unit stay the same, so the shape keeps its size in the world.
+    /// PolyMod moves the pivot by the added pixels, so the outline stays in line with the source sprite.
+    /// </remarks>
+    public class OutlineInfo
+    {
+        /// <summary>
+        /// The distance in pixels that the silhouette grows around the visible pixels of the shape. The default value is 8.
+        /// </summary>
+        [JsonInclude]
+        public int thickness = 8;
+
+        /// <summary>
+        /// The color of the silhouette, as <c>#RRGGBB</c> or <c>#RRGGBBAA</c>. The default value is white.
+        /// Keep white for outlines that the game tints.
+        /// If it is null, PolyMod does not fill a color: the image stays as it is, and only the blur changes it. The thickness is then not used.
+        /// </summary>
+        [JsonInclude]
+        public string? color = "#FFFFFF";
+
+        /// <summary>
+        /// The radius of the Gaussian blur in pixels. The default value is 0, which gives no blur.
+        /// </summary>
+        [JsonInclude]
+        public float blur = 32f;
     }
 
     /// <summary>
@@ -1095,96 +1118,141 @@ public static class Visual
     /// <param name="data">The bytes of the image file.</param>
     /// <param name="pivot">The pivot of the sprite, as a fraction of the sprite size. If null, the pivot is the center.</param>
     /// <param name="pixelsPerUnit">The number of texture pixels in one world unit.</param>
-    /// <param name="transformToOutline">If true, the image changes into a white silhouette with a border.</param>
-    /// <param name="gaussianBlurRadius">The radius of the Gaussian blur, or null for no blur.</param>
+    /// <param name="outline">The outline settings, or null to use the image as it is.</param>
     /// <returns>The new sprite.</returns>
-    public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f, bool transformToOutline = false, float? gaussianBlurRadius = null)
+    public static Sprite BuildSprite(byte[] data, Vector2? pivot = null, float pixelsPerUnit = 2112f, OutlineInfo? outline = null)
     {
-        return BuildSpriteWithTexture(BuildTexture(data), pivot, pixelsPerUnit, transformToOutline, gaussianBlurRadius);
+        return BuildSpriteWithTexture(BuildTexture(data), pivot, pixelsPerUnit, outline);
     }
 
     /// <summary>
     /// Makes a sprite that uses all of a texture.
-    /// If <paramref name="transformToOutline"/> is true, the method first changes the texture with <see cref="TransformToOutline"/>.
-    /// Then, if the blur radius is not null, it applies <see cref="ApplyGaussianBlur"/>.
     /// </summary>
+    /// <remarks>
+    /// If <paramref name="outline"/> is not null, the method first changes the texture with <see cref="TransformToOutline"/>.
+    /// The new texture is larger by the thickness and the reach of the blur on each side, and then the method applies <see cref="ApplyGaussianBlur"/> if the blur is more than 0.
+    /// The method moves the pivot by the added pixels, so the shape stays at the same place in the world.
+    /// The pixels per unit do not change, so the shape also keeps its size.
+    /// </remarks>
     /// <param name="texture">The texture for the sprite.</param>
-    /// <param name="pivot">The pivot of the sprite, as a fraction of the sprite size. If null, the pivot is the center.</param>
+    /// <param name="pivot">The pivot of the source texture, as a fraction of its size. If null, the pivot is the center.</param>
     /// <param name="pixelsPerUnit">The number of texture pixels in one world unit. If null, the method uses 2112.</param>
-    /// <param name="transformToOutline">If true, the image changes into a white silhouette with a border.</param>
-    /// <param name="gaussianBlurRadius">The radius of the Gaussian blur, or null for no blur.</param>
+    /// <param name="outline">The outline settings, or null to use the texture as it is.</param>
     /// <returns>The new sprite.</returns>
-    public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f, bool transformToOutline = false, float? gaussianBlurRadius = null)
+    public static Sprite BuildSpriteWithTexture(Texture2D texture, Vector2? pivot = null, float? pixelsPerUnit = 2112f, OutlineInfo? outline = null)
     {
-        if (transformToOutline) texture = TransformToOutline(texture);
+        Vector2 finalPivot = pivot ?? new(0.5f, 0.5f);
 
-        if (gaussianBlurRadius != null) texture = ApplyGaussianBlur(texture, gaussianBlurRadius.Value);
+        if (outline != null)
+        {
+            Color? fillColor = outline.color == null ? null : ParseHexColor(outline.color);
+
+            int thickness = fillColor == null ? 0 : Math.Max(0, outline.thickness);
+            int padding = thickness + (outline.blur > 0f ? GetGaussianKernelRadius(outline.blur) : 0);
+            int sourceWidth = texture.width;
+            int sourceHeight = texture.height;
+
+            texture = TransformToOutline(texture, thickness, padding, fillColor);
+            if (outline.blur > 0f)
+                texture = ApplyGaussianBlur(texture, outline.blur);
+
+            finalPivot = new(
+                (finalPivot.x * sourceWidth + padding) / texture.width,
+                (finalPivot.y * sourceHeight + padding) / texture.height
+            );
+        }
 
         return Sprite.Create(
             texture,
             new(0, 0, texture.width, texture.height),
-            pivot ?? new(0.5f, 0.5f),
+            finalPivot,
             pixelsPerUnit ?? 2112f
-        ); ;
+        );
+    }
+
+    private static Color ParseHexColor(string color)
+    {
+        string hex = color.TrimStart('#');
+        if (hex.Length == 6)
+            hex += "FF";
+
+        if (hex.Length != 8 || !uint.TryParse(hex, System.Globalization.NumberStyles.HexNumber, null, out uint rgba))
+        {
+            Plugin.logger.LogWarning($"Outline color '{color}' is not valid, using white");
+            return Color.white;
+        }
+
+        return new Color32((byte)(rgba >> 24), (byte)(rgba >> 16), (byte)(rgba >> 8), (byte)rgba);
     }
 
     /// <summary>
-    /// Makes a silhouette texture with a border from the visible pixels of a texture.
-    /// The new texture is larger than the source texture by the border size on each side.
-    /// Each pixel within the border size of a visible source pixel gets the given color.
-    /// All other pixels are transparent.
-    /// A source pixel is visible if its alpha is more than 0.01.
+    /// Gets the number of pixels that a Gaussian blur with a radius reaches on each side.
+    /// <see cref="ApplyGaussianBlur"/> uses the same value.
     /// </summary>
+    /// <param name="radius">The radius of the blur, in pixels.</param>
+    /// <returns>The reach of the blur, in pixels. It is at least 1.</returns>
+    private static int GetGaussianKernelRadius(float radius)
+    {
+        float sigma = Math.Max(radius / 2f, 0.01f);
+        return Math.Max(1, (int)MathF.Ceiling(sigma * 3f));
+    }
+
+    /// <summary>
+    /// Makes a silhouette texture from the visible pixels of a texture, or copies the texture into a larger canvas.
+    /// The new texture is larger than the source texture by the padding on each side.
+    /// </summary>
+    /// <remarks>
+    /// If <paramref name="color"/> is not null, each pixel within the thickness of a visible source pixel gets the color, and all other pixels are transparent.
+    /// A source pixel is visible if its alpha is more than 0.01.
+    /// If <paramref name="color"/> is null, the method does not fill a color: it copies the source pixels unchanged into the middle of the new texture, and does not use the thickness.
+    /// </remarks>
     /// <param name="sourceTexture">The texture that gives the shape.</param>
-    /// <param name="borderSizeInPixels">The width of the border around the shape, in pixels.</param>
-    /// <param name="color">The color of the silhouette. If null, the method uses white.</param>
+    /// <param name="thickness">The distance that the silhouette grows around the shape, in pixels.</param>
+    /// <param name="padding">The number of pixels to add on each side of the texture. It must be at least the thickness.</param>
+    /// <param name="color">The color of the silhouette, or null to keep the source pixels.</param>
     /// <returns>A new RGBA32 texture without mipmaps.</returns>
-    public static Texture2D TransformToOutline(Texture2D sourceTexture, int borderSizeInPixels = 8, Color? color = null)
+    public static Texture2D TransformToOutline(Texture2D sourceTexture, int thickness, int padding, Color? color)
     {
         Plugin.logger.LogInfo("Transforming texture to outline...");
-        if (color == null)
-            color = Color.white;
-
-        int sourceWidthInPixels = sourceTexture.width;
-        int sourceHeightInPixels = sourceTexture.height;
-        int outputWidthInPixels = sourceWidthInPixels + borderSizeInPixels * 2;
-        int outputHeightInPixels = sourceHeightInPixels + borderSizeInPixels * 2;
+        int sourceWidth = sourceTexture.width;
+        int sourceHeight = sourceTexture.height;
+        int outputWidth = sourceWidth + padding * 2;
+        int outputHeight = sourceHeight + padding * 2;
 
         Color[] sourcePixels = sourceTexture.GetPixels();
-        bool[] filledMask = new bool[outputWidthInPixels * outputHeightInPixels];
-        int borderSquared = borderSizeInPixels * borderSizeInPixels;
+        Color[] outputPixels = new Color[outputWidth * outputHeight];
 
-        for (int pixelY = 0; pixelY < sourceHeightInPixels; pixelY++)
+        for (int y = 0; y < sourceHeight; y++)
         {
-            for (int pixelX = 0; pixelX < sourceWidthInPixels; pixelX++)
+            for (int x = 0; x < sourceWidth; x++)
             {
-                if (sourcePixels[pixelY * sourceWidthInPixels + pixelX].a <= 0.01f) continue;
+                Color sourcePixel = sourcePixels[y * sourceWidth + x];
+                int outputIndex = (y + padding) * outputWidth + x + padding;
 
-                int centerX = pixelX + borderSizeInPixels;
-                int centerY = pixelY + borderSizeInPixels;
-
-                for (int offsetY = -borderSizeInPixels; offsetY <= borderSizeInPixels; offsetY++)
+                if (color == null)
                 {
-                    for (int offsetX = -borderSizeInPixels; offsetX <= borderSizeInPixels; offsetX++)
-                    {
-                        if (offsetX * offsetX + offsetY * offsetY > borderSquared) continue;
+                    outputPixels[outputIndex] = sourcePixel;
+                    continue;
+                }
 
-                        filledMask[(centerY + offsetY) * outputWidthInPixels + (centerX + offsetX)] = true;
+                if (sourcePixel.a <= 0.01f)
+                    continue;
+
+                for (int offsetY = -thickness; offsetY <= thickness; offsetY++)
+                {
+                    for (int offsetX = -thickness; offsetX <= thickness; offsetX++)
+                    {
+                        if (offsetX * offsetX + offsetY * offsetY <= thickness * thickness)
+                            outputPixels[outputIndex + offsetY * outputWidth + offsetX] = color.Value;
                     }
                 }
             }
         }
 
-        Color[] outputPixels = new Color[filledMask.Length];
-        for (int pixelIndex = 0; pixelIndex < outputPixels.Length; pixelIndex++)
-        {
-            outputPixels[pixelIndex] = filledMask[pixelIndex] ? color.Value : Color.clear;
-        }
-
-        Texture2D whiteSilhouetteTexture = new Texture2D(outputWidthInPixels, outputHeightInPixels, TextureFormat.RGBA32, false);
-        whiteSilhouetteTexture.SetPixels(outputPixels);
-        whiteSilhouetteTexture.Apply();
-        return whiteSilhouetteTexture;
+        Texture2D outputTexture = new(outputWidth, outputHeight, TextureFormat.RGBA32, false);
+        outputTexture.SetPixels(outputPixels);
+        outputTexture.Apply();
+        return outputTexture;
     }
 
     /// <summary>
@@ -1239,7 +1307,7 @@ public static class Visual
         int textureHeightInPixels = sourceTexture.height;
 
         float sigma = Math.Max(radius / 2f, 0.01f);
-        int kernelRadiusInPixels = Math.Max(1, (int)MathF.Ceiling(sigma * 3f));
+        int kernelRadiusInPixels = GetGaussianKernelRadius(radius);
         float[] kernelWeights = BuildGaussianKernelWeights(sigma, kernelRadiusInPixels);
 
         Color32[] sourcePixels = sourceTexture.GetPixels32();
@@ -1367,6 +1435,7 @@ public static class Visual
     /// Makes and registers the sprites from mod textures.
     /// First, the method makes a sprite for each entry in <see cref="Registry.spriteInfos"/>.
     /// If the entry has an origin name, the method uses the texture with that name. Otherwise, it uses the texture with the sprite name.
+    /// A pivot or pixels per unit that the entry does not set comes from the sprite info of the origin, if it has one.
     /// It skips an entry without a texture, and keeps <see cref="OriginType.Inner"/> entries for <see cref="CreateInnerOriginSprites"/>.
     /// Then it makes a sprite with the default settings for each texture that does not have a registered sprite with the same name.
     /// A texture that only an origin name uses therefore also gets a sprite with its own name.
@@ -1391,15 +1460,15 @@ public static class Visual
             if (!Registry.textures.TryGetValue(textureName, out Texture2D? texture))
                 continue;
 
-            Vector2 pivot = spriteInfo.pivot ?? GetPivotPreset(spriteName);
-            float pixelsPerUnit = spriteInfo.pixelsPerUnit ?? defaultPixelsPerUnit;
+            Registry.spriteInfos.TryGetValue(textureName, out SpriteInfo? originInfo);
+            Vector2 pivot = spriteInfo.pivot ?? originInfo?.pivot ?? GetPivotPreset(textureName);
+            float pixelsPerUnit = spriteInfo.pixelsPerUnit ?? originInfo?.pixelsPerUnit ?? defaultPixelsPerUnit;
 
             Sprite sprite = BuildSpriteWithTexture(
                 texture,
                 pivot,
                 pixelsPerUnit,
-                spriteInfo.transformToOutline,
-                spriteInfo.gaussianBlurRadius
+                spriteInfo.outline
             );
             RegisterSprite(spriteAtlasManager, spriteName, sprite);
         }
@@ -1516,7 +1585,7 @@ public static class Visual
     /// Makes and registers the sprites in <see cref="pendingInnerOriginSpriteInfos"/>, and then clears that list.
     /// For each entry, the method finds the game sprite with the origin name.
     /// If the game sprite does not exist, it writes a warning to the log and skips the entry.
-    /// If the entry has a pivot, pixels per unit, an outline or a blur, the method makes a new sprite with these settings.
+    /// If the entry has a pivot, pixels per unit or an outline, the method makes a new sprite with these settings.
     /// A setting that the entry does not have comes from the game sprite.
     /// Without these settings, the method registers the game sprite with no changes.
     /// </summary>
@@ -1542,11 +1611,9 @@ public static class Visual
 
             bool hasPivotOverride = spriteInfo.pivot != null;
             bool hasPixelsPerUnitOverride = spriteInfo.pixelsPerUnit != null;
-            bool hasEffect = spriteInfo.transformToOutline || spriteInfo.gaussianBlurRadius != null;
-
             Sprite sprite = originalSprite;
 
-            if (hasPivotOverride || hasPixelsPerUnitOverride || hasEffect)
+            if (hasPivotOverride || hasPixelsPerUnitOverride || spriteInfo.outline != null)
             {
                 Vector2 normalizedOriginalPivot = new(
                     originalSprite.pivot.x / originalSprite.rect.width,
@@ -1555,11 +1622,9 @@ public static class Visual
 
                 Vector2 finalPivot = hasPivotOverride ? spriteInfo.pivot!.Value : normalizedOriginalPivot;
                 float finalPixelsPerUnit = hasPixelsPerUnitOverride ? spriteInfo.pixelsPerUnit!.Value : originalSprite.pixelsPerUnit;
-                bool transformToOutline = spriteInfo.transformToOutline;
-                float? gaussianBlurRadius = spriteInfo.gaussianBlurRadius;
 
                 Texture2D bakedTexture = BakeSpriteToTexture(originalSprite);
-                sprite = BuildSpriteWithTexture(bakedTexture, finalPivot, finalPixelsPerUnit, transformToOutline, gaussianBlurRadius);
+                sprite = BuildSpriteWithTexture(bakedTexture, finalPivot, finalPixelsPerUnit, spriteInfo.outline);
                 sprite.name = spriteName;
             }
 

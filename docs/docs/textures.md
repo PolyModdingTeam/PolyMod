@@ -44,7 +44,7 @@ Units and some other objects have an outline sprite. Its name is the full sprite
 
 A name like `head_outline_bardur` is never used.
 
-To make an outline from an existing texture, use [`transformToOutline`](sprites.md#making-outlines) in `sprites.json`.
+To make an outline from an existing texture, use [`outline`](sprites.md#making-outlines) in `sprites.json`.
 
 ## Examples
 

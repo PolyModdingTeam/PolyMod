@@ -16,7 +16,7 @@ This documentation is for **PolyMod 2.0** (`2.0.0-pre`). It was written against 
 | Add names and descriptions for new content, or translate it | `localization.json` | [Localization](localization.md) |
 | Add a completely new language | `language_<code>.json` | [Localization](localization.md#adding-a-new-language) |
 | Replace or add images | `.png` files | [Textures](textures.md) |
-| Set the pivot, scale, outline or blur of images | `sprites.json` | [Sprites](sprites.md) |
+| Set the pivot and scale of images, or make outlines | `sprites.json` | [Sprites](sprites.md) |
 | Build the look of a new unit, building or resource | prefab files | [Prefabs](prefabs.md) |
 | Change the tribe preview map | `preview` in a tribe | [Tribe previews](tribe-previews.md) |
 | Change game code | `.dll` PolyScripts | [PolyScripts](polyscripts.md) |
