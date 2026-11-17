@@ -32,7 +32,19 @@ New terrains, resources and improvements always use their id as the base name.
 
 ### Outlines
 
-Units and some other objects have an outline sprite. Its name is the sprite name followed by `_outline`, for example `lancer_body_outline` for the sprite `lancer_body`. To make an outline from an existing texture, use [`transformToOutline`](sprites.md#making-outlines) in `sprites.json`.
+Units and some other objects have an outline sprite. Its name is the full sprite name followed by `_outline`, for example `lancer_body_outline` for the sprite `lancer_body`.
+
+`_outline` always comes **last**, after the tribe, skin and level parts. When the game looks up a sprite, it finds the sprite name with the rules above and then adds `_outline` to that name:
+
+| Sprite | Outline |
+| --- | --- |
+| `head` | `head_outline` |
+| `head_bardur` | `head_bardur_outline` |
+| `head_bardur_baerion` | `head_bardur_baerion_outline` |
+
+A name like `head_outline_bardur` is never used.
+
+To make an outline from an existing texture, use [`transformToOutline`](sprites.md#making-outlines) in `sprites.json`.
 
 ## Examples
 
