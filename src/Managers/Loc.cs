@@ -2,7 +2,6 @@ using System.Globalization;
 using HarmonyLib;
 using I2.Loc;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
-using System.Reflection;
 using LibCpp2IL;
 using Polytopia.Data;
 using PolytopiaBackendBase.Common;
@@ -26,68 +25,69 @@ public static class Loc
     internal static Dictionary<string, string> buildingsInfoOverrides = new();
 
     /// <summary>
-    /// A Harmony prefix on <c>Localization.Get(string, Il2CppReferenceArray)</c>.
-    /// It finds a custom enum value in the parts of the key, which are separated by dots.
-    /// A custom enum value is a number that is not less than <see cref="Plugin.AUTOIDX_STARTS_FROM"/>.
-    /// The patch gets the enum name of this value from the enum caches of the type mappings in <see cref="Loader.typeMappings"/>.
-    /// If more than one enum type has a name for the value, the patch uses the last of these types in <see cref="Loader.typeMappings"/>.
-    /// Then it replaces the number in the key with the enum name.
-    /// If the key has more than one custom value, the patch uses only the last value.
+    /// The localization keys that the game makes from an enum value with <c>ToString</c>, by key prefix.
+    /// For a custom enum value, <c>ToString</c> gives the number, so the key has the number in place of the name.
+    /// Each entry gets the name of a value from the <c>EnumCache</c> of the enum type, or null if the value has no name.
+    /// <c>action.info.clear</c> must come before <c>action.info.</c>, because both prefixes match the same keys.
     /// </summary>
-    /// <param name="key">The localization key. The patch can change it.</param>
-    /// <param name="args">The format arguments of the localized text. The patch does not use them.</param>
+    private static readonly (string prefix, Func<int, string?> getName)[] enumValueKeyPrefixes =
+    {
+        ("action.info.clear", value => EnumCache<TileData.EffectType>.TryGetName((TileData.EffectType)value, out string name) ? name : null),
+        ("action.info.", value => EnumCache<CommandType>.TryGetName((CommandType)value, out string name) ? name : null),
+        ("actionbox.unit.", value => EnumCache<UnitEffect>.TryGetName((UnitEffect)value, out string name) ? name : null),
+        ("actionbox.building.", value => EnumCache<ImprovementEffect>.TryGetName((ImprovementEffect)value, out string name) ? name : null),
+        ("wcontroller.reward.", value => EnumCache<CityReward>.TryGetName((CityReward)value, out string name) ? name : null),
+        ("tribes.", value => EnumCache<TribeType>.TryGetName((TribeType)value, out string name) ? name : null),
+    };
+
+    /// <summary>
+    /// Replaces the number of a custom enum value in a localization key with the name of the value.
+    /// </summary>
+    /// <remarks>
+    /// The method only changes keys that start with a prefix in <see cref="enumValueKeyPrefixes"/>, directly followed by a number that is not less than <see cref="Plugin.AUTOIDX_STARTS_FROM"/>.
+    /// After the number, the key can end, or continue with <c>_</c> or <c>.</c>, for example for the skin suffix that <c>Localization.GetSkinned</c> adds.
+    /// For example, it changes <c>action.info.1000</c> to <c>action.info.mycommand</c>, and <c>action.info.1000_swamp</c> to <c>action.info.mycommand_swamp</c>.
+    /// </remarks>
+    /// <param name="key">The localization key.</param>
+    /// <returns>The key with the name of the value, or the key without changes.</returns>
+    private static string ReplaceEnumValueInKey(string key)
+    {
+        foreach (var (prefix, getName) in enumValueKeyPrefixes)
+        {
+            if (!key.StartsWith(prefix, StringComparison.Ordinal))
+                continue;
+
+            int numberEnd = prefix.Length;
+            while (numberEnd < key.Length && key[numberEnd] >= '0' && key[numberEnd] <= '9')
+                numberEnd++;
+
+            bool numberIsWholePart = numberEnd == key.Length || key[numberEnd] == '_' || key[numberEnd] == '.';
+            if (numberEnd == prefix.Length || !numberIsWholePart
+                || !int.TryParse(key.AsSpan(prefix.Length, numberEnd - prefix.Length), NumberStyles.None, CultureInfo.InvariantCulture, out int value)
+                || value < Plugin.AUTOIDX_STARTS_FROM)
+                return key;
+
+            string? name = getName(value);
+            return name == null ? key : string.Concat(prefix, name, key.AsSpan(numberEnd));
+        }
+        return key;
+    }
+
+    /// <summary>
+    /// A Harmony prefix on <c>LocalizationManager.TryGetTranslation</c> of I2 Localization.
+    /// It changes the key with <see cref="ReplaceEnumValueInKey"/>.
+    /// </summary>
+    /// <remarks>
+    /// All lookups of localized text use this method: <c>Localization.Get</c>, the skin lookup of <c>Localization.GetSkinned</c>, and the direct lookups of the game, for example the tribe names in the stats rows.
+    /// </remarks>
+    /// <param name="Term">The localization key. The patch can change it.</param>
     /// <returns>Always true, which runs the original method.</returns>
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(Localization), nameof(Localization.Get), typeof(string), typeof(Il2CppReferenceArray<Il2CppSystem.Object>))]
-    private static bool Localization_Get(ref string key, Il2CppReferenceArray<Il2CppSystem.Object> args)
+    [HarmonyPatch(typeof(LocalizationManager), nameof(LocalizationManager.TryGetTranslation))]
+    private static bool LocalizationManager_TryGetTranslation(ref string Term)
     {
-        List<string> keys = key.Split('.').ToList();
-        int? idx = null;
-        string? name = null;
-
-        // Find any custom enum indices in the localization key
-        foreach (string item in keys)
-        {
-            if (int.TryParse(item, out int parsedIdx))
-            {
-                if (parsedIdx >= Plugin.AUTOIDX_STARTS_FROM)
-                {
-                    idx = parsedIdx;
-                }
-            }
-        }
-
-        // If a custom enum index is found, try to resolve its name
-        if (idx != null)
-        {
-            foreach (var typeMapping in Loader.typeMappings.Values)
-            {
-                if (!typeMapping.shouldCreateCache)
-                    continue;
-
-                MethodInfo? methodInfo = typeof(EnumCache<>).MakeGenericType(typeMapping.type).GetMethod("TryGetName");
-                if (methodInfo != null)
-                {
-                    object?[] parameters = { idx, null };
-                    object? methodInvokeResult = methodInfo.Invoke(null, parameters);
-                    if (methodInvokeResult != null)
-                    {
-                        if ((bool)methodInvokeResult)
-                        {
-                            name = (string?)parameters[1];
-                        }
-                    }
-                }
-            }
-
-            // If the name was resolved, replace the index with the name in the key
-            if (name != null && idx != null)
-            {
-                int index = keys.IndexOf(idx.Value.ToString(CultureInfo.InvariantCulture));
-                keys[index] = name;
-                key = string.Join(".", keys);
-            }
-        }
+        if (!string.IsNullOrEmpty(Term))
+            Term = ReplaceEnumValueInKey(Term);
         return true;
     }
 
