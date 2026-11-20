@@ -473,8 +473,8 @@ public static class Prefabs
     /// The method makes a copy of the default Imperius Warrior prefab.
     /// It removes the sprite container of the copy and adds an empty <c>SpriteContainer</c> object.
     /// Then it adds the visual parts from <see cref="ApplyUnitVisualParts"/>.
-    /// The head position marker is the visual part with the name <see cref="UnitPrefabInfo.headPositionMarker"/>.
-    /// If no visual part has this name, the method uses the first visual part that it made.
+    /// The head position marker is the first visual part whose default sprite name is <see cref="UnitPrefabInfo.headPositionMarker"/>.
+    /// If no visual part has this default sprite name, the method uses the first visual part that it made.
     /// If the description has no visual parts, the method uses the <c>SpriteContainer</c> object.
     /// <para>
     /// The method keeps the prefab when the scene changes.
@@ -507,7 +507,7 @@ public static class Prefabs
         Transform? headPositionMarker = null;
         foreach (var vp in visualParts)
         {
-            if (vp.visualPart.gameObject.name == unitPrefabInfo.headPositionMarker)
+            if (vp.DefaultSpriteName == unitPrefabInfo.headPositionMarker)
             {
                 headPositionMarker = vp.visualPart.gameObject.transform;
                 break;

@@ -260,7 +260,7 @@ internal static class Dumper
 
                 prefabsInfo.units.Add(new UnitPrefabInfo
                 {
-                    headPositionMarker = entry.Value.headPositionMarker.gameObject.name,
+                    headPositionMarker = GetHeadPositionMarkerName(entry.Value),
                     skinnedKey = entry.Key,
                     visualParts = visualParts,
                 });
@@ -319,6 +319,35 @@ internal static class Dumper
         {
             Plugin.logger.LogError($"Dumping prefabs failed: {exception}");
         }
+    }
+
+    /// <summary>
+    /// Gets the value for <see cref="UnitPrefabInfo.headPositionMarker"/> of a unit prefab.
+    /// </summary>
+    /// <remarks>
+    /// The method finds the visual part whose object is the head position marker of the unit, and gives the default sprite name of that part.
+    /// If the marker is not a visual part object, the method uses the nearest parent of the marker that is a visual part object.
+    /// If the unit has no marker, or no visual part contains the marker, the method gives an empty string.
+    /// When PolyMod loads the dump, an empty string makes it use the first visual part.
+    /// </remarks>
+    /// <param name="unit">The unit prefab.</param>
+    /// <returns>The default sprite name of the visual part of the head position marker, or an empty string.</returns>
+    private static string GetHeadPositionMarkerName(Unit unit)
+    {
+        Transform? marker = unit.headPositionMarker;
+        SkinVisualsReference skinVisualsReference = unit.GetComponent<SkinVisualsReference>();
+        if (marker == null || skinVisualsReference == null || skinVisualsReference.visualParts == null)
+            return "";
+
+        for (Transform? current = marker; current != null; current = current.parent)
+        {
+            foreach (var visualPart in skinVisualsReference.visualParts)
+            {
+                if (visualPart?.visualPart != null && visualPart.visualPart.transform == current)
+                    return visualPart.DefaultSpriteName ?? "";
+            }
+        }
+        return "";
     }
 
     /// <summary>

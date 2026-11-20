@@ -44,7 +44,7 @@ Each part also gets an outline object, named `defaultSpriteName` plus `_Outline`
 | Field | Type | Description |
 | --- | --- | --- |
 | `skinnedKey` | object | The unit, tribe and skin that this prefab is for: `{ "unitType": "...", "tribeType": "...", "skinType": "..." }`. Use the ids, for example `"tribeType": "none"` for all tribes and `"skinType": "default"` for the default skin. |
-| `headPositionMarker` | string | The `defaultSpriteName` of the part that marks the head of the unit. If no part has this name, PolyMod uses the first part. |
+| `headPositionMarker` | string | The `defaultSpriteName` of the part that marks the head of the unit. If more than one part has this `defaultSpriteName`, PolyMod uses the first of them. If no part has it, PolyMod uses the first part. In dumped prefabs, this field can be empty. That means the head marker of the vanilla unit is not one of its parts. |
 | `uiOverride` | boolean | If `true`, this prefab is only used in the UI, in place of the normal prefab of the same key. Default `false`. |
 | `visualParts` | array | The [visual parts](#visual-parts). |
 

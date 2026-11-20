@@ -30,8 +30,10 @@ public class UnitPrefabInfo : BasePrefabInfo
     public SkinnedKey skinnedKey;
 
     /// <summary>
-    /// The name of the visual part that is the head position marker of the unit.
-    /// If no visual part has this name, PolyMod uses the first visual part that it makes.
+    /// The default sprite name of the visual part that is the head position marker of the unit.
+    /// PolyMod compares this value with <see cref="VisualPartInfo.defaultSpriteName"/>, not with the name of the game object.
+    /// If more than one visual part has this default sprite name, PolyMod uses the first of them.
+    /// If no visual part has this default sprite name, PolyMod uses the first visual part that it makes.
     /// </summary>
     [JsonInclude]
     public string headPositionMarker = "";
