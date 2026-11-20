@@ -1133,6 +1133,7 @@ public static class Visual
     /// The new texture is larger by the thickness and the reach of the blur on each side, and then the method applies <see cref="ApplyGaussianBlur"/> if the blur is more than 0.
     /// The method moves the pivot by the added pixels, so the shape stays at the same place in the world.
     /// The pixels per unit do not change, so the shape also keeps its size.
+    /// The sprite uses a full rectangle mesh, because a tight mesh is slow to make.
     /// </remarks>
     /// <param name="texture">The texture for the sprite.</param>
     /// <param name="pivot">The pivot of the source texture, as a fraction of its size. If null, the pivot is the center.</param>
@@ -1154,7 +1155,11 @@ public static class Visual
 
             texture = TransformToOutline(texture, thickness, padding, fillColor);
             if (outline.blur > 0f)
-                texture = ApplyGaussianBlur(texture, outline.blur);
+            {
+                Texture2D outlineTexture = texture;
+                texture = ApplyGaussianBlur(outlineTexture, outline.blur);
+                UnityEngine.Object.Destroy(outlineTexture);
+            }
 
             finalPivot = new(
                 (finalPivot.x * sourceWidth + padding) / texture.width,
@@ -1166,7 +1171,9 @@ public static class Visual
             texture,
             new(0, 0, texture.width, texture.height),
             finalPivot,
-            pixelsPerUnit ?? 2112f
+            pixelsPerUnit ?? 2112f,
+            0,
+            SpriteMeshType.FullRect
         );
     }
 
@@ -1203,7 +1210,8 @@ public static class Visual
     /// </summary>
     /// <remarks>
     /// If <paramref name="color"/> is not null, each pixel within the thickness of a visible source pixel gets the color, and all other pixels are transparent.
-    /// A source pixel is visible if its alpha is more than 0.01.
+    /// A source pixel is visible if its alpha is more than 2 of 255.
+    /// The method draws the circle of the thickness only around the visible pixels at the edge of the shape, because the circles of the other pixels are inside the shape.
     /// If <paramref name="color"/> is null, the method does not fill a color: it copies the source pixels unchanged into the middle of the new texture, and does not use the thickness.
     /// </remarks>
     /// <param name="sourceTexture">The texture that gives the shape.</param>
@@ -1219,38 +1227,49 @@ public static class Visual
         int outputWidth = sourceWidth + padding * 2;
         int outputHeight = sourceHeight + padding * 2;
 
-        Color[] sourcePixels = sourceTexture.GetPixels();
-        Color[] outputPixels = new Color[outputWidth * outputHeight];
+        Color32[] sourcePixels = sourceTexture.GetPixels32();
+        Color32[] outputPixels = new Color32[outputWidth * outputHeight];
+        Color32 fillColor = color ?? default;
+
+        List<int> circleOffsets = new();
+        for (int offsetY = -thickness; offsetY <= thickness; offsetY++)
+        {
+            for (int offsetX = -thickness; offsetX <= thickness; offsetX++)
+            {
+                if (offsetX * offsetX + offsetY * offsetY <= thickness * thickness)
+                    circleOffsets.Add(offsetY * outputWidth + offsetX);
+            }
+        }
+
+        bool IsVisible(int x, int y) => x >= 0 && y >= 0 && x < sourceWidth && y < sourceHeight
+            && sourcePixels[y * sourceWidth + x].a > INVISIBLE_ALPHA;
 
         for (int y = 0; y < sourceHeight; y++)
         {
             for (int x = 0; x < sourceWidth; x++)
             {
-                Color sourcePixel = sourcePixels[y * sourceWidth + x];
                 int outputIndex = (y + padding) * outputWidth + x + padding;
 
                 if (color == null)
                 {
-                    outputPixels[outputIndex] = sourcePixel;
+                    outputPixels[outputIndex] = sourcePixels[y * sourceWidth + x];
                     continue;
                 }
 
-                if (sourcePixel.a <= 0.01f)
+                if (!IsVisible(x, y))
                     continue;
 
-                for (int offsetY = -thickness; offsetY <= thickness; offsetY++)
-                {
-                    for (int offsetX = -thickness; offsetX <= thickness; offsetX++)
-                    {
-                        if (offsetX * offsetX + offsetY * offsetY <= thickness * thickness)
-                            outputPixels[outputIndex + offsetY * outputWidth + offsetX] = color.Value;
-                    }
-                }
+                outputPixels[outputIndex] = fillColor;
+                if (IsVisible(x - 1, y) && IsVisible(x + 1, y) && IsVisible(x, y - 1) && IsVisible(x, y + 1))
+                    continue;
+
+                foreach (int offset in circleOffsets)
+                    outputPixels[outputIndex + offset] = fillColor;
             }
         }
 
         Texture2D outputTexture = new(outputWidth, outputHeight, TextureFormat.RGBA32, false);
-        outputTexture.SetPixels(outputPixels);
+        outputTexture.SetPixels32(outputPixels);
         outputTexture.Apply();
         return outputTexture;
     }
@@ -1418,7 +1437,7 @@ public static class Visual
     /// <summary>
     /// Adds a sprite to the <c>Heads</c> cache of the sprite atlas manager and to <see cref="Registry.sprites"/>.
     /// If a sprite with the same name exists, the method replaces it.
-    /// The method writes the sprite name to the log.
+    /// The method writes the sprite name to the debug log.
     /// </summary>
     /// <param name="spriteAtlasManager">The sprite atlas manager of the game.</param>
     /// <param name="spriteName">The name of the sprite.</param>
